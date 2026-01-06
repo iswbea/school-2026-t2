@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Notes - Winter 2026</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Course Notes - Winter 2026</h1>
+            <p class="subtitle">UBC Computer Science</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="schedule">Schedule</button>
+            <button class="tab-btn" data-tab="cpsc410">CPSC 410</button>
+            <button class="tab-btn" data-tab="cpsc420">CPSC 420</button>
+            <button class="tab-btn" data-tab="cpsc436">CPSC 436</button>
+            <button class="tab-btn" data-tab="cpsc440">CPSC 440</button>
+            <button class="tab-btn" data-tab="cpsc404">CPSC 404</button>
+        </nav>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search all notes...">
+        </div>
+
+        <!-- Schedule Tab -->
+        <div id="schedule" class="tab-content active">
+            <h2>Course Schedule</h2>
+            <div class="schedule-grid">
+                <div class="course-card">
+                    <h3>CPSC 410 - Advanced Software Engineering</h3>
+                    <p class="instructor">Caroline Lemieux</p>
+                    <p class="time">Mon/Wed 2:00 PM - 3:30 PM</p>
+                    <p class="location">CHBE 102</p>
+                    <p class="dates">Jan 5 - Apr 8, 2026</p>
+                </div>
+
+                <div class="course-card">
+                    <h3>CPSC 420 - Advanced Algorithms</h3>
+                    <p class="instructor">Bruce Shepherd</p>
+                    <p class="time">Mon/Wed/Fri 1:00 PM - 2:00 PM</p>
+                    <p class="location">MCLD 2018</p>
+                    <p class="dates">Jan 5 - Apr 10, 2026</p>
+                </div>
+
+                <div class="course-card">
+                    <h3>CPSC 436 - Computer Security</h3>
+                    <p class="instructor">Michael Feeley</p>
+                    <p class="time">Wed/Fri 11:00 AM - 12:30 PM</p>
+                    <p class="location">MCML 166</p>
+                    <p class="dates">Jan 7 - Apr 10, 2026</p>
+                </div>
+
+                <div class="course-card">
+                    <h3>CPSC 440 - Advanced Machine Learning</h3>
+                    <p class="instructor">Danica Sutherland</p>
+                    <p class="time">Mon/Wed 4:00 PM - 5:30 PM</p>
+                    <p class="location">CHEM B250</p>
+                    <p class="dates">Jan 5 - Apr 10, 2026</p>
+                    <p class="discussion">Discussion: Tue 3:30 PM - 4:30 PM (FORW 519)</p>
+                </div>
+
+                <div class="course-card">
+                    <h3>CPSC 404 - Advanced Relational Databases</h3>
+                    <p class="instructor">Ed Knorr</p>
+                    <p class="time">Tue/Thu 9:30 AM - 11:00 AM</p>
+                    <p class="location">SWNG 122</p>
+                    <p class="dates">Jan 6 - Apr 9, 2026</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CPSC 410 Tab -->
+        <div id="cpsc410" class="tab-content">
+            <h2>CPSC 410 - Advanced Software Engineering</h2>
+            <div class="lectures-list">
+                <div class="lecture-item">
+                    <a href="CPSC_410_Advanced_Software_Engineering/2026-01-06/notes.html">
+                        <span class="lecture-date">2026-01-06</span>
+                        <span class="lecture-title">Lecture Notes</span>
+                    </a>
+                </div>
+                <!-- Lectures will be listed here -->
+            </div>
+        </div>
+
+        <!-- CPSC 420 Tab -->
+        <div id="cpsc420" class="tab-content">
+            <h2>CPSC 420 - Advanced Algorithms</h2>
+            <div class="lectures-list">
+                <p class="no-lectures">No lectures yet. Add your first lecture!</p>
+            </div>
+        </div>
+
+        <!-- CPSC 436 Tab -->
+        <div id="cpsc436" class="tab-content">
+            <h2>CPSC 436 - Computer Security</h2>
+            <div class="lectures-list">
+                <p class="no-lectures">No lectures yet. Add your first lecture!</p>
+            </div>
+        </div>
+
+        <!-- CPSC 440 Tab -->
+        <div id="cpsc440" class="tab-content">
+            <h2>CPSC 440 - Advanced Machine Learning</h2>
+            <div class="lectures-list">
+                <p class="no-lectures">No lectures yet. Add your first lecture!</p>
+            </div>
+        </div>
+
+        <!-- CPSC 404 Tab -->
+        <div id="cpsc404" class="tab-content">
+            <h2>CPSC 404 - Advanced Relational Databases</h2>
+            <div class="lectures-list">
+                <p class="no-lectures">No lectures yet. Add your first lecture!</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

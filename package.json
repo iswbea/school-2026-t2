@@ -1,0 +1,15 @@
+{
+  "name": "ubc-course-notes",
+  "version": "1.0.0",
+  "description": "Personal course notes system for UBC CPSC courses",
+  "scripts": {
+    "new-lecture": "node create-lecture.js"
+  },
+  "keywords": ["notes", "education", "ubc"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "highlight.js": "^11.11.1",
+    "marked": "^17.0.1"
+  }
+}

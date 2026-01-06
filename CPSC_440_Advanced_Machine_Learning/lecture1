@@ -1,0 +1,85 @@
+40 % assignments, 4-ish. A1 alone, no late days
+A2+ with a partner or alone. 5 total late days over term
+20% quizes. Self-scheduled, about evvery other week, short conceptual questions. Need to do 5/6
+40% max(projects, final exam)
+important links: 
+course website: https://www.cs.ubc.ca/~dsuth/440/25w2/
+gradescope: https://www.gradescope.ca/courses/34664
+piazza: https://piazza.com/class/mk0uk8835r31ic
+
+
+General problem: binary density estimation
+    This is a special case of density estimation with binary date.
+        example: What is the probability that a radnomly selected student has covid.
+        Input: n iid samples, of binary values x^1,x^2,x^n in {0,1}
+        output: a probability model for a random variable X: here, just Pr(X=1)
+        X in R^(nx1) contains our sample data
+
+        X = [1,0,0,1,0] => Desnsity estimator Pr(X = 1) = 0.4
+
+        We'll start by discusig major concepts for this very simple case
+        We'll slowly build to more complicated casess
+        Beyond binary data...
+
+    Some oter questions: 
+        Whats the probability this medical treatment works?
+        Whats the probability that if you plant 10 seeds, at least one will germinate?
+        How many lottery tickets should you expect to buy before you win?
+
+        We're using the model to compute some other quantity in ex. 2-3, in the first we compute Pr(X=1) like before. We call all 3 "inference" with this model.
+
+    In ml, the usual terminoligy is:
+        Learning: Going from data to parameters theta
+        Inference: Is the task of using the parameters theta to infer/predict something
+    Statisticians sometimes use a 'referse terminology', given data you can infer parameters.
+    We'll use ml terminoligy.
+    Model definition: Bournoulli distribution
+        - We're going to start bhy using a parameterized probability model.
+          - ie a moda with some parameters we can learn
+      - For binary variables we usuaully use the bernulli distribtuion
+      - x is bournilli wth parameter theta, or x ~ bern(theta), if Pr(x=1|theta) = theta
+        - In the covid example, if theta = 0.08, we think 8% of the population has covid.
+    - inferenace task: Given theta, compute Pr(X=0|Theta)
+    - We'll also sometimes write this as p(0|theta), p_theta(0), or just p(0) (this really confused me, please given english explanations for this)
+      - Be careful you know what we're abbrviating "explicit is better than implicit".
+    - Recall that probabilities add up to 1, since X in {0,1} Pr(X = 0 | theta) + Pr(X=1 | theta) = 1
+    - Since Pr(X = 1 | theta) = theta, by definition this gives us Pr(X=0|theta )+ theta = 1 .... please explain rest of what this was getting to, i didnt get it all
+
+It's sometimes helpful to combine the bernoulli distribution into one expression
+p(x|theta) = theta ^ x(1-theta)^(1-x)  = theta ^(1x=1)(1-theta).... (i missed the rest of this)this evalutes to 0 if x is 0, and evalutes to 1 if x is 1.
+
+
+
+big 1 is the "indicator function" `(E) is 1 if the condition E is true, and 0 if its not.
+
+
+Bournoulli inference tasks:
+    Given theta, and an iid sample compute p(x^(1), x^(2)...x^(n)|theta)
+    Also called the likelihood: Pr(X(1) = x(1), X^(2) = x^(2).... X^(n) = x^(n)|theta) 
+    Many ways to estimate learn theta need this, mximum likelihood estaimation .
+    Also helpful oin comparing models on vlaidation/test data
+
+    Assuming that X^(i) are independetn geiven theta we have 
+    p(x^(1), x^(2)....x^n)|theta  = product^n_i=1p(x^(i)|theta)
+    example: = p(x^(1)|theta)...
+    = theta (1-theta) theat theta
+    = theta cubed(1-theta)
+    p(X|theta) = summation form
+    = summation form with theindicator function
+    = theta^n_(1-theta) ** n-0
+
+    A lot of this might be wrong, please fact check these
+    Inference task: computing dataset probabiltiies in code:
+    n_1 = X.sum()
+    n_0 = X.shaope[0] - n_1
+    log_p = n_1 * np.log(theta) + n_0 * np.log1p(-theta)
+
+    Look at each element once, doing a single addition each time, thena constant number ofmoperations for a final value
+    operating in log space is very practically helpful
+        if n is huge and or theta is close to 0 or 1 the probability is tiny
+        calculation might underflow adn return 0 / be very inaccurate
+        logs give much bigger range of effective floating point computation
+        np.log1p(t) is log(1+t) but floats are much more accurate near 0 than 1!
+
+
+    
