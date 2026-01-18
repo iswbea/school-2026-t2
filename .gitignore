@@ -1,4 +1,13 @@
-node_modules/
+# PDFs
+*.pdf
+
+# OS files
 .DS_Store
-*.log
+Thumbs.db
+
+# Editor files
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
