@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_436 - Lecture 2026-01-07</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc436">CPSC_436</a> /
+            <span>2026-01-07</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Computer Security</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-07</span>
+                <span class="instructor">👤 Michael Feeley</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <p>Low level details matter a lot, one misplaced character and you can have a security vulnerability</p>
+
+                    <pre><code>for (i=0; i&lt;= buffer_length; i++)
+malloc(strlen(string))
+if (err != 0) goto fail; goto fail;</code></pre>
+
+                    <p><strong>Grading:</strong></p>
+                    <ul>
+                        <li>CTF-style assignments (10): 25%</li>
+                        <li>Clicker questions: 3%</li>
+                        <li>In-class activities: 7%</li>
+                        <li>Midterm (1): 25%</li>
+                        <li>Final Exam: 40%</li>
+                    </ul>
+
+                    <p><strong>Secure system:</strong></p>
+                    <ul>
+                        <li>Confidentiality: making information available only to authorized parties</li>
+                        <li>Integrity: Ensuring information is always accurate and complete</li>
+                        <li>Availability: Providing services when needed by any authorized parties</li>
+                    </ul>
+
+                    <p><strong>Example:</strong> Sending a message securely (Wikipedia)</p>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+
+                    <!-- ===== INTRODUCTION TO COMPUTER SECURITY ===== -->
+                    <article>
+                        <h3>Why Low-Level Details Matter in Security</h3>
+
+                        <p>Computer security is fundamentally about <strong>precision and attention to detail</strong>. Unlike many areas of software engineering where small mistakes might cause minor bugs or performance issues, in security engineering, <mark>a single misplaced character can create a critical vulnerability that compromises an entire system</mark>.</p>
+
+                        <p>This principle sets security apart from other computing disciplines. In web development, a typo might break a feature. In security, a typo might allow an attacker to take complete control of your system, steal sensitive data, or cause catastrophic damage.</p>
+
+                        <h4>Classic Examples of Single-Character Vulnerabilities</h4>
+
+                        <p>Let's examine three real-world examples that demonstrate how tiny mistakes create massive security holes:</p>
+
+                        <h5>1. Off-by-One Buffer Overflow</h5>
+                        <pre><code class="language-c">for (i=0; i&lt;= buffer_length; i++)</code></pre>
+
+                        <p><strong>The Bug:</strong> The loop condition uses <code>&lt;=</code> instead of <code>&lt;</code></p>
+
+                        <p><strong>Why it's critical:</strong> This is a classic <em>off-by-one error</em>, one of the most common security vulnerabilities in C/C++ programming:</p>
+
+                        <ul>
+                            <li>If <code>buffer_length</code> is 10, the buffer has valid indices from 0 to 9 (10 total elements)</li>
+                            <li>But this loop runs from 0 to 10 (11 iterations)</li>
+                            <li>The final iteration writes <strong>one byte past the end of the buffer</strong></li>
+                            <li>This overwrites whatever memory happens to be adjacent to the buffer</li>
+                        </ul>
+
+                        <p><strong>What can attackers do with this?</strong></p>
+                        <blockquote>
+                            <p>By carefully crafting input, attackers can control what gets written to that extra byte. They might overwrite:</p>
+                            <ul>
+                                <li><strong>Return addresses</strong> on the stack → redirect program execution to attacker's code</li>
+                                <li><strong>Function pointers</strong> → hijack program control flow</li>
+                                <li><strong>Security flags</strong> → bypass authentication checks</li>
+                                <li><strong>Adjacent variables</strong> → manipulate program logic</li>
+                            </ul>
+                        </blockquote>
+
+                        <p><strong>Real-world impact:</strong> Buffer overflow vulnerabilities have been responsible for countless security breaches, including major worms like Morris Worm (1988), Code Red (2001), and SQL Slammer (2003). They remain in the OWASP Top 10 and CWE Top 25 most dangerous vulnerabilities.</p>
+
+                        <p><strong>The fix:</strong> <code>for (i=0; i &lt; buffer_length; i++)</code> — remove the equals sign.</p>
+
+                        <h5>2. Missing Null Terminator Allocation</h5>
+                        <pre><code class="language-c">malloc(strlen(string))</code></pre>
+
+                        <p><strong>The Bug:</strong> Allocates exactly <code>strlen(string)</code> bytes, forgetting that C strings require a null terminator <code>\0</code></p>
+
+                        <p><strong>Why it's critical:</strong> This creates a <em>heap buffer overflow</em>:</p>
+
+                        <ul>
+                            <li>If the string is "hello", <code>strlen()</code> returns 5</li>
+                            <li>This allocates exactly 5 bytes of heap memory</li>
+                            <li>But copying "hello" requires 6 bytes: 'h', 'e', 'l', 'l', 'o', '\0'</li>
+                            <li>The null terminator gets written <strong>beyond the allocated buffer</strong></li>
+                        </ul>
+
+                        <p><strong>What can attackers do with this?</strong></p>
+                        <blockquote>
+                            <p>Heap overflows are particularly dangerous because they can corrupt heap metadata (the bookkeeping information that malloc/free use to manage memory). Attackers can exploit this to:</p>
+                            <ul>
+                                <li><strong>Arbitrary write primitives</strong> → write attacker-controlled data anywhere in memory</li>
+                                <li><strong>Code execution</strong> → overwrite function pointers stored on the heap</li>
+                                <li><strong>Information disclosure</strong> → read sensitive data from adjacent heap chunks</li>
+                            </ul>
+                        </blockquote>
+
+                        <p><strong>The fix:</strong> <code>malloc(strlen(string) + 1)</code> — add one byte for the null terminator.</p>
+
+                        <h5>3. The Apple "goto fail" Bug (CVE-2014-1266)</h5>
+                        <pre><code class="language-c">if (err != 0) goto fail; goto fail;</code></pre>
+
+                        <p><strong>The Bug:</strong> The second <code>goto fail;</code> statement is unconditional—it <em>always</em> executes, regardless of the if condition.</p>
+
+                        <p><strong>Why it's critical:</strong> This was an actual bug in Apple's SSL/TLS implementation that shipped in iOS and macOS in 2014. Here's what happened:</p>
+
+                        <ul>
+                            <li>The code was supposed to verify SSL certificate signatures</li>
+                            <li>If verification failed (<code>err != 0</code>), it should jump to error handling</li>
+                            <li>But the second <code>goto fail;</code> runs <strong>every time</strong>, even when <code>err == 0</code></li>
+                            <li>This caused the function to skip critical signature verification steps</li>
+                            <li>Result: <mark>Any SSL certificate, including forged ones, was accepted as valid</mark></li>
+                        </ul>
+
+                        <p><strong>What could attackers do with this?</strong></p>
+                        <blockquote>
+                            <p>This vulnerability completely undermined SSL/TLS security:</p>
+                            <ul>
+                                <li><strong>Man-in-the-middle attacks</strong> → intercept "secure" communications</li>
+                                <li><strong>Credential theft</strong> → steal passwords, cookies, auth tokens</li>
+                                <li><strong>Data manipulation</strong> → modify encrypted traffic in transit</li>
+                                <li><strong>Certificate forgery</strong> → impersonate any website</li>
+                            </ul>
+                        </blockquote>
+
+                        <p><strong>Real-world impact:</strong> This affected millions of iOS and macOS devices. Any network traffic—banking apps, email, iMessage, App Store connections—could be intercepted by anyone on the same network (coffee shops, airports, etc.).</p>
+
+                        <p><strong>Root cause analysis:</strong> The bug likely happened because someone copied a line during development or merge conflict resolution. With proper indentation and braces, the bug would have been obvious:</p>
+
+                        <pre><code class="language-c">// Incorrect (actual code):
+if (err != 0) goto fail;
+goto fail;  // This ALWAYS runs!
+
+// Correct:
+if (err != 0) {
+    goto fail;
+}</code></pre>
+
+                        <p><strong>The lesson:</strong> Code style matters for security. Brace-less if statements, poor indentation, and lack of code review all contributed to this vulnerability going unnoticed.</p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">💡 Key Takeaway</h5>
+                            <p><strong>In security engineering, precision is non-negotiable.</strong> Every character, every operator, every boundary condition must be correct. Unlike features that can be patched later, security vulnerabilities can be exploited the moment they're discovered—and sometimes for years before discovery.</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== COURSE LOGISTICS ===== -->
+                    <article>
+                        <h3>Course Structure and Grading</h3>
+
+                        <p>CPSC 436 uses a practical, hands-on approach to learning computer security. The grading breakdown reflects the emphasis on applied skills and active participation:</p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Component</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Details</th>
+                                    <th style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);">Weight</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>CTF Assignments</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">10 Capture-the-Flag style challenges</td>
+                                    <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);">25%</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Clicker Questions</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">In-class participation and comprehension checks</td>
+                                    <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);">3%</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>In-Class Activities</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Hands-on exercises and group work</td>
+                                    <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);">7%</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Midterm Exam</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">One midterm examination</td>
+                                    <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);">25%</td>
+                                </tr>
+                                <tr style="background: var(--secondary-bg);">
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Final Exam</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Cumulative final examination</td>
+                                    <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);"><strong>40%</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>About CTF (Capture the Flag) Assignments</h4>
+
+                        <p><strong>CTF challenges</strong> are a gamified way to learn security concepts. In each assignment, you'll:</p>
+                        <ul>
+                            <li>Analyze vulnerable code or systems</li>
+                            <li>Discover and exploit security weaknesses</li>
+                            <li>Retrieve a hidden "flag" (usually a string like <code>flag{s3cur1ty_1s_h4rd}</code>)</li>
+                            <li>Document your methodology and findings</li>
+                        </ul>
+
+                        <p>These assignments mirror real-world security work: penetration testing, vulnerability research, and security auditing. You'll gain practical experience with tools and techniques that security professionals use daily.</p>
+
+                        <h4>Participation Components</h4>
+
+                        <p><strong>Clicker questions (3%)</strong> and <strong>in-class activities (7%)</strong> together make up 10% of your grade. While this might seem small, these components serve important purposes:</p>
+
+                        <ul>
+                            <li><strong>Immediate feedback</strong> — Test your understanding in real-time</li>
+                            <li><strong>Active learning</strong> — Security requires hands-on practice, not just passive listening</li>
+                            <li><strong>Attendance incentive</strong> — Security concepts build on each other; missing lectures makes later material harder</li>
+                            <li><strong>Low-stakes practice</strong> — Try things out before high-stakes exams</li>
+                        </ul>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">📊 Grade Distribution Philosophy</h5>
+                            <p>Notice that 60% of your grade (CTF assignments + participation + midterm) comes from continuous assessment throughout the term. This structure rewards consistent effort and ongoing learning rather than cramming for one big exam. Security skills develop through practice over time, not overnight study sessions.</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== FUNDAMENTAL SECURITY CONCEPTS ===== -->
+                    <article>
+                        <h3>The CIA Triad: Foundation of Information Security</h3>
+
+                        <p>When we talk about building <strong>secure systems</strong>, we need a framework to understand what "security" actually means. The field of information security is built on three fundamental pillars, collectively known as the <strong>CIA Triad</strong>:</p>
+
+                        <ol>
+                            <li><strong>Confidentiality</strong></li>
+                            <li><strong>Integrity</strong></li>
+                            <li><strong>Availability</strong></li>
+                        </ol>
+
+                        <p>Every security mechanism, policy, or technology ultimately serves to protect one or more of these properties. Let's explore each in detail.</p>
+
+                        <h4>1. Confidentiality</h4>
+
+                        <blockquote>
+                            <p><strong>Definition:</strong> Making information available only to authorized parties</p>
+                        </blockquote>
+
+                        <p>Confidentiality is about <strong>preventing unauthorized access to information</strong>. In other words, keeping secrets secret. When confidentiality is violated, we call it an <em>information disclosure</em> or <em>data breach</em>.</p>
+
+                        <p><strong>What does this mean in practice?</strong></p>
+
+                        <ul>
+                            <li>Your bank account balance should only be visible to you (and authorized bank employees)</li>
+                            <li>Your medical records should only be accessible to your healthcare providers</li>
+                            <li>Your passwords should never be readable by anyone, including system administrators</li>
+                            <li>Your private messages should only be readable by intended recipients</li>
+                            <li>Your company's trade secrets should not be accessible to competitors</li>
+                        </ul>
+
+                        <p><strong>How do we achieve confidentiality?</strong></p>
+
+                        <ul>
+                            <li><strong>Encryption</strong> — Transform data so only authorized parties with the correct key can read it</li>
+                            <li><strong>Access control</strong> — File permissions, user roles, authentication systems</li>
+                            <li><strong>Physical security</strong> — Locked server rooms, secure disposal of hard drives</li>
+                            <li><strong>Network isolation</strong> — Firewalls, VPNs, private networks</li>
+                            <li><strong>Information classification</strong> — Label data by sensitivity (public, internal, confidential, secret)</li>
+                        </ul>
+
+                        <p><strong>Real-world confidentiality failures:</strong></p>
+                        <ul>
+                            <li>Equifax breach (2017): 147 million people's personal data exposed</li>
+                            <li>Edward Snowden leaks (2013): Classified NSA documents disclosed</li>
+                            <li>Password database leaks: LinkedIn, Adobe, Yahoo—billions of credentials stolen</li>
+                        </ul>
+
+                        <h4>2. Integrity</h4>
+
+                        <blockquote>
+                            <p><strong>Definition:</strong> Ensuring information is always accurate and complete</p>
+                        </blockquote>
+
+                        <p>Integrity means <strong>data cannot be modified or tampered with by unauthorized parties</strong>. When we talk about integrity, we're concerned with both:</p>
+
+                        <ul>
+                            <li><strong>Data integrity</strong> — The information itself hasn't been altered</li>
+                            <li><strong>System integrity</strong> — The systems processing the data haven't been compromised</li>
+                        </ul>
+
+                        <p><strong>What does this mean in practice?</strong></p>
+
+                        <ul>
+                            <li>A bank transfer for $100 should not be changed to $1,000 in transit</li>
+                            <li>Medical prescriptions should not be altered to change dosages</li>
+                            <li>Software downloads should not be tampered with to include malware</li>
+                            <li>Audit logs should accurately record what happened, without deletions or modifications</li>
+                            <li>Email contents should not be altered after being sent</li>
+                        </ul>
+
+                        <p><strong>How do we achieve integrity?</strong></p>
+
+                        <ul>
+                            <li><strong>Cryptographic hashes</strong> — Checksums (MD5, SHA-256) that detect any modification</li>
+                            <li><strong>Digital signatures</strong> — Prove data came from a specific source and wasn't altered</li>
+                            <li><strong>Version control</strong> — Track changes and maintain history (git, blockchain)</li>
+                            <li><strong>Write-once storage</strong> — Append-only logs, immutable backups</li>
+                            <li><strong>Access controls</strong> — Restrict who can modify data</li>
+                            <li><strong>Input validation</strong> — Reject malformed or suspicious data</li>
+                        </ul>
+
+                        <p><strong>Real-world integrity failures:</strong></p>
+                        <ul>
+                            <li>Stuxnet (2010): Malware modified industrial control systems to damage Iranian nuclear centrifuges</li>
+                            <li>Supply chain attacks: SolarWinds (2020)—attackers modified legitimate software updates</li>
+                            <li>SQL injection: Attackers modify database queries to change or delete data</li>
+                        </ul>
+
+                        <h4>3. Availability</h4>
+
+                        <blockquote>
+                            <p><strong>Definition:</strong> Providing services when needed by authorized parties</p>
+                        </blockquote>
+
+                        <p>Availability means <strong>systems and data are accessible when legitimate users need them</strong>. Even if data is kept confidential and unchanged, it's useless if no one can access it. Availability is often the most visible aspect of security—when it fails, everyone notices immediately.</p>
+
+                        <p><strong>What does this mean in practice?</strong></p>
+
+                        <ul>
+                            <li>Emergency 911 systems must be operational 24/7</li>
+                            <li>Banking systems should be accessible during business hours (and ideally always)</li>
+                            <li>Your email should be available when you need to send a message</li>
+                            <li>E-commerce sites should remain operational during peak shopping periods</li>
+                            <li>Critical infrastructure (power grids, hospitals) must maintain continuous operation</li>
+                        </ul>
+
+                        <p><strong>How do we achieve availability?</strong></p>
+
+                        <ul>
+                            <li><strong>Redundancy</strong> — Backup servers, failover systems, RAID storage</li>
+                            <li><strong>Load balancing</strong> — Distribute traffic across multiple servers</li>
+                            <li><strong>DDoS protection</strong> — Filter malicious traffic, rate limiting</li>
+                            <li><strong>Disaster recovery</strong> — Backups, off-site storage, recovery procedures</li>
+                            <li><strong>Monitoring & alerts</strong> — Detect failures quickly and respond</li>
+                            <li><strong>Capacity planning</strong> — Ensure systems can handle expected load</li>
+                            <li><strong>Patch management</strong> — Keep systems secure without excessive downtime</li>
+                        </ul>
+
+                        <p><strong>Real-world availability failures:</strong></p>
+                        <ul>
+                            <li>DDoS attacks: Dyn DNS (2016) took down major websites (Twitter, Netflix, Reddit) for hours</li>
+                            <li>Ransomware: Colonial Pipeline (2021)—fuel pipeline shut down for days</li>
+                            <li>Natural disasters: Data center floods, power outages</li>
+                            <li>Accidental outages: AWS outages affecting thousands of services</li>
+                        </ul>
+
+                        <h4>Balancing the CIA Triad</h4>
+
+                        <p>Here's the challenge: <mark>these three properties often conflict with each other</mark>. Security engineering is about finding the right balance for your specific use case:</p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Tradeoff</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Confidentiality vs. Availability</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Strong encryption protects data (confidentiality) but if you lose the key, data becomes inaccessible (availability loss)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Integrity vs. Availability</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Strict input validation prevents corruption (integrity) but might reject legitimate users with unusual inputs (availability)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Availability vs. Confidentiality</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Public CDNs improve availability but might expose usage patterns (confidentiality concern)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>Different contexts prioritize differently:</strong></p>
+
+                        <ul>
+                            <li><strong>Military/Intelligence</strong>: Confidentiality > Integrity > Availability (better to destroy data than let it leak)</li>
+                            <li><strong>Financial Services</strong>: Integrity > Availability > Confidentiality (incorrect transactions are catastrophic)</li>
+                            <li><strong>Emergency Services</strong>: Availability > Integrity > Confidentiality (911 must always work)</li>
+                            <li><strong>Healthcare</strong>: All three are critical but context-dependent (patient privacy vs. emergency access)</li>
+                        </ul>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🎯 Mental Model: The Security Triangle</h5>
+                            <p>Think of the CIA Triad as a triangle where you can't maximize all three corners simultaneously. Pulling one corner out often means pushing another in. <strong>Security engineering is the art of finding the right position in this triangle for your specific threat model and use case.</strong></p>
+                            <p>When evaluating any security decision, always ask: "How does this affect confidentiality, integrity, and availability?"</p>
+                        </aside>
+
+                        <h4>Example: Sending a Message Securely</h4>
+
+                        <p>Let's apply the CIA Triad to a concrete example: sending a secure message. What could go wrong, and how does each property address it?</p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Property</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Threat</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Protection Mechanism</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Confidentiality</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Someone intercepts and reads the message</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">End-to-end encryption (e.g., Signal, WhatsApp)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Integrity</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Someone modifies the message in transit</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Digital signatures, message authentication codes (MACs)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Availability</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">The messaging service is down or blocked</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Redundant servers, peer-to-peer protocols, offline message queuing</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>Additional considerations:</strong></p>
+                        <ul>
+                            <li><strong>Authentication</strong>: How do you know you're talking to the right person? (Often considered a 4th pillar)</li>
+                            <li><strong>Non-repudiation</strong>: Can the sender later deny sending the message? (Digital signatures prevent this)</li>
+                            <li><strong>Forward secrecy</strong>: If keys are compromised later, are old messages still protected?</li>
+                        </ul>
+
+                        <p>Modern secure messaging apps like Signal address all of these concerns through careful protocol design, demonstrating how the CIA Triad guides real-world security engineering.</p>
+                    </article>
+
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Understanding how single-character mistakes create critical security vulnerabilities</li>
+                    <li>Analyzing classic security bugs: buffer overflows, memory allocation errors, and the Apple goto fail bug</li>
+                    <li>Exploring the CIA Triad: Confidentiality, Integrity, and Availability</li>
+                    <li>Learning course structure with CTF-style practical assignments</li>
+                    <li>Applying security principles to real-world scenarios (secure messaging)</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li>Review the three code vulnerability examples and understand why each is exploitable</li>
+                    <li>Familiarize yourself with the course grading structure and CTF assignment format</li>
+                    <li>Practice applying the CIA Triad framework to security scenarios you encounter</li>
+                    <li>Bring clicker device to next class for participation questions</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc436" class="back-link">← Back to CPSC_436</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

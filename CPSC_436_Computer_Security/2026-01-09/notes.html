@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_436 - Lecture 2026-01-09</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc436">CPSC_436</a> /
+            <span>2026-01-09</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Computer Security</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-09</span>
+                <span class="instructor">👤 Michael Feeley</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <h3>Module 01: Authentication and Access Control</h3>
+
+                    <h4>Learning Goals</h4>
+                    <ul>
+                        <li>Understand properties integral to secure systems</li>
+                        <li>Determine security policies of a system</li>
+                        <li>Identify and compare three main types of authentication</li>
+                        <li>Define access controls and implementation methods</li>
+                    </ul>
+
+                    <h4>The CIA Triad</h4>
+                    <ul>
+                        <li><strong>Confidentiality:</strong> Information available only to authorized parties</li>
+                        <li><strong>Integrity:</strong> Information is accurate and complete</li>
+                        <li><strong>Availability:</strong> Services available when needed by authorized parties</li>
+                    </ul>
+
+                    <h4>Threat Models</h4>
+                    <ul>
+                        <li>Threat = anything that negatively affects security properties</li>
+                        <li>Threat model includes: threat actor (attacker), capabilities, goals</li>
+                        <li>Security involves tradeoffs with performance, cost, usability, reliability</li>
+                    </ul>
+
+                    <h4>Three Types of Authentication</h4>
+                    <ol>
+                        <li><strong>Something you know:</strong> Passwords, PINs, secret questions
+                            <ul>
+                                <li>Pros: Popular, easy, cheap to implement</li>
+                                <li>Cons: Forgettable, easily shared, poor practices</li>
+                                <li>Attacks: Dictionary, brute-force (online/offline), shoulder-surfing, credential-stuffing, social engineering, phishing</li>
+                            </ul>
+                        </li>
+                        <li><strong>Something you are:</strong> Biometrics (fingerprint, face, iris, voice, DNA)
+                            <ul>
+                                <li>Pros: Cannot be shared, doesn't depend on user behavior</li>
+                                <li>Cons: Privacy concerns, accuracy issues, cannot be changed if compromised</li>
+                                <li>Characterized by false positive/false negative rates</li>
+                            </ul>
+                        </li>
+                        <li><strong>Something you have:</strong> Tokens (keys, badges, phones)
+                            <ul>
+                                <li>Static tokens: don't change (credit card, key)</li>
+                                <li>Dynamic tokens: change over time (2FA codes)</li>
+                                <li>Vulnerable to: copying (static), SIM-swapping, social engineering</li>
+                            </ul>
+                        </li>
+                    </ol>
+
+                    <h4>Password Security</h4>
+                    <ul>
+                        <li><strong>Entropy:</strong> log₂(number of possibilities) bits</li>
+                        <li><strong>Storage:</strong> Hash + salt (never plain text!)</li>
+                        <li>Use password hashing functions (scrypt) - designed to be SLOW</li>
+                        <li>SHA-1: 50 billion hashes/sec on RTX 4090</li>
+                        <li>scrypt-16384: 7,000 hashes/sec on RTX 4090</li>
+                        <li>Use password managers for unique passwords per site</li>
+                    </ul>
+
+                    <h4>Multifactor Authentication (MFA)</h4>
+                    <ul>
+                        <li>Combining different authentication types improves security</li>
+                        <li>Requires attackers to work harder</li>
+                        <li>Systems can use "cookies" on known devices to reduce friction</li>
+                        <li>Demand extra factors for suspicious logins</li>
+                    </ul>
+
+                    <h4>Access Control</h4>
+                    <ul>
+                        <li><strong>Subjects:</strong> Users, programs, computers (entities claiming access)</li>
+                        <li><strong>Objects:</strong> Files, systems, database entries (assets being accessed)</li>
+                        <li><strong>Access modes:</strong> Read, write, delete, create, execute (permissions)</li>
+                    </ul>
+
+                    <h4>Access Control Implementation Approaches</h4>
+                    <ol>
+                        <li><strong>Access Control Directory:</strong> Subjects carry object lists + permissions</li>
+                        <li><strong>Access Control Matrix:</strong> Sparse matrix of subjects × objects</li>
+                        <li><strong>Access Control List (ACL):</strong> Objects carry subject lists + permissions</li>
+                        <li><strong>Capability-Based:</strong> Subjects carry tokens granting permissions</li>
+                    </ol>
+
+                    <h4>UNIX Permissions Case Study</h4>
+                    <ul>
+                        <li>Subjects = processes (run as uid/gids)</li>
+                        <li>Objects = files ("everything is a file")</li>
+                        <li>Permissions: read (r), write (w), execute (x)</li>
+                        <li>Three sets: user (u), group (g), other (o)</li>
+                        <li>Special bits: setuid, setgid, sticky</li>
+                        <li><code>chmod 777</code> = dangerous (gives everyone full access)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+                    <!-- ============================================ -->
+                    <!-- FOUNDATIONAL SECURITY CONCEPTS -->
+                    <!-- ============================================ -->
+
+                    <article>
+                        <h3>The Foundation of Secure Systems: The CIA Triad</h3>
+
+                        <p>When we talk about computer security, we're really talking about protecting three fundamental properties of information and systems. These three properties—<strong>Confidentiality</strong>, <strong>Integrity</strong>, and <strong>Availability</strong>—form what security professionals call the <mark>CIA Triad</mark>, and they are the cornerstone of all security systems.</p>
+
+                        <h4>Confidentiality: Keeping Secrets Secret</h4>
+                        <p><strong>Confidentiality</strong> means that information is only accessible to those who are authorized to see it. Think of it like a sealed envelope—only the intended recipient should be able to open it and read what's inside.</p>
+
+                        <p><strong>Real-world example:</strong> When you send a private message to a friend, confidentiality ensures that nobody else can intercept and read that message along the way. For Wikipedia user accounts, confidentiality means that your password is never revealed—not even Wikipedia administrators can see it in plain text.</p>
+
+                        <aside class="definition">
+                            <strong>Key Insight:</strong> Confidentiality is about <em>who can see</em> the information. Even if data is stored securely with perfect integrity and availability, a breach in confidentiality means unauthorized parties have gained access.
+                        </aside>
+
+                        <h4>Integrity: Ensuring Accuracy and Completeness</h4>
+                        <p><strong>Integrity</strong> ensures that information remains accurate, complete, and unmodified except by authorized parties. It's not enough for data to be secret—we also need to trust that the data hasn't been tampered with.</p>
+
+                        <p><strong>Real-world example:</strong> On Wikipedia, integrity means that only users with the appropriate permissions can edit certain pages. The page history system maintains integrity by creating an immutable record of all changes—even administrators cannot go back and alter what previous versions looked like. If someone tries to vandalize a page, the integrity mechanisms ensure we can detect and revert those changes.</p>
+
+                        <aside class="definition">
+                            <strong>In other words:</strong> Integrity answers the question "Can I trust this data?" It protects against both malicious tampering (an attacker changing your bank balance) and accidental corruption (a hard drive error scrambling a file).
+                        </aside>
+
+                        <h4>Availability: Services When You Need Them</h4>
+                        <p><strong>Availability</strong> ensures that authorized users can access information and services when they need them. A system that is perfectly confidential and has perfect integrity is useless if no one can access it!</p>
+
+                        <p><strong>Real-world example:</strong> For Wikipedia to maintain availability, their servers must stay online and responsive even when millions of people are trying to read articles simultaneously. When you send a message to a friend, availability means that message actually gets delivered—not lost in transit or stuck in an unreachable server.</p>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>CIA Property</th>
+                                    <th>What It Protects</th>
+                                    <th>Attack Example</th>
+                                    <th>Defense Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Confidentiality</strong></td>
+                                    <td>Information from unauthorized viewing</td>
+                                    <td>Attacker intercepts your password</td>
+                                    <td>Encryption, access controls</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Integrity</strong></td>
+                                    <td>Data from unauthorized modification</td>
+                                    <td>Attacker changes your account balance</td>
+                                    <td>Hashing, digital signatures, audit logs</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Availability</strong></td>
+                                    <td>Services from disruption</td>
+                                    <td>DDoS attack takes down website</td>
+                                    <td>Redundancy, load balancing, backups</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>The Tradeoffs: No Perfect Security</h4>
+                        <p>Here's a crucial lesson: <mark>security always involves tradeoffs</mark>. A perfectly secure system would be so locked down that it would be unusable. Consider these real-world tensions:</p>
+
+                        <ul>
+                            <li><strong>Security vs. Performance:</strong> Encryption protects confidentiality but requires CPU time to encrypt/decrypt, slowing things down</li>
+                            <li><strong>Security vs. Cost:</strong> Biometric scanners are more secure than passwords, but they're expensive to deploy</li>
+                            <li><strong>Security vs. Usability:</strong> Requiring users to change 20-character passwords every week is secure, but users will hate it (and likely write them down, creating new vulnerabilities!)</li>
+                            <li><strong>Security vs. Reliability:</strong> A system that locks accounts after 3 failed login attempts prevents brute-force attacks but can lock out legitimate users who mistype their password</li>
+                        </ul>
+
+                        <aside class="definition">
+                            <strong>Remember:</strong> The goal isn't perfect security (which is impossible), but rather <em>appropriate security</em> for your threat model. A personal blog doesn't need the same security measures as a bank's database.
+                        </aside>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- THREATS AND THREAT MODELS -->
+                    <!-- ============================================ -->
+
+                    <article>
+                        <h3>Understanding Threats and Threat Models</h3>
+
+                        <h4>What Is a Threat?</h4>
+                        <p>A <strong>threat</strong> is anything that may negatively affect one or more of the CIA properties. Threats can be natural (hardware failure, natural disaster), accidental (user error, software bugs), or <strong>malicious</strong> (deliberate attacks).</p>
+
+                        <p>In this course, we focus primarily on <mark>malicious threats</mark>—adversaries who are actively trying to break into or subvert your systems.</p>
+
+                        <h4>Building a Threat Model</h4>
+                        <p>A <strong>threat model</strong> is a structured way of thinking about potential threats to your system. It helps you answer questions like:</p>
+                        <ul>
+                            <li>Who might attack us? (the <strong>threat actor</strong>)</li>
+                            <li>What are they capable of? (their <strong>capabilities</strong>)</li>
+                            <li>What are they trying to achieve? (their <strong>goals</strong>)</li>
+                        </ul>
+
+                        <h4>Example Threat Actors and Their Capabilities</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Threat Actor</th>
+                                    <th>Capabilities</th>
+                                    <th>Typical Goals</th>
+                                    <th>Realistic Defense?</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Script Kiddie</strong></td>
+                                    <td>Uses pre-built tools, little technical skill</td>
+                                    <td>Bragging rights, curiosity, minor disruption</td>
+                                    <td>✅ Yes—basic security stops them</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Opportunistic Attacker</strong></td>
+                                    <td>Scans internet for vulnerable systems</td>
+                                    <td>Install malware, steal credentials, cryptocurrency mining</td>
+                                    <td>✅ Yes—keeping software updated helps</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Organized Crime</strong></td>
+                                    <td>Sophisticated tools, resources, time</td>
+                                    <td>Financial theft, ransomware, data theft for sale</td>
+                                    <td>⚠️ Challenging—requires strong security</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Nation-State Actor (NSA, etc.)</strong></td>
+                                    <td>Nearly unlimited resources, zero-day exploits, hardware backdoors</td>
+                                    <td>Espionage, sabotage, strategic advantage</td>
+                                    <td>❌ Very difficult—may be impossible</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <aside class="definition">
+                            <strong>Critical Insight:</strong> You cannot defend against everything. A realistic threat model helps you allocate resources efficiently. If you're building a small e-commerce site, defending against random internet attackers makes sense. Defending against the NSA probably doesn't—and attempting to do so would consume all your resources while leaving you vulnerable to more likely threats.
+                        </aside>
+
+                        <h4>Security Policies</h4>
+                        <p>Once you understand your threats, you establish a <strong>security policy</strong>—a formal statement of:</p>
+                        <ul>
+                            <li>Who and what is authorized (users, actions, access levels)</li>
+                            <li>What controls will be enacted to enforce these rules</li>
+                            <li>What the consequences are for violations</li>
+                        </ul>
+
+                        <p>Security policies aren't one-size-fits-all. Different parts of an organization may have different requirements. For example:</p>
+                        <ul>
+                            <li>The <strong>marketing department</strong> might prioritize availability (website must stay up!) with moderate confidentiality needs</li>
+                            <li>The <strong>finance department</strong> might prioritize integrity (transaction records must be accurate!) and confidentiality (salary information must be protected) over availability (if the payroll system is down for an hour, that's acceptable)</li>
+                            <li>The <strong>research lab</strong> might prioritize integrity (research data must not be corrupted) and availability (researchers need access 24/7) with lower confidentiality needs (research is often eventually published anyway)</li>
+                        </ul>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- AUTHENTICATION: IDENTITY vs PROOF -->
+                    <!-- ============================================ -->
+
+                    <article>
+                        <h3>Authentication: Proving Who You Are</h3>
+
+                        <h4>Authentication vs. Identification: A Critical Distinction</h4>
+                        <p>Before we dive into authentication methods, it's crucial to understand the difference between two often-confused concepts:</p>
+
+                        <ul>
+                            <li><strong>Identification</strong> is the act of <em>asserting</em> an identity: "I am Alice"</li>
+                            <li><strong>Authentication</strong> is the act of <em>proving</em> that asserted identity: "Here's evidence that I'm really Alice"</li>
+                        </ul>
+
+                        <aside class="definition">
+                            <strong>Remember:</strong> Identities are often public and unprotected (like usernames, email addresses, employee IDs). Authentication mechanisms must be protected because they're what prove you are who you claim to be.
+                        </aside>
+
+                        <p><strong>Examples of Identification (NOT Authentication):</strong></p>
+                        <ul>
+                            <li>Email address</li>
+                            <li>Username</li>
+                            <li>Telephone number</li>
+                            <li>Social Insurance Number</li>
+                            <li>Employee ID</li>
+                        </ul>
+
+                        <p><strong>Examples of Authentication:</strong></p>
+                        <ul>
+                            <li>Password (proves you know the secret)</li>
+                            <li>Fingerprint scan (proves it's your finger)</li>
+                            <li>Security key in your USB port (proves you have the device)</li>
+                        </ul>
+
+                        <h4>The Three Pillars of Authentication</h4>
+                        <p>All authentication mechanisms fall into three categories, based on what they verify about you:</p>
+
+                        <ol>
+                            <li><strong>Something you know</strong> (knowledge-based)</li>
+                            <li><strong>Something you are</strong> (biometric-based)</li>
+                            <li><strong>Something you have</strong> (possession-based)</li>
+                        </ol>
+
+                        <p>Let's explore each of these in depth.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- PASSWORDS: SOMETHING YOU KNOW -->
+                    <!-- ============================================ -->
+
+                    <article>
+                        <h3>Something You Know: Password Authentication</h3>
+
+                        <h4>Why Passwords?</h4>
+                        <p>Passwords remain the most common form of authentication despite their many flaws. Why? Because they're:</p>
+                        <ul>
+                            <li><strong>Easy to implement:</strong> No special hardware needed—just a database and some code</li>
+                            <li><strong>Cheap:</strong> Almost zero cost per user</li>
+                            <li><strong>Familiar:</strong> Everyone knows how to use them</li>
+                            <li><strong>Flexible:</strong> Easy to reset, change, or revoke remotely</li>
+                        </ul>
+
+                        <p>But passwords also have serious weaknesses:</p>
+                        <ul>
+                            <li><strong>Forgettable:</strong> Users forget passwords, requiring reset mechanisms (which create new vulnerabilities)</li>
+                            <li><strong>Shareable:</strong> Unlike biometrics, passwords can be easily shared or stolen</li>
+                            <li><strong>Weak by nature:</strong> People choose predictable passwords or reuse them across sites</li>
+                            <li><strong>Vulnerable to observation:</strong> Someone watching can see you type your password</li>
+                        </ul>
+
+                        <h4>The Attacker's Toolkit: How Passwords Are Broken</h4>
+
+                        <h5>1. Dictionary Attacks</h5>
+                        <p>Attackers try common passwords from a list: "password", "123456", "qwerty", "letmein", "admin". These lists are built from:</p>
+                        <ul>
+                            <li>Previously leaked password databases</li>
+                            <li>Common words and phrases</li>
+                            <li>Common patterns (e.g., "password1", "Summer2024")</li>
+                        </ul>
+
+                        <h5>2. Brute-Force Attacks</h5>
+                        <p>Attackers systematically try every possible password. The key question: How long does this take?</p>
+
+                        <p><strong>Example calculations:</strong></p>
+                        <ul>
+                            <li><strong>4-digit PIN:</strong> 10<sup>4</sup> = 10,000 possibilities</li>
+                            <li><strong>6-digit PIN:</strong> 10<sup>6</sup> = 1,000,000 possibilities</li>
+                            <li><strong>8 lowercase letters:</strong> 26<sup>8</sup> = 208,827,064,576 possibilities</li>
+                            <li><strong>10 alphanumeric characters:</strong> 62<sup>10</sup> = 839,299,365,868,340,224 possibilities</li>
+                        </ul>
+
+                        <h5>Online vs. Offline Brute-Force</h5>
+                        <p>There are two fundamentally different scenarios for brute-force attacks:</p>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Attack Type</th>
+                                    <th>How It Works</th>
+                                    <th>Defenses</th>
+                                    <th>Speed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Online Attack</strong></td>
+                                    <td>Attacker tries passwords through the authentication system (login page, phone lock screen)</td>
+                                    <td>Rate limiting: Allow only N attempts per hour, but don't block legitimate users!</td>
+                                    <td>Slow—limited by network and rate limits (maybe 10-100 attempts per minute)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Offline Attack</strong></td>
+                                    <td>Attacker has stolen password database and can test locally</td>
+                                    <td>Strong hashing + salting to slow down cracking</td>
+                                    <td>Fast—modern GPUs can try billions of passwords per second</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <aside class="definition">
+                            <strong>Why offline attacks are terrifying:</strong> If an attacker obtains your password database (through a breach, SQL injection, etc.), they can test passwords as fast as their hardware allows. This is why proper password storage is critical!
+                        </aside>
+
+                        <h5>3. Credential Stuffing</h5>
+                        <p>Many people reuse passwords across multiple sites. Attackers exploit this by:</p>
+                        <ol>
+                            <li>Obtaining leaked credentials from one site (e.g., a data breach)</li>
+                            <li>Trying those same username/password combinations on other sites</li>
+                        </ol>
+                        <p>This is why password reuse is so dangerous—one breach can compromise all your accounts.</p>
+
+                        <h5>4. Shoulder Surfing</h5>
+                        <p>An attacker simply watches you type your password—at an ATM, in a coffee shop, over your shoulder on an airplane. Low-tech but effective!</p>
+
+                        <h5>5. Social Engineering and Phishing</h5>
+                        <p>Rather than breaking the password technically, attackers trick you into giving it to them:</p>
+                        <ul>
+                            <li><strong>Phishing emails:</strong> "Your account will be suspended unless you verify your password by clicking this link"</li>
+                            <li><strong>Fake login pages:</strong> Sites that look exactly like the real thing but send your credentials to the attacker</li>
+                            <li><strong>Pretexting:</strong> "Hi, I'm from IT support. I need your password to fix your account."</li>
+                        </ul>
+
+                        <h4>Password Entropy: Measuring Strength</h4>
+                        <p><strong>Entropy</strong> is a measure of password randomness, expressed in bits:</p>
+
+                        <pre><code class="language-plaintext">Entropy = log₂(number of possible passwords)
+
+If all passwords are equally likely:
+- 4-digit PIN: log₂(10,000) = 13.3 bits
+- 6-digit PIN: log₂(1,000,000) = 19.9 bits
+- 8 lowercase: log₂(26⁸) = 37.6 bits
+- 10 alphanumeric: log₂(62¹⁰) = 59.5 bits</code></pre>
+
+                        <p><strong>But here's the problem:</strong> Real passwords aren't random! People choose patterns:</p>
+                        <ul>
+                            <li>"password123" looks like it has decent entropy, but it's in every dictionary</li>
+                            <li>"Tr0ub4dor&3" follows predictable substitution patterns (3 → E, 4 → A, 0 → O)</li>
+                            <li>"correct horse battery staple" is actually stronger despite being all lowercase!</li>
+                        </ul>
+
+                        <aside class="definition">
+                            <strong>The XKCD Lesson:</strong> Length matters more than complexity when passwords are random. Four random common words (44 bits of entropy) beats short complex passwords with predictable patterns. But the key word is <em>random</em>—"I love my dog Rover" is not a random four-word combination!
+                        </aside>
+
+                        <h4>Password Storage: Never Store Plaintext!</h4>
+                        <p>If you're building a system that accepts passwords, <mark>never, ever store passwords in plain text</mark>. Here's why:</p>
+
+                        <p><strong>Scenario:</strong> Your database is breached (SQL injection, insider threat, misconfigured backup). If passwords are stored in plain text:</p>
+                        <ul>
+                            <li>Every user account is immediately compromised</li>
+                            <li>Attackers can use credential stuffing to access users' accounts on other sites</li>
+                            <li>You face massive legal and reputational damage</li>
+                        </ul>
+
+                        <h5>Solution: Cryptographic Hashing</h5>
+                        <p><strong>Hashing</strong> is a one-way mathematical function that transforms text into a fixed-length string:</p>
+
+                        <pre><code class="language-plaintext">SHA-1("apple") = d0be2dc421be4fcd0172e5afceea3970e2f3d940
+SHA-1("applf") = da68bafb76be6ff1f8697c8e06870f126ff40a4c</code></pre>
+
+                        <p>Key properties of cryptographic hashes:</p>
+                        <ul>
+                            <li><strong>Deterministic:</strong> Same input always produces same output</li>
+                            <li><strong>One-way:</strong> Cannot reverse the hash to get the original password</li>
+                            <li><strong>Avalanche effect:</strong> Tiny change in input creates completely different output</li>
+                            <li><strong>Fast to compute</strong> (for most hash functions)</li>
+                        </ul>
+
+                        <p><strong>How authentication works with hashing:</strong></p>
+                        <ol>
+                            <li>User creates account with password "mypassword123"</li>
+                            <li>System computes H("mypassword123") and stores the hash</li>
+                            <li>User logs in with password "mypassword123"</li>
+                            <li>System computes H("mypassword123") and compares to stored hash</li>
+                            <li>If hashes match, authentication succeeds</li>
+                        </ol>
+
+                        <aside class="definition">
+                            <strong>Critical Note:</strong> Hashing is NOT encryption! Encryption is reversible (you can decrypt to get the original). Hashing is irreversible by design. This is a feature, not a bug—even system administrators cannot see user passwords.
+                        </aside>
+
+                        <h5>The Problem: Rainbow Tables</h5>
+                        <p>Even with hashing, attackers can precompute hash values for common passwords:</p>
+
+                        <pre><code class="language-plaintext">password → 5f4dcc3b5aa765d61d8327deb882cf99
+123456   → e10adc3949ba59abbe56e057f20f883e
+qwerty   → d8578edf8458ce06fbc5bb76a58c5ca4</code></pre>
+
+                        <p>This <strong>rainbow table</strong> lets attackers instantly reverse hashes for common passwords.</p>
+
+                        <h5>The Solution: Salting</h5>
+                        <p>A <strong>salt</strong> is a random value added to each password before hashing:</p>
+
+                        <pre><code class="language-plaintext">User 1: password + salt="x7f9k2a" → hash1
+User 2: password + salt="9m3j8ld" → hash2
+
+Even though both users have password "password", the hashes are different!</code></pre>
+
+                        <p><strong>Database stores:</strong> (username, salt, hash)</p>
+
+                        <p><strong>Benefits of salting:</strong></p>
+                        <ul>
+                            <li>Identical passwords have different hashes</li>
+                            <li>Rainbow tables are useless (attacker must rebuild table for each unique salt)</li>
+                            <li>Attacker must crack each password individually</li>
+                        </ul>
+
+                        <h5>Modern Password Hashing: Slow by Design</h5>
+                        <p>Regular hash functions like SHA-1 are designed to be <em>fast</em>. But for password hashing, fast is bad!</p>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Hash Function</th>
+                                    <th>Speed on RTX 4090 GPU</th>
+                                    <th>Time to try 1 billion passwords</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>SHA-1</td>
+                                    <td>50,000,000,000 hashes/sec</td>
+                                    <td>0.02 seconds</td>
+                                </tr>
+                                <tr>
+                                    <td>bcrypt</td>
+                                    <td>~100,000 hashes/sec</td>
+                                    <td>2.8 hours</td>
+                                </tr>
+                                <tr>
+                                    <td>scrypt-16384</td>
+                                    <td>7,000 hashes/sec</td>
+                                    <td>40 hours</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>Password hashing functions</strong> like scrypt, bcrypt, and Argon2 are intentionally slow:</p>
+                        <ul>
+                            <li>Legitimate login: User waits 0.1 seconds → acceptable</li>
+                            <li>Brute-force attack: Attacker must wait 0.1 seconds per guess → massive slowdown</li>
+                        </ul>
+
+                        <p>Additionally, scrypt is <strong>memory-hard</strong>, meaning it requires significant RAM. This makes it expensive to parallelize on GPUs, further slowing down attackers.</p>
+
+                        <h4>Password Managers: The Modern Solution</h4>
+                        <p>The best practice today is:</p>
+                        <ul>
+                            <li>Use a <strong>password manager</strong> (1Password, Bitwarden, KeePass)</li>
+                            <li>Generate a <strong>unique, random password</strong> for every site (20+ characters)</li>
+                            <li>Protect your password manager with a strong <strong>master password</strong> and <strong>two-factor authentication</strong></li>
+                        </ul>
+
+                        <p><strong>Bonus benefit:</strong> Password managers can detect phishing! If you visit a fake login page, your password manager won't auto-fill because the domain doesn't match.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- BIOMETRICS: SOMETHING YOU ARE -->
+                    <!-- ============================================ -->
+
+                    <article>
+                        <h3>Something You Are: Biometric Authentication</h3>
+
+                        <h4>What Are Biometrics?</h4>
+                        <p><strong>Biometrics</strong> are authentication mechanisms based on physical characteristics of the human body:</p>
+                        <ul>
+                            <li>Fingerprints</li>
+                            <li>Facial recognition</li>
+                            <li>Iris and retina patterns</li>
+                            <li>Voice recognition</li>
+                            <li>Hand geometry</li>
+                            <li>Ear shape</li>
+                            <li>DNA sequencing</li>
+                            <li>Gait analysis (the way you walk)</li>
+                        </ul>
+
+                        <h4>Advantages of Biometrics</h4>
+                        <ul>
+                            <li><strong>Cannot be forgotten:</strong> You always have your fingerprint with you!</li>
+                            <li><strong>Difficult to share:</strong> Unlike passwords, you can't easily lend someone your fingerprint</li>
+                            <li><strong>Doesn't depend on user behavior:</strong> Users can't choose weak biometrics (unlike weak passwords)</li>
+                            <li><strong>Convenient:</strong> No need to remember or carry anything</li>
+                        </ul>
+
+                        <h4>Disadvantages of Biometrics</h4>
+                        <ul>
+                            <li><strong>Cannot be changed:</strong> If your password is compromised, you change it. If your fingerprint is compromised, you're stuck forever!</li>
+                            <li><strong>Privacy concerns:</strong> Biometric data is deeply personal and may reveal medical information</li>
+                            <li><strong>Accuracy challenges:</strong> Legitimate users may be rejected; attackers may be accepted</li>
+                            <li><strong>Change over time:</strong> Injuries, aging, illness can alter your biometrics</li>
+                            <li><strong>Expensive:</strong> Requires specialized hardware (fingerprint sensors, cameras, etc.)</li>
+                        </ul>
+
+                        <h4>How Biometric Systems Work</h4>
+                        <p>A biometric authentication system has several components:</p>
+
+                        <ol>
+                            <li><strong>Sensor:</strong> Hardware to capture the biometric (camera, fingerprint reader, microphone)</li>
+                            <li><strong>Enrollment:</strong> User provides one or more samples that are stored as:
+                                <ul>
+                                    <li>Raw samples (actual fingerprint image)</li>
+                                    <li>Extracted features (mathematical representation of key points)</li>
+                                    <li>Trained ML models (neural network that recognizes the user)</li>
+                                </ul>
+                            </li>
+                            <li><strong>Matching:</strong> When authenticating, the system compares the new sample to stored data and produces a <strong>match score</strong></li>
+                            <li><strong>Decision:</strong> If score exceeds a threshold, authentication succeeds</li>
+                        </ol>
+
+                        <h4>The Accuracy Tradeoff: False Positives vs. False Negatives</h4>
+                        <p>Unlike passwords (which either match or don't), biometrics involve fuzzy matching. This creates two types of errors:</p>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Error Type</th>
+                                    <th>What Happens</th>
+                                    <th>Security Impact</th>
+                                    <th>Usability Impact</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>False Positive</strong></td>
+                                    <td>System accepts an unauthorized user</td>
+                                    <td>❌ Security breach</td>
+                                    <td>✅ No impact</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>False Negative</strong></td>
+                                    <td>System rejects a legitimate user</td>
+                                    <td>✅ No security impact</td>
+                                    <td>❌ Frustrating for users</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p>You can adjust the threshold to trade off these error rates:</p>
+                        <ul>
+                            <li><strong>Lower threshold:</strong> More false positives (less secure), fewer false negatives (more convenient)</li>
+                            <li><strong>Higher threshold:</strong> Fewer false positives (more secure), more false negatives (less convenient)</li>
+                        </ul>
+
+                        <aside class="definition">
+                            <strong>Real-world example:</strong> Apple's Face ID is tuned to have about a 1 in 1,000,000 false positive rate (very secure) but occasionally produces false negatives (you have to try again, especially with glasses or after a haircut).
+                        </aside>
+
+                        <h4>Security Considerations</h4>
+                        <p>The security of biometric systems varies widely based on implementation:</p>
+
+                        <ul>
+                            <li><strong>Liveness detection:</strong> Can it distinguish a real finger from a photo, mold, or severed finger? Early systems were easily fooled!</li>
+                            <li><strong>Sensor quality:</strong> High-resolution sensors are more accurate but more expensive</li>
+                            <li><strong>Matching algorithm:</strong> Machine learning has dramatically improved accuracy in recent years</li>
+                            <li><strong>Data storage:</strong> Are biometric templates stored securely? Can they be extracted and replayed?</li>
+                            <li><strong>Template updates:</strong> Some systems can update templates as you age; others require re-enrollment</li>
+                        </ul>
+
+                        <h4>Use Cases: Authentication vs. Identification</h4>
+                        <p>Biometrics can be used for two distinct purposes:</p>
+
+                        <ul>
+                            <li><strong>Authentication (1:1 matching):</strong> "Is this person really Alice?" → Compare against Alice's stored template</li>
+                            <li><strong>Identification (1:N matching):</strong> "Who is this person?" → Compare against all templates in database</li>
+                        </ul>
+
+                        <p>Identification is much harder and less reliable because the false positive rate multiplies across all N users in the database.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- TOKENS: SOMETHING YOU HAVE -->
+                    <!-- ============================================ -->
+
+                    <article>
+                        <h3>Something You Have: Token-Based Authentication</h3>
+
+                        <h4>What Are Tokens?</h4>
+                        <p>A <strong>token</strong> is a physical object used for authentication:</p>
+                        <ul>
+                            <li>Physical keys</li>
+                            <li>ID badges and smart cards</li>
+                            <li>Security keys (YubiKey, etc.)</li>
+                            <li>Your smartphone</li>
+                            <li>ATM cards and credit cards</li>
+                        </ul>
+
+                        <h4>Static vs. Dynamic Tokens</h4>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Token Type</th>
+                                    <th>How It Works</th>
+                                    <th>Examples</th>
+                                    <th>Security</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Static Token</strong></td>
+                                    <td>Contains fixed information that doesn't change</td>
+                                    <td>House key, credit card magnetic stripe, ID card</td>
+                                    <td>Vulnerable to copying/cloning (even from photos!)</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dynamic Token</strong></td>
+                                    <td>Contains a computer that generates changing codes</td>
+                                    <td>RSA SecurID, Google Authenticator, YubiKey, smartphone with 2FA app</td>
+                                    <td>Much harder to copy; security depends on physical security</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>How Dynamic Tokens Work</h4>
+                        <p>Dynamic tokens typically use one of two approaches:</p>
+
+                        <h5>1. Time-Based One-Time Passwords (TOTP)</h5>
+                        <pre><code class="language-plaintext">Code = HMAC(shared_secret, current_time)
+
+The token and the server both know the shared_secret.
+Every 30 seconds, they independently compute a new 6-digit code.
+If the codes match, authentication succeeds.</code></pre>
+
+                        <p><strong>Examples:</strong> Google Authenticator, Authy, Microsoft Authenticator</p>
+
+                        <h5>2. Challenge-Response</h5>
+                        <pre><code class="language-plaintext">1. Server sends a random challenge: "Prove you have the token"
+2. Token cryptographically signs the challenge with its private key
+3. Server verifies the signature using the token's public key</code></pre>
+
+                        <p><strong>Examples:</strong> YubiKey, hardware security keys supporting FIDO2/WebAuthn</p>
+
+                        <aside class="definition">
+                            <strong>Key advantage:</strong> Challenge-response tokens are immune to phishing! The token cryptographically binds the authentication to the specific domain, so it won't work on a fake site.
+                        </aside>
+
+                        <h4>Attacks on Token-Based Authentication</h4>
+
+                        <h5>1. Token Theft</h5>
+                        <p>Physical theft of the token (someone steals your phone, YubiKey, or smart card). This is why tokens are often combined with other factors!</p>
+
+                        <h5>2. SIM Swapping</h5>
+                        <p>For SMS-based 2FA, attackers can:</p>
+                        <ol>
+                            <li>Gather personal information about you (social engineering, data breaches)</li>
+                            <li>Call your phone carrier pretending to be you</li>
+                            <li>Convince them to transfer your number to a SIM card the attacker controls</li>
+                            <li>Receive your 2FA codes on their phone</li>
+                        </ol>
+                        <p><mark>This is why SMS-based 2FA is considered weak today.</mark> Use authenticator apps or hardware keys instead!</p>
+
+                        <h5>3. Social Engineering for Codes</h5>
+                        <p>Attacker calls you: "Hi, this is IT support. We're having issues with your account. Can you read me the code on your authenticator app?"</p>
+                        <p><strong>Defense:</strong> Hardware security keys (like YubiKeys) eliminate this attack because the user can't manually read or provide the cryptographic response.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- MULTIFACTOR AUTHENTICATION -->
+                    <!-- ============================================ -->
+
+                    <article>
+                        <h3>Multifactor Authentication: Combining Methods for Stronger Security</h3>
+
+                        <h4>Why Multiple Factors?</h4>
+                        <p>Each authentication method has weaknesses:</p>
+                        <ul>
+                            <li>Passwords can be forgotten, phished, or cracked</li>
+                            <li>Biometrics can fail or be spoofed</li>
+                            <li>Tokens can be lost or stolen</li>
+                        </ul>
+
+                        <p><strong>Multifactor Authentication (MFA)</strong> combines two or more factors from different categories, creating defense in depth:</p>
+
+                        <pre><code class="language-plaintext">Single Factor:      Password alone
+Two Factors (2FA):  Password + SMS code
+Three Factors:      Password + fingerprint + hardware key</code></pre>
+
+                        <aside class="definition">
+                            <strong>Important:</strong> Using two factors from the <em>same</em> category doesn't count as MFA. For example, password + security questions = two knowledge factors = still single-factor authentication.
+                        </aside>
+
+                        <h4>Real-World Example: Logging into UBC Workday</h4>
+                        <p>Let's analyze a real multifactor authentication flow:</p>
+
+                        <ol>
+                            <li><strong>Visit site on laptop:</strong> Password manager auto-fills password
+                                <ul><li>Factor 1: <strong>Something you have</strong> (the laptop with the password manager)</li></ul>
+                            </li>
+                            <li><strong>System requests Duo confirmation:</strong> Prompt appears on phone
+                                <ul><li>Factor 2: <strong>Something you have</strong> (the phone)</li></ul>
+                            </li>
+                            <li><strong>Unlock phone with fingerprint:</strong> Biometric scan
+                                <ul><li>Factor 3: <strong>Something you are</strong> (your fingerprint)</li></ul>
+                            </li>
+                            <li><strong>Approve login in Duo app:</strong> Confirm the request</li>
+                        </ol>
+
+                        <p>This is actually <strong>two-factor authentication</strong> (something you have + something you are), even though multiple devices are involved.</p>
+
+                        <h4>Balancing Security and Usability</h4>
+                        <p>Requiring multiple factors for every login can be frustrating. Modern systems use <strong>adaptive authentication</strong> (also called risk-based authentication):</p>
+
+                        <ul>
+                            <li><strong>Low-risk login:</strong> Same device, same location, typical time → password only</li>
+                            <li><strong>Medium-risk login:</strong> New device, same location → password + 2FA code</li>
+                            <li><strong>High-risk login:</strong> New device, foreign country, unusual time → password + 2FA code + security questions + email confirmation</li>
+                        </ul>
+
+                        <p><strong>Device recognition:</strong> Systems can store a cookie or device fingerprint to mark devices as "trusted":</p>
+                        <ul>
+                            <li>First login from new device: Full MFA required</li>
+                            <li>Subsequent logins from that device: Reduced friction</li>
+                            <li>User can revoke device trust through account settings</li>
+                        </ul>
+
+                        <h4>Best Practices for MFA</h4>
+                        <ol>
+                            <li><strong>Enable MFA everywhere it's available</strong> (especially for email, banking, and work accounts)</li>
+                            <li><strong>Prefer hardware keys</strong> (YubiKey, etc.) > authenticator apps > SMS codes</li>
+                            <li><strong>Keep backup codes</strong> in a safe place in case you lose your primary factor</li>
+                            <li><strong>Don't trust SMS-based 2FA</strong> for high-security accounts (vulnerable to SIM swapping)</li>
+                        </ol>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- ACCESS CONTROL -->
+                    <!-- ============================================ -->
+
+                    <article>
+                        <h3>Access Control: Governing Who Can Do What</h3>
+
+                        <h4>The Core Concepts</h4>
+                        <p>Once we've authenticated a user (we know who they are), we need <strong>access control</strong> to determine what they're allowed to do. Access control systems involve three key entities:</p>
+
+                        <ul>
+                            <li><strong>Subjects:</strong> Entities requesting access (users, programs, other computers)</li>
+                            <li><strong>Objects:</strong> Resources being accessed (files, database records, hardware devices, system functions)</li>
+                            <li><strong>Access Modes (Permissions):</strong> Actions that can be performed (read, write, execute, delete, create, append, etc.)</li>
+                        </ul>
+
+                        <h4>Access Control Implementation: Four Approaches</h4>
+
+                        <h5>1. Access Control Directory</h5>
+                        <p><strong>Subjects carry lists of objects they can access:</strong></p>
+                        <pre><code class="language-plaintext">User Alice:
+  - Can read /home/alice/documents
+  - Can write /home/alice/documents
+  - Can read /shared/team-files
+
+User Bob:
+  - Can read /home/bob/personal
+  - Can write /home/bob/personal
+  - Can execute /usr/bin/calculator</code></pre>
+
+                        <p><strong>Pros:</strong> Easy to see all permissions for a specific user</p>
+                        <p><strong>Cons:</strong> Hard to see who has access to a specific file; difficult to revoke access when a user leaves</p>
+
+                        <h5>2. Access Control Matrix</h5>
+                        <p><strong>A (sparse) matrix of subjects × objects:</strong></p>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>File1.txt</th>
+                                    <th>File2.txt</th>
+                                    <th>Database</th>
+                                    <th>Printer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Alice</strong></td>
+                                    <td>read, write</td>
+                                    <td>read</td>
+                                    <td>read, write</td>
+                                    <td>—</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Bob</strong></td>
+                                    <td>read</td>
+                                    <td>—</td>
+                                    <td>read</td>
+                                    <td>print</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>System</strong></td>
+                                    <td>read, write, delete</td>
+                                    <td>read, write, delete</td>
+                                    <td>read, write, delete</td>
+                                    <td>full control</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>Pros:</strong> Conceptually simple, complete view of all permissions</p>
+                        <p><strong>Cons:</strong> Sparse matrix is inefficient to store; hard to implement in practice</p>
+
+                        <h5>3. Access Control Lists (ACLs)</h5>
+                        <p><strong>Objects carry lists of subjects and their permissions:</strong></p>
+                        <pre><code class="language-plaintext">File: /home/alice/report.docx
+  - Alice: read, write, delete
+  - Bob: read
+  - Carol: —  (no access)
+
+File: /shared/team-data.csv
+  - Alice: read, write
+  - Bob: read, write
+  - Carol: read</code></pre>
+
+                        <p><strong>Pros:</strong> Easy to see who can access a specific file; easy to audit object-level security</p>
+                        <p><strong>Cons:</strong> Hard to see all files a user can access; must check every object individually</p>
+                        <p><strong>Used by:</strong> Windows NTFS, Linux extended attributes, AWS S3 bucket policies</p>
+
+                        <h5>4. Capability-Based Security</h5>
+                        <p><strong>Subjects carry unforgeable tokens granting specific permissions:</strong></p>
+                        <pre><code class="language-plaintext">Alice holds capabilities:
+  - Token#1: (read, /home/alice/documents)
+  - Token#2: (write, /home/alice/documents)
+  - Token#3: (read, /shared/team-files)
+
+Alice can give Token#3 to Bob (delegating read access)
+Alice can create Token#4: (read-only subset of Token#2)</code></pre>
+
+                        <p><strong>Pros:</strong> Fine-grained delegation; principle of least privilege; easy to create restricted versions of capabilities</p>
+                        <p><strong>Cons:</strong> Complex to implement; revocation is difficult; requires strong cryptographic protection of tokens</p>
+                        <p><strong>Used by:</strong> Some microkernels, distributed systems, Google's Macaroons</p>
+
+                        <h4>Grouping and Roles</h4>
+                        <p>Managing permissions for individual users doesn't scale. Instead, we use <strong>groups</strong> and <strong>roles</strong>:</p>
+
+                        <pre><code class="language-plaintext">Group: Engineering
+  - Members: Alice, Bob, Charlie
+  - Permissions: Read/write source code, deploy to staging
+
+Role: Administrator
+  - Permissions: All system access, user management
+  - Assigned to: David, Eve
+
+File: /company/financial-records
+  - Allow: Finance group (read, write)
+  - Deny: Interns group (all access)</code></pre>
+
+                        <h4>Hierarchical Permissions</h4>
+                        <p>Permissions can be organized hierarchically to enable both coarse and fine-grained control:</p>
+
+                        <pre><code class="language-plaintext">Owner permission includes:
+  ├─ All Viewer permissions
+  ├─ All Editor permissions
+  └─ Plus: Delete, change permissions, transfer ownership
+
+Editor permission includes:
+  ├─ All Viewer permissions
+  └─ Plus: Write, append, rename
+
+Viewer permission includes:
+  └─ Read file contents, read metadata</code></pre>
+
+                        <h4>Audit Logging</h4>
+                        <p><strong>Audit logs</strong> record access attempts and actions:</p>
+                        <ul>
+                            <li>Who accessed what, when, and from where</li>
+                            <li>Both successful and failed access attempts</li>
+                            <li>Changes to permissions or configurations</li>
+                        </ul>
+
+                        <p><strong>Uses for audit logs:</strong></p>
+                        <ul>
+                            <li><strong>Debugging:</strong> "Why is this user unable to access this file?"</li>
+                            <li><strong>Resource analysis:</strong> "Which files are accessed most frequently?"</li>
+                            <li><strong>Detecting misuse:</strong> "Someone is trying to access sensitive files they don't have permission for"</li>
+                            <li><strong>Forensics:</strong> After a breach, trace the attacker's actions (assuming they didn't gain enough access to wipe the logs!)</li>
+                        </ul>
+
+                        <h4>Enforcement and Bypasses</h4>
+                        <p>Access control must be enforced by a <strong>trusted authority</strong> that cannot be bypassed:</p>
+
+                        <ul>
+                            <li><strong>Operating system:</strong> Enforces file permissions
+                                <ul><li>Bypass: Boot from external drive and directly read disk</li></ul>
+                            </li>
+                            <li><strong>Database server:</strong> Enforces table/row permissions
+                                <ul><li>Bypass: Compromise web server and write directly to database files</li></ul>
+                            </li>
+                            <li><strong>Web application:</strong> Enforces user roles and permissions
+                                <ul><li>Bypass: SQL injection, API vulnerabilities</li></ul>
+                            </li>
+                        </ul>
+
+                        <aside class="definition">
+                            <strong>Defense in depth:</strong> Multiple layers of access control make systems more secure. Even if an attacker bypasses one layer, additional layers can stop them.
+                        </aside>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- UNIX PERMISSIONS CASE STUDY -->
+                    <!-- ============================================ -->
+
+                    <article>
+                        <h3>Case Study: UNIX/Linux File Permissions</h3>
+
+                        <h4>The UNIX Permission Model</h4>
+                        <p>UNIX-like systems (Linux, macOS, BSD) use a classic permission model that's simple yet powerful:</p>
+
+                        <ul>
+                            <li><strong>Subjects:</strong> Processes (running programs)
+                                <ul>
+                                    <li>Every process runs as a specific user ID (<code>uid</code>)</li>
+                                    <li>Every process belongs to one or more groups (<code>gids</code>)</li>
+                                    <li>These are inherited from the login session and parent processes</li>
+                                </ul>
+                            </li>
+                            <li><strong>Objects:</strong> Files (and "everything is a file!")
+                                <ul>
+                                    <li>Regular files and directories</li>
+                                    <li>Hardware devices (<code>/dev/sda</code>, <code>/dev/tty</code>)</li>
+                                    <li>Inter-process communication (<code>/proc</code>, <code>/sys</code>)</li>
+                                    <li>Sockets and pipes</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h4>The Three Basic Permissions</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Permission</th>
+                                    <th>Symbol</th>
+                                    <th>Files</th>
+                                    <th>Directories</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Read</strong></td>
+                                    <td>r</td>
+                                    <td>Read file contents</td>
+                                    <td>List directory contents</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Write</strong></td>
+                                    <td>w</td>
+                                    <td>Modify file contents</td>
+                                    <td>Create/delete files in directory</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Execute</strong></td>
+                                    <td>x</td>
+                                    <td>Run file as a program</td>
+                                    <td>Access files within directory (traverse)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Three Classes of Users</h4>
+                        <p>Every file has <strong>three sets</strong> of permissions:</p>
+
+                        <pre><code class="language-bash">-rw-r--r-- 1 alice staff 1024 Jan 9 10:00 example.txt
+ │││ │││ │││
+ ││└─┴─┴─┴── Other (everyone else)
+ │└──────── Group (users in the "staff" group)
+ └───────── User/Owner (alice)</code></pre>
+
+                        <ul>
+                            <li><strong>User (u):</strong> Permissions for the file owner (alice)</li>
+                            <li><strong>Group (g):</strong> Permissions for users in the file's group (staff)</li>
+                            <li><strong>Other (o):</strong> Permissions for everyone else</li>
+                        </ul>
+
+                        <h4>How Permission Checking Works</h4>
+                        <p>When a process tries to access a file:</p>
+
+                        <ol>
+                            <li>If process uid matches file uid → use <strong>user permissions</strong></li>
+                            <li>Else if any process gid matches file gid → use <strong>group permissions</strong></li>
+                            <li>Else → use <strong>other permissions</strong></li>
+                        </ol>
+
+                        <aside class="definition">
+                            <strong>Important:</strong> The check stops at the first match. If you're the owner, your permissions apply—even if they're more restrictive than group or other permissions!
+                        </aside>
+
+                        <h4>Numeric Representation</h4>
+                        <p>Permissions are often written in octal (base-8):</p>
+
+                        <pre><code class="language-plaintext">r = 4 (binary 100)
+w = 2 (binary 010)
+x = 1 (binary 001)
+
+rwx = 4+2+1 = 7
+rw- = 4+2+0 = 6
+r-x = 4+0+1 = 5
+r-- = 4+0+0 = 4
+
+Example: chmod 755 file.txt
+  7 (rwx) for user
+  5 (r-x) for group
+  5 (r-x) for other</code></pre>
+
+                        <h4>Special Permissions</h4>
+
+                        <h5>1. Setuid and Setgid</h5>
+                        <p>When a file with the <strong>setuid</strong> bit is executed, the new process runs as the <em>file owner</em> (not the user who ran it):</p>
+
+                        <pre><code class="language-bash">-rwsr-xr-x 1 root root 54321 Jan 1 12:00 /usr/bin/sudo
+   ^
+   setuid bit (s replaces x)
+
+When Alice runs sudo, the process runs as root!</code></pre>
+
+                        <p><strong>Use case:</strong> The <code>sudo</code> command needs root privileges to change users, but we want regular users to be able to run it.</p>
+
+                        <p><strong>Security risk:</strong> Setuid programs are extremely dangerous if they contain vulnerabilities—they give regular users a path to root access!</p>
+
+                        <h5>2. Sticky Bit</h5>
+                        <p>The <strong>sticky bit</strong> on a directory restricts deletion: only the file owner (or directory owner, or root) can delete files:</p>
+
+                        <pre><code class="language-bash">drwxrwxrwt 10 root root 4096 Jan 9 10:00 /tmp
+         ^
+         sticky bit (t replaces x)
+
+Everyone can create files in /tmp, but you can only delete YOUR files!</code></pre>
+
+                        <p><strong>Use case:</strong> Shared directories like <code>/tmp</code> where many users store temporary files.</p>
+
+                        <h4>The Root User (uid 0)</h4>
+                        <p>Traditionally, user ID 0 (the "root" user or "superuser") <mark>bypasses all permission checks</mark>. Root can:</p>
+                        <ul>
+                            <li>Read, write, and execute any file</li>
+                            <li>Kill any process</li>
+                            <li>Change system configuration</li>
+                            <li>Impersonate any user</li>
+                        </ul>
+
+                        <p><strong>Modern systems</strong> have begun restricting root's power using:</p>
+                        <ul>
+                            <li><strong>Capabilities:</strong> Break root privileges into granular capabilities (CAP_NET_ADMIN, CAP_SYS_MODULE, etc.)</li>
+                            <li><strong>Mandatory Access Control:</strong> SELinux, AppArmor enforce policies even root must follow</li>
+                            <li><strong>Secure Boot:</strong> Cryptographically prevents unauthorized kernel modifications</li>
+                        </ul>
+
+                        <h4>Why chmod 777 Is Dangerous</h4>
+                        <p>A common piece of Internet advice when facing permission errors is:</p>
+
+                        <pre><code class="language-bash">chmod 777 filename  # DON'T DO THIS!</code></pre>
+
+                        <p><strong>What this does:</strong></p>
+                        <pre><code class="language-plaintext">7 7 7
+│ │ └─ Other: rwx (everyone on the system)
+│ └─── Group: rwx
+└───── User: rwx
+
+Result: Everyone can read, write, and execute the file!</code></pre>
+
+                        <p><strong>Why it's dangerous:</strong></p>
+                        <ul>
+                            <li>Any user on the system can modify or delete the file</li>
+                            <li>If it's executable, anyone can replace it with malicious code</li>
+                            <li>If it's a directory, anyone can create/delete files inside</li>
+                            <li>Doesn't give Internet access (contrary to popular belief), but does compromise the entire system</li>
+                        </ul>
+
+                        <aside class="definition">
+                            <strong>Better approach:</strong> Understand why you're getting permission errors and fix the actual problem (wrong user/group, missing execute permission on parent directory, etc.) rather than opening everything up.
+                        </aside>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- SUMMARY AND KEY TAKEAWAYS -->
+                    <!-- ============================================ -->
+
+                    <article>
+                        <h3>Key Takeaways and Study Tips</h3>
+
+                        <h4>Essential Concepts to Master</h4>
+
+                        <ol>
+                            <li><strong>The CIA Triad:</strong> All security revolves around Confidentiality, Integrity, and Availability. Be able to identify which property is affected in any scenario.</li>
+
+                            <li><strong>Authentication vs. Identification:</strong> Identification is claiming an identity; authentication is proving it. This distinction matters!</li>
+
+                            <li><strong>Three Authentication Factors:</strong>
+                                <ul>
+                                    <li>Something you know (passwords)</li>
+                                    <li>Something you are (biometrics)</li>
+                                    <li>Something you have (tokens)</li>
+                                </ul>
+                                Know the pros, cons, and attacks for each.
+                            </li>
+
+                            <li><strong>Password Security Layers:</strong>
+                                <ul>
+                                    <li>Strong passwords resist dictionary/brute-force attacks</li>
+                                    <li>Hashing makes stolen databases less useful</li>
+                                    <li>Salting defeats rainbow tables</li>
+                                    <li>Slow hashing (scrypt, bcrypt) slows offline attacks</li>
+                                    <li>Unique passwords prevent credential stuffing</li>
+                                    <li>Password managers solve the memorization problem</li>
+                                </ul>
+                            </li>
+
+                            <li><strong>Biometric Tradeoffs:</strong> Understand false positives vs. false negatives, and why biometrics can't be "changed" if compromised.</li>
+
+                            <li><strong>Multifactor Authentication:</strong> Combining factors from different categories provides defense in depth.</li>
+
+                            <li><strong>Access Control Models:</strong> Be able to compare ACLs, ACMs, capabilities, and understand when each is appropriate.</li>
+
+                            <li><strong>UNIX Permissions:</strong> Understand user/group/other, how permission checking works, and special bits (setuid, sticky).</li>
+                        </ol>
+
+                        <h4>Common Exam Topics</h4>
+                        <ul>
+                            <li>Given a scenario, identify which CIA properties are violated</li>
+                            <li>Calculate password entropy given character set and length</li>
+                            <li>Identify authentication factors (knowledge vs. biometric vs. possession)</li>
+                            <li>Explain why specific password practices are secure or insecure</li>
+                            <li>Analyze UNIX permission strings (e.g., <code>-rwxr-sr--</code>)</li>
+                            <li>Design an appropriate threat model for a given system</li>
+                            <li>Evaluate security vs. usability tradeoffs</li>
+                        </ul>
+
+                        <h4>Hands-On Practice</h4>
+                        <p>To solidify your understanding:</p>
+                        <ul>
+                            <li>Set up a Linux VM and practice with <code>chmod</code>, <code>chown</code>, and <code>ls -l</code></li>
+                            <li>Enable 2FA on your personal accounts (preferably with an authenticator app)</li>
+                            <li>Check your passwords on <a href="https://haveibeenpwned.com">haveibeenpwned.com</a></li>
+                            <li>Set up a password manager if you don't already use one</li>
+                            <li>Calculate entropy for various password schemes</li>
+                        </ul>
+                    </article>
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>The CIA Triad: Confidentiality, Integrity, and Availability as foundational security properties</li>
+                    <li>Threat models: Understanding threat actors, their capabilities, goals, and realistic defenses</li>
+                    <li>Security policies and the tradeoffs between security, performance, cost, usability, and reliability</li>
+                    <li>Authentication vs. Identification: The critical distinction between asserting and proving identity</li>
+                    <li>Something you know: Password authentication, attacks (dictionary, brute-force, credential stuffing, phishing), and defenses</li>
+                    <li>Password security: Entropy, hashing, salting, and password hashing functions (scrypt, bcrypt)</li>
+                    <li>Something you are: Biometric authentication, false positives/negatives, and implementation challenges</li>
+                    <li>Something you have: Token-based authentication (static vs. dynamic), TOTP, and challenge-response protocols</li>
+                    <li>Multifactor Authentication (MFA): Combining authentication factors for defense in depth</li>
+                    <li>Access control fundamentals: Subjects, objects, and access modes</li>
+                    <li>Access control implementation: ACLs, ACMs, directories, and capability-based security</li>
+                    <li>Groups, roles, hierarchical permissions, and audit logging</li>
+                    <li>UNIX/Linux permissions: User/group/other model, rwx permissions, setuid/setgid/sticky bits</li>
+                    <li>The root user and modern security enhancements (capabilities, SELinux, AppArmor)</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li><strong>Reading:</strong> Complete textbook sections 1.2, 1.4, 1.5, 2.1, 2.2 before next lecture</li>
+                    <li><strong>Practice:</strong> Calculate password entropy for various combinations:
+                        <ul>
+                            <li>8-character password with uppercase, lowercase, and digits</li>
+                            <li>6-word passphrase from a 10,000-word dictionary</li>
+                            <li>16-character password with all ASCII printable characters</li>
+                        </ul>
+                    </li>
+                    <li><strong>Security audit:</strong> Check if any of your passwords appear on <a href="https://haveibeenpwned.com">haveibeenpwned.com</a></li>
+                    <li><strong>Practical setup:</strong> If you don't already use one, research and set up a password manager (1Password, Bitwarden, or KeePass)</li>
+                    <li><strong>Enable MFA:</strong> Turn on two-factor authentication for at least 3 critical accounts (email, banking, university)</li>
+                    <li><strong>UNIX practice:</strong> If possible, practice with a Linux system:
+                        <ul>
+                            <li>Use <code>ls -l</code> to view file permissions</li>
+                            <li>Practice with <code>chmod</code> using both symbolic (chmod u+x) and numeric (chmod 755) notation</li>
+                            <li>Experiment with creating files in directories with different permissions</li>
+                            <li>Try using <code>sudo</code> and understand why it needs setuid</li>
+                        </ul>
+                    </li>
+                    <li><strong>Analyze examples:</strong> For each CIA property (Confidentiality, Integrity, Availability), think of 2-3 real-world examples of:
+                        <ul>
+                            <li>Systems where that property is most critical</li>
+                            <li>Attacks that would violate that property</li>
+                            <li>Defenses to protect that property</li>
+                        </ul>
+                    </li>
+                    <li><strong>Review clicker questions:</strong> Make sure you understand the correct answers to all 5 clicker questions from the lecture (authentication types, password practices, biometrics, UBC Workday MFA example, chmod 777)</li>
+                    <li><strong>Memorize key concepts:</strong>
+                        <ul>
+                            <li>CIA Triad definitions</li>
+                            <li>Three authentication factors (know, are, have)</li>
+                            <li>Password entropy formula: log₂(possibilities)</li>
+                            <li>Difference between hashing and encryption</li>
+                            <li>UNIX permission notation (rwx = 421)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Optional deep dive:</strong> Research one of these topics in more detail:
+                        <ul>
+                            <li>How TOTP (Time-based One-Time Password) works mathematically</li>
+                            <li>The history of major password database breaches and their impact</li>
+                            <li>How Face ID implements liveness detection</li>
+                            <li>SELinux or AppArmor mandatory access control systems</li>
+                        </ul>
+                    </li>
+                    <li><strong>Upcoming:</strong> In-class activity on "KitKot Security" - review access control concepts before next lecture (January 14, 2026)</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc436" class="back-link">← Back to CPSC_436</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+Crows foot notation ----1< 1 or more
+----0< 0 or more
+------11 min 1 max 1
+
+DB2 for z/OS case study:
+
+DB2p - Prod
+DB2T - Test
+DB2S - Support
+
+Many DB's per database
+
+database has a tablespace
+which contains tablespacewhich has views 1-5 per tablespace
+tables contain data pages
+1-1,000,000 per tables
+row contains records of 1-255 per page
+rows contain columns 1-100 per row
+data entry <key, rid> 1-255 per index page
+index page (1-10,000) per index
+index 1 per indexspace
+indexspace 1-500 per DB
+
+Indexes example:  please create a diagram and explanation of Indexes
+b-trees,
+Student table (data)
+
+1. unique hash index on student id
+44 for kim adams-> [15,90,]
+select * from student where studentIID = 44;
+
+Sample row on that data page is 
+[ADAMS,KIM,APSC,44,123777111]
+
+2. unique hash index on S.I.N 
+EG. KIM = 1237777111
+
+3. non-unique clustering index on Dept (b+ tree)
+
+4. non-unique non-clustering st tree index on lastname
+
+"Clustered means most of the data pages are physcially ordered in the order of the clustering index"
+
+we dont want our disk arms to be moving like crazy looking for adams.

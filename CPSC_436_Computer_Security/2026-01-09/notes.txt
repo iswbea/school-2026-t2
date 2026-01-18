@@ -1,0 +1,406 @@
+Mike Feeley - slides by Robert Xiao - 2025W2 - Jan 7, 2026
+CPSC 436S Computer Security
+Module 01 - Authentication and Access Control
+Learning Goals
+• Understand the properties that are integral to a secure system
+• Determine the security policies of a system
+• Identify and compare the three main types of authentication
+• Define what access controls are and how to implement them
+• Textbook Readings: 1.2, 1.4, 1.5, 2.1, 2.2
+Goals of a Secure System
+The CIA Triad
+• A secure system generally has the following properties:
+• Confidentiality: Making information available only to authorized parties
+• Integrity: Ensuring that information is always accurate and complete
+• Availability: Providing services when needed by any authorized parties
+Goals of a Secure System
+Example
+• Sending a message securely:
+• Confidentiality: Nobody else can read the message at any time
+• Integrity: The message is not altered
+• Availability: The message is actually received
+E.g., Wikipedia …
+Goals of a Secure System
+Example
+• The Wikipedia website:
+• Confidentiality: Private information for users, such as passwords, are not
+divulged
+• Integrity: Users can only edit pages they have access to; page history is
+accurately maintained and cannot be modified
+• Availability: Wikipedia continues to be available to read, and to edit
+Threats
+• A threat is anything that may negatively affect a security property
+• We’ll focus on malicious threats: threats that are actively attempting to subvert a
+system’s security
+• A threat model is a model of a potential threat against a system
+• A system can be built to defend against multiple threat models
+• Not all threats are equally relevant, or equally defensible
+• e.g. random login attempts from the Internet, vs. the NSA backdooring your hardware
+• A threat model includes the threat actor (attacker), their capabilities, and their goals.
+Security Policy
+• A system owner establishes a security policy, defining who and what is
+authorized, and enacts controls to enforce that policy.
+• The security policy changes depending on the system requirements and
+applicable threat models.
+Security Policy
+Tradeoffs
+• Security can involve tradeoffs with other desirable properties
+• Performance, cost, usability, reliability
+• Choosing a realistic threat model can help with finding the right balance
+• Different parts of an organization may have different security requirements
+and threat models
+Mike Feeley - slides by Robert Xiao - 2025W2 - Jan 9, 2026
+CPSC 436S Computer Security
+Module 01 - Authentication and Access Control
+Security Policy
+• Authentication
+To positively identify who is authorized, we need ways to determine a
+subject’s identity beyond a reasonable doubt.
+• Access Control
+Mechanisms to ensure that objects are accessed only by authorized users in
+authorized ways.
+• A subject might be people, computer processes (programs), other computers
+(e.g. on the network), and other entities.
+Typical Controls
+Authentication
+Authentication vs. Identification
+• Identification
+The act of asserting an identity.
+• Authentication
+The act of proving that asserted identity.
+• Don’t mix these up!
+• Identities are often public, well-known and not protected.
+• Authentication is necessarily protected.
+Clicker Question
+1.1
+Which of the following is a type of Authentication, not Identity?
+A. Email
+B. Username
+C. Password
+D. Telephone Number
+E. Social Insurance Number
+Authentication
+Authentication is based on something you know, are or have.
+• Something the user knows: passwords, PINs, secret questions
+• Something the user is: fingerprint, voice, face, eyes
+• Something the user has: identity badge, physical keys, passport
+What You Know: Passwords
+Passwords (and PINs) are a string of characters used to confirm a user’s
+identity.
+• Pros: Popular and common; easy and cheap to implement
+• Cons: Inconvenient and forgettable, easily used by others, poor password
+practices
+Clicker Question
+1.2
+Which of the following are considered good practices for using passwords?
+A. Memorizing a long, complex password and using it for everything
+B. Memorizing a different long, complex password for every service
+C. Using randomly-generated passwords
+D. Not changing your passwords every six months
+E. Storing your passwords securely on your computer
+What You Know: Passwords
+The Attacker’s View
+• The goal of an attacker is to obtain the password corresponding to an account
+• Many possible attacks:
+• Dictionary attack: enumerate common passwords (“123456”, “password”, etc.)
+• Brute-force attack: enumerate all passwords of a certain form (e.g. all 4-digit PIN
+numbers, all dictionary words plus “1”)
+• Shoulder-surfing attack: watch the user enter their password (e.g. at an ATM)
+• Credential-stuffing attack: use a password leaked from one account to log into a
+different account under the same identity
+• Social engineering attack: convince the user to send their password to you
+What You Know: Passwords
+Brute-Force Attacks
+• Two types of brute-force attacks:
+• Online attack: try passwords through the authentication mechanism (e.g.
+typing in a phone’s PIN, submitting a password on a website)
+• Must use rate-limiting to limit attempts - without introducing denial-ofservice against real users!
+• Offline attack: attack passwords in their stored format, e.g. as dumped from
+a database or password file
+• Only rate limit is the speed at which passwords can be tried
+What You Know: Passwords
+Brute-Force Attacks
+• Simplest brute-force is to try all passwords
+• Difficulty of brute-force scales with the length & complexity of a password
+• 6 digits = 106 = 1,000,000
+• 10 alphanumeric = 6210 = 839,299,365,868,340,224
+• Entropy: number of bits needed to specify a password
+• Entropy = log2(number of possibilities), if all passwords are equally likely
+What You Know: Passwords
+Weak vs. Strong Passwords
+• A weak password is one that is vulnerable to a simple dictionary or brute-force
+attack
+• A password’s strength is related to the number of guesses that it would take to
+guess the password
+• This depends on how good the attacker is at guessing!
+• People are bad at choosing passwords - attackers can exploit psychology.
+• For a “sufficiently random” password, strength scales with length and complexity
+• Choosing strong passwords is important, but only protects against dictionary and
+brute-force attacks.
+What You Know: Passwords
+Password Entropy
+https://xkcd.com/936/, CC BY-NC 2.5
+What You Know: Passwords
+Password Storage
+• Passwords should never be stored in plain text
+• If you’re breached, all the passwords are leaked immediately
+• Ideally, hash and salt the passwords using a strong hash function such as a password
+hashing function (e.g. scrypt) and a random salt per account to force the attacker into
+offline brute-force
+• Hashing irreversibly transforms text into a random-looking string:
+• H(“apple”) = d0be2dc421be4fcd0172e5afceea3970e2f3d940
+• H(“applf”) = da68bafb76be6ff1f8697c8e06870f126ff40a4c
+• Hashing is not encryption! Encryption is easily reversible - hashing is not
+What You Know: Passwords
+Password Storage
+• A salt is an additional, random value stored with the account, and added to
+the hash to ensure that even accounts with the same password have different
+hashes (e.g., store (username, salt, password hash) in database)
+• Ensures that an attacker can’t identify identical passwords just by looking
+for identical hashes
+• Increases attacker’s workload because each password has to be
+individually cracked
+• Defeats rainbow table techniques: precomputed tables which can vastly
+speed up brute-force attacks on hashes
+Offline Password Cracking
+• Hacker obtains list of (username, password hash) pairs from a target
+• Run that same hash algorithm as the target
+• try various passwords and then look for matches in the list
+• when found, attacher has essentially revered the irreversible hash
+• can be brute force, but likely uses various dictionaries in combination
+• leaked passwords from other sites (easy to get these / buy them)
+• common words (and tricks)
+• rainbow table - (password,hash) pairs computed previously
+What You Know: Passwords
+Password Storage
+• Passwords should be hashed with a password hashing function which is
+designed to be slow
+• Why slow? A typical hash function like SHA-1 is designed to be fast: which
+means that an attacker can brute-force lots of hashes quickly
+• On a modern GPU (RTX 4090, hashcat software):
+• SHA-1: 50,000,000,000 passwords tested per second
+• scrypt-16384: 7000 passwords tested per second
+• scrypt is memory-hard, making it hard to parallelize.
+What You Know: Passwords
+Password Reuse
+• Reusing a password across multiple services is never safe, no matter how
+long or complex the password is!
+• Services are breached all the time - and many do not store passwords
+securely
+• https://haveibeenpwned.com/
+• Remembering a unique password for every site is not feasible
+• Solution: use a password manager to store a long, random password for
+each site, and keep your password manager safe.
+What You Know: Passwords
+Phishing and Social Engineering
+• Users are often fooled by phishing attacks: messages and communications
+sent to users to convince them to visit the attacker’s webpage.
+What You Know: Passwords
+Phishing and Social Engineering
+• Users are then sent to a page convincing the user to send the password to
+the attacker.
+• A password manager can help: it will not enter a password for a different site.
+What You Are: Biometrics
+• Biometrics are biological properties based on a physical characteristic of the human body
+• Fingerprint
+• Hand geometry
+• Retina and iris pattern
+• Voiceprint
+• Face
+• Ear shape
+• DNA
+What You Are: Biometrics
+• Pros: Credential cannot be shared, security does not depend on user
+behaviour
+• Cons: Privacy implications, challenging to implement with high accuracy,
+cannot be changed if disclosed or copied, some biometrics change over time
+Clicker Question
+1.3
+Which statement(s) are true about biometrics?
+A. They can distinguish identical twins
+B. They can uniquely identify any individual
+C. False negatives can occur (failure to positively authenticate a user), but false
+positives cannot (failure to reject an unauthorized user).
+D. They are useful for authentication and identification
+E. Biometric identification and authentication are the same thing
+What You Are: Biometrics
+Parts of a Biometric System
+• A biometric authenticator requires a sensor to acquire the biometric
+• e.g. fingerprint sensor, camera, microphone
+• Users initialize the biometric system by enrolling one or more samples to match
+against
+• These can be stored as raw samples, as extracted features, or as e.g. trained
+machine-learning models
+• When evaluating a biometric for authentication, the system compares with the stored
+samples and produces a match score
+• The threshold to accept or reject the biometric can be adjusted to set the accuracy
+What You Are: Biometrics
+Accuracy
+• Biometric systems are characterized by their false positive and false negative rates
+• These can be traded off by adjusting the threshold
+• False positives grant access to unauthorized users; false negatives reject legitimate
+users
+• Accuracy is influenced by sensor hardware, matching algorithm and the nature of the
+biometric
+• The security of biometric systems is very implementation-dependent
+• Does it reject copies (e.g. photo of a face)? Is the false-positive rate low enough to
+reliably reject impostors? Are the samples stored securely enough to resist extraction?
+What You Have: Tokens
+• A token is a physical object in your possession, such as keys, badges or
+identity cards
+• Your phone counts as a token too!
+What You Have: Tokens
+• A static token does not change over time (credit card, key, identity card)
+• A dynamic token can change value, usually by having a computer inside
+Static Dynamic
+What You Have: Tokens
+• A static token might be copied or cloned, maybe even from a photo
+• Security of dynamic tokens depends more on physical security - less so on
+computer security.
+• Social engineering may be used to obtain codes from dynamic tokens
+• Plug-in security keys are not vulnerable to this
+• Techniques like SIM-swapping may be used to obtain codes sent to a phone
+Multifactor Authentication
+• No single type of authentication is perfect
+• Passwords can be forgotten or broken
+• Biometrics can fail
+• Tokens can be lost or stolen
+• Combining different types of authentication can improve security
+• Having many factors makes it possible to fall back if one is missing
+• Having many factors improves security by requiring attackers to work harder
+Multifactor Authentication
+• To improve usability, a system can use additional signals when deciding to
+ask for more factors
+• Store a “cookie” on a computer to identify that device as “known” and
+avoid extra factors
+• Demand extra factors if the login attempt seems suspicious (different
+country, unrecognized computer, many login attempts)
+Clicker Question
+1.4
+Jane logs into UBC Workday as follows: she visits the site on her laptop, and her
+password manager automatically fills in the password. The site asks her to confirm
+using Duo, so she unlocks her phone with her fingerprint and approves the login in the
+app.
+In this sequence, what type(s) of authentication did Jane use?
+A. Something she knows
+B. Something she is
+C. Something she has
+D. None of these
+Access Control
+Access Control
+• Access control governs the relationship between subjects, objects and access
+modes.
+• Subjects: Entities that claim access, such as users, programs, or other
+computers on the network
+• Objects: Assets that can be accessed, such as computer systems, files,
+database entries, hardware devices, etc.
+• Access modes (Permissions): Actions that subjects can perform on objects,
+such as logging in, reading, modifying, deleting, creating, annotating, etc.
+Access Control
+Access Logging
+• Accesses, particularly sensitive ones, can be logged to an audit log
+• Audit logs can be useful for ordinary operations - e.g. debugging, resource
+usage analysis
+• Audit logs can reveal misuse - e.g. excessive resource usage, improper
+access
+• Most critically, audit logs can track the activity of attempted or successful
+system intrusion - as long as the attacker does not gain enough permission to
+wipe the log!
+Access Control
+Implementation
+• Access control is typically enforced by a central authority: operating system,
+database server, website operator
+• Authority provides logging and manages objects
+• Must ensure that the access control mechanism cannot be bypassed!
+• Example: bypass OS security by directly altering data on disk (e.g. with
+hardware access)
+• Example: bypass database security by writing directly to database files (e.g.
+from a compromised web server)
+Access Control
+Implementation
+• Different approaches to encoding permissions:
+• Access Control Directory: subjects carry lists of objects they have access to and
+the corresponding permissions
+• Access Control Matrix: (sparse) matrix of subjects × objects and permissions for
+each combination
+• Access Control List: objects carry lists of subjects (or subject groups) and
+corresponding permissions
+• Capability-Based Security: subjects carry tokens granting them certain
+permissions to certain objects, and may be able to further restrict the tokens or
+give them to other subjects
+Access Control
+Implementation
+• Subjects/objects might be grouped or labelled to apply permissions to many
+subjects/objects simultaneously
+• Labels might be programmatic (e.g. “all files ending in .bin”, “all users who are
+more than 7 days old”)
+• Subject labels are also called roles
+• Access control system might enable certain labels to deny subjects access
+• e.g. a “ban” label prohibits a subject from performing certain actions
+• A system supporting multiple labels per subject/object may have complex allow/
+deny rules (e.g. “deny if label X, allow if label Y, deny otherwise”)
+Access Control
+Implementation
+• Permissions might be coarse, fine-grained, or even hierarchical
+• e.g. for a file, coarse may be “read/write”, fine-grained may be “read
+contents, read metadata, write contents, write metadata, append to file,
+rename, lock, delete, …”
+• Hierarchical permissions enable a mix of coarse and fine-grained control
+• e.g. “Owner” permission can include all other permissions; “Viewer”
+permission can include a smaller subset
+Access Control
+Implementation
+• What design features make a mechanism more / less vulnerable to attack?
+• for example, is OS more or less vulnerable than a database
+• a virtual machine?
+• hardware?
+• what are the key tradeoffs?
+Mike Feeley - slides by Robert Xiao - 2025W2 - Jan 14, 2026
+CPSC 436S Computer Security
+Module 01 - Authentication and Access Control
+In-Class Activity
+KitKot Security
+Access Control
+Case Study: UNIX Permissions
+• Subjects are processes which interact with the operating system
+• Processes run as a particular user id (uid) and as one or more groups (gids)
+• Initial uid/gids are set upon login and inherited to all spawned processes
+• Objects are files
+• And “everything is a file” - including directories, hardware devices, and many
+operating system services
+• Special user id 0 (“root”) traditionally ignores all access restrictions
+• Modern systems have begun to restrict root’s privileges
+Access Control
+Case Study: UNIX Permissions
+• Files are owned by a particular uid and gid
+• Only owning uid can change permissions
+• Only root can change owning uid (why?)
+• Three main permissions: read (r), write (w), and execute (x)
+• Every file has three sets of permissions: one for the owning uid (u), one for the owning
+gid (g), and one for all other users (o)
+• Combination of permissions is called the file mode
+• Process uid/gids are matched against file uid/gid to determine applicable permissions
+Access Control
+Case Study: UNIX Permissions
+• Files with the execute permission can be executed to create new processes
+• New processes inherit parent process uid/gids by default
+• Special setuid/setgid bits on a file causes new process to inherit file’s uid/gid
+instead - used for sudo
+• Directories without the execute permission will deny access to all files within them
+• Directory write permission interpreted as permission to create and delete files
+inside
+• Special sticky permission restricts creation/deletion to file owner - useful for
+shared directories like /tmp
+• Permission demo
+Access Control
+Case Study: UNIX Permissions
+Clicker Question
+1.5
+When dealing with weird permission issues on UNIX/Linux, a common bit of Internet
+advice is to just run chmod 777 <filename>. Why might that be a problem?
+A. This makes the file writable, which prevents caching and reduces performance
+B. This makes the file executable, which can load the contents as arbitrary code in
+the system and create a security hole
+C. This can give anyone on the Internet access to the file
+D. This can give anyone on that computer system access to read and modify the file
+E. None of these apply: this Internet advice is safe

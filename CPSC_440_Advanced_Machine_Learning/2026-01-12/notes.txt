@@ -1,0 +1,358 @@
+Multivariate models; Generative classifiers
+CPSC 440/550: Advanced Machine Learning
+cs.ubc.ca/~dsuth/440/25w2
+University of British Columbia, on unceded Musqueam land
+2025-26 Winter Term 2 (Jan–Apr 2026)
+1 / 24
+Admin
+Tutorials start this week
+Totally optional; you can go to any section
+In the unlikely event that it’s full, prioritize seats for those registered for that section
+Office hours calendar linked from Piazza – I’m doing Thursday this week
+Everyone currently on the waitlist will get in; might take a bit
+Quiz this week Thursday–Saturday; schedule a slot soon
+If you don’t have access, let me know your CWL in a private Piazza post right away
+(See debugging on Piazza @19)
+Every CfA accommodation I know about is resolved except one (check your email)
+Topic bullet points will be posted on Piazza tonight
+Don’t leave assignment 1 to the last minute!
+Due Friday 11:59pm (no longer 5pm)
+2 / 24
+Last time: MLE and MAP for Bernoulli model
+Bernoulli distribution: simple parameterized probability model for binary data
+If X ∼ Bern(θ), then for x ∈ {0, 1} we have
+Pr(X = x | θ) = (
+θ if x = 1
+1 − θ if x = 0
+= θ
+1(x=1)(1 − θ)
+1(x=0) = θ
+x
+(1 − θ)
+1−x
+Also write this as p(x | θ) or even p(x), if context is clear
+Maximum likelihood estimate (MLE): arg maxθ p(X | θ), just ˆθ = n1/n
+Maximum a posteriori (MAP) estimate: adds a prior p(θ) to choose
+arg maxθ p(θ | X) = arg maxθ p(X | θ)p(θ)
+Beta(α, β) prior acts like α − 1 “fake” one observations, β − 1 “fake” zeros
+3 / 24
+Outline
+1 Product of Bernoullis
+2 Generative classifiers
+4 / 24
+Motivation: modeling traffic congestion
+We want to model traffic congestion in a big city
+Simple version: measure which intersections are busy on different days:
+loc 1 loc 2 loc 3 loc 4 loc 5 loc 6 loc 7 loc 8 loc 9
+0 1 0 1 1 1 0 0 1
+0 0 1 1 0 0 0 0 0
+0 1 0 1 1 1 0 0 1
+0 1 0 1 1 1 0 0 0
+1 1 1 1 1 1 1 1 1
+0 0 0 1 1 0 0 0 1
+0 1 0 1 1 1 1 1 0
+We’d like a model of this data, to identify problems or to route buses efficiently
+“Location 4 is always busy,” “location 1 is rarely busy”
+“locations 7 and 8 are always the same,” “location 2 is busy when location 7 is busy”
+“There’s a 25% chance you hit a busy spot if you take intersections 1 and 8”
+5 / 24
+Multivariate binary density estimation
+We can view this as multivariate binary density estimation:
+Input: n iid samples of binary vectors x
+(1), . . . , x(n)
+in {0, 1}
+d
+Output: a model that can assign a probability to any binary vector x ∈ {0, 1}
+d
+loc 1 loc 2 loc 3 loc 4 loc 5 loc 6 loc 7 loc 8 loc 9
+0 1 0 1 1 1 0 0 1
+0 0 1 1 0 0 0 0 0
+0 1 0 1 1 1 0 0 1
+0 1 0 1 1 1 0 0 0
+1 1 1 1 1 1 1 1 1
+0 0 0 1 1 0 0 0 1
+0 1 0 1 1 1 1 1 0
+estimator
+−−−−−−→
+p((0, . . . , 0)) = 0.0001
+.
+.
+. (2
+9 total values)
+.
+.
+.
+p((1, . . . , 1)) = 0.002
+Another example: “are there >10% covid cases in area j?”
+Notation (memorize):
+We have n examples, each with d number of features
+x
+(4) is a vector of length d, with elements x
+(4)
+1
+to x
+(4)
+d
+X3 is the third dimension of a random vector X; x3 is a value X3 might take
+6 / 24
+Product of Bernoullis model
+There are many possible models for binary density estimation
+Each one makes different assumptions; we’ll see lots of options
+We’ll start with a very simple “product of Bernoullis” model
+Here we assume that all the dimensions are independent
+If d = 4, this means p(x1, x2, x3, x4) = p(x1)p(x2)p(x3)p(x4)
+We treat our d dimensional problem as d separate univariate problems
+X =
+loc 1 loc 2 loc 3
+0 1 0
+0 0 1
+0 1 0
+0 1 0
+1 1 1
+0 0 0
+0 1 0
+reframe
+−−−−→ X1 =
+loc 1
+0
+0
+0
+0
+1
+0
+0
+X2 =
+loc 2
+1
+0
+1
+1
+1
+0
+1
+X3 =
+loc 3
+0
+1
+0
+0
+1
+0
+0
+7 / 24
+Product of Bernoullis: inference and learning
+Advantage of doing this: it makes inference and learning really easy
+For most tasks: just do it on each variable, then combine results
+Joint probability: Pr(X1=1,X2=0,...,Xd=1)=Pr(X1=1) Pr(X2=0)··· Pr(Xd=1)=θ1(1−θ2)···θd
+Marginal probability: Pr(X2=1)=θ2, Pr(X2=1,X3=1)=Pr(X2=1) Pr(X3=1)=θ2θ3
+Conditional probabilities: p(x2 | x3) = p(x2)
+Mode: set x1 from arg maxx1
+p(x1), . . . , xd from arg maxxd
+p(xd)
+Sampling: sample x1 from p(x1), . . . , xd from p(xd)
+MLE: ˆθ1 =
+n11
+n =
+number of times X1 is 1
+n
+, . . . ,
+ˆθd =
+nd1
+n
+; MAP is similar
+np.mean(X, axis=0); takes O(nd) time
+Or O(nnz(X)) if X is a sparse matrix with nnz(X) ≤ nd nonzero entries
+8 / 24
+Running example: MNIST digits
+We’ll often use a basic dataset, MNIST digits, as an example
+n = 60, 000 images; each is a 28 × 28 grayscale image of a handwritten number
+For binary density estimation: d = 784 for each pixel, rounded to {0, 1}
+In CPSC 340, we wanted a function that takes in an image and says “this is a 7”
+In density estimation, we want a probability distribution over images
+What’s the probability that some 28 × 28 grayscale image is a handwritten digit?
+Unsupervised density estimation (ignoring the class label) for now
+Sampling from the density should produce a novel image of a digit
+9 / 24
+Product of Bernoullis on MNIST
+If we fit a product of Bernoullis to MNIST:
+Have 784 parameters: each pixel location is Bern(θj )
+The MLE ˆθj is just the portion of the time pixel j “has ink”
+Viewing the ˆθj shaped into an image:
+More likely to have writing near the centre of the image
+10 / 24
+Product of Bernoullis on MNIST
+Is this a good fit to MNIST?
+One way to check: look at samples from the model
+This is a terrible model – the sample don’t look like the data at all
+In the data, the pixels are far from independent
+For example, adjacent pixels are highly correlated with each other
+Even though the assumption is usually wrong,
+a product of Bernoullis is often “good enough to be useful”
+Especially as a component of a model, instead of the whole thing
+We’ll see several ways to relax the independence assumption later in the course
+11 / 24
+Outline
+1 Product of Bernoullis
+2 Generative classifiers
+12 / 24
+Motivation: spam filtering
+Spam used to be a huge problem, until ML-based spam detectors
+Can frame as supervised learning
+Learn a function from e-mails to “is this spam”
+13 / 24
+Data collection and feature extraction
+Collect a lot of emails
+Get users to label them as spam (y
+(i) = 1) or not (y
+(i) = 0)
+Extract features of each email, e.g. bag of words: x
+(i)
+j = 1(word j in email i)
+winner CPSC 440 vicodin . . . spam?
+1 0 0 0 . . . 1
+0 1 1 0 . . . 0
+0 0 0 1 . . . 1
+1 1 1 0 . . . 0
+y
+(i)
+is label of ith example; collected in vector y (length n)
+x
+(i)
+j
+is jth feature of ith example
+x
+(i)
+is the vector (length d) of features for ith example
+X collects all the inputs, shape n × d – in practice, use a sparse format!
+Xj is random variable for the jth feature of random sample; X is random vector
+14 / 24
+Generative classifiers
+Early ’00s: best spam filtering methods used generative classifiers
+Treat supervised learning as density estimation
+Learning: fit a model for p(x1, . . . , xd, y)
+“Data-generating process” for the features and labels together
+Inference: compute conditionals p(y | x1, . . . , xd)
+Is p(y = 1 | x1, . . . , xd) > p(y = 0 | x1, . . . , xd)?
+Should we plug in our new fancy product of Bernoullis as our density estimator?
+Probably not – it assumes Y is independent of X1, . . . , Xd!
+So predictions wouldn’t depend on the features at all!
+15 / 24
+Na¨ıve Bayes
+Product of Bernoullis assumes X1, . . . , Xd, Y are all mutually independent
+Na¨ıve Bayes assumes xj are mutually independent given y
+X1, . . . , Xd are (mutually) independent if
+p(x1, . . . , xd) = p(x1)· · · p(xd) for all possible values x1, . . . , xd
+X1, . . . , Xd are (mutually) conditionally independent given y if
+p(x1, . . . , xd | y) = p(x1 | y)· · · p(xd | y) for all possible values x1, . . . , xd, y
+Features independent per class: use a different product of Bernoullis for each class
+To fit, need conditional univariate density estimates
+p(x1, . . . , xd, y) = p(x1, . . . , xd | y)p(y) = p(x1 | y)· · · p(xd | y)p(y)
+16 / 24
+Na¨ıve Bayes inference
+Given model, can compute p(x1, . . . , xd, y) = p(x1 | y)· · · p(xd | y)p(y)
+To classify: have p(y | x) ∝ p(x, y) – probabilistic predictions
+We maximize probability of correct answer if we take arg maxy p(y | x)
+But probabilities make it easy to do more variations!
+Probably cost of missing a spam email < cost of flagging a non-spam email
+Prediction \Truth y = 0: Good email y = 1: Spam
+yˆ = 0: Good email 0 1
+yˆ = 1: Spam 50 0
+Can minimize expected cost: letting ρ(x) = p(y = 1 | x) be the prediction,
+E[C(ˆy, y)] = ρ(x) C(ˆy, 1) + (1 − ρ(x)) C(ˆy, 0)
+=
+(
+(1 − ρ(x)) · 0 + ρ(x) · 1 if yˆ = 0
+(1 − ρ(x)) · 50 + ρ(x) · 0 if yˆ = 1
+=
+(
+ρ(x) if yˆ = 0
+50(1 − ρ(x)) if yˆ = 1
+so we predict yˆ = 1 only if 50(1 − ρ(x)) ≤ ρ(x), i.e. ρ(x) ≥
+50
+51 ≈ 98%
+17 / 24
+Expected cost can be really important
+Destroying angels are “among the
+most toxic known mushrooms”
+“Symptoms do not appear for 5 to 24
+hours, by which time the toxins may
+already be absorbed and the damage
+(destruction of liver and kidney
+tissues) is irreversible. As little as half
+a mushroom cap can be fatal if the
+victim is not treated quickly enough.”
+https://blog.mycology.cornell.
+edu/2006/11/22/
+i-survived-the-destroying-angel/
+18 / 24
+Na¨ıve Bayes inference
+Can also do other inference tasks:
+What’s p(x1, . . . , xd)?
+What are the “most spammy” features? arg maxx1,...,xd
+p(x1, . . . , xd | y = 1)
+How can I minimally change my spam email to make it look not like spam?
+Generate data with ancestral sampling:
+Sample y˜ from p(y), then x˜ from p(x | y˜)
+19 / 24
+Training na¨ıve Bayes: conditional binary density estimation
+Recall that under na¨ıve Bayes assumption,
+p(x1, . . . , xd, y) = p(x1, . . . , xd | y)p(y) = p(x1 | y)· · · p(xd | y)p(y)
+For binary Xj and Y : p(y) is just binary density estimation
+Can parameterize p(xj | y) = Pr(Xj = xj | Y = y) as conditionally Bernoulli:
+Pr(Xj = 1 | Y = 1) = θj|1 Pr(Xj = 1 | Y = 0) = θj|0
+Two parameters per feature: θj|y
+is probability of Xj being 1 given Y = y
+Xj | Y = 0 is Bern(θj|0
+), and Xj | Y = 1 is Bern(θj|1
+)
+MLE is given by “counting conditionally”:
+ˆθj|1 =
+Pn
+i=1 1(x
+(i)
+j = 1) 1(y
+(i) = 1)
+n1
+=
+nxj=1,y=1
+ny=1
+ˆθj|0 =
+nxj=1,y=0
+ny=0
+Should be intuitive, but worth writing out for yourself to check the steps make sense!
+20 / 24
+Generative classifiers
+Training phase: density estimation: fit a model for p(x, y)
+Usually: first fit a model for p(y)
+For binary y, just use a Bernoulli and do MLE/MAP O(n) time
+Next, for each class c, fit p(x | y = c) using examples from class c
+For na¨ıve Bayes, fit p(x1 | y = c), . . . , p(xd | y = c) separately
+For binary data, fits a product of Bernoullis for class c O(ny=c d) time
+Total: O(n + ny=1d + · · · + ny=kd) = O(n + nd) = O(nd) time
+Can reduce to O(number of nonzero entries) with sparse format
+Testing phase: use p(y | x) ∝ p(x, y) to get probability of each class for x
+Usually: predict arg maxy p(y | x) = arg maxy p(x, y)
+“What’s the most likely y, after seeing x?” (Like MAP!)
+21 / 24
+Na¨ıve Bayes on MNIST
+Let’s make a binary supervised learning problem: distinguish 1 from 2
+There are 6,742 1s, and 5,958 2s
+With MLE, get p(y = 1) = 6 742/(6 742 + 5 958) ≈ 0.53
+MLE parameters for Na¨ıve Bayes, p(xj | y) for each class (arranged as an image):
+22 / 24
+Na¨ıve Bayes on MNIST
+Sample class y˜ from p(y), then features from p(x | y˜):
+Clearly different from the dataset, but at least there’s some structure
+We don’t need a perfect model for na¨ıve Bayes to classify well
+Might be enough to see 2 is more likely than 1, even if it’s a bad model of each class
+Na¨ıve Bayes is a terrible estimator of email distribution, but “good enough” classifier
+23 / 24
+Summary
+Product of Bernoullis:
+Extremely simple way to handle multivariate data
+Assumes all variables are independent
+Very strong assumption gives really easy inference/learning but bad models
+Generative classifiers: model p(x, y), then use p(y | x) to classify
+Na¨ıve Bayes: assume that dimensions of x are independent given y
+Next time: discriminating (but in a good way)
+24 / 24

@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC 440 - Quiz 1 Study Guide</title>
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        .study-guide-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .concept-card {
+            background: var(--secondary-bg);
+            border-left: 4px solid var(--accent-color);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .formula-box {
+            background: #1a1a2e;
+            border: 2px solid var(--accent-color);
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+        }
+
+        .key-formula {
+            font-size: 1.3em;
+            color: #4ecdc4;
+            margin: 0.5rem 0;
+        }
+
+        .analogy-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+        }
+
+        .warning-box {
+            background: #ff6b6b;
+            color: white;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+        }
+
+        .tip-box {
+            background: #51cf66;
+            color: white;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 8px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .comparison-table th {
+            background: var(--accent-color);
+            color: white;
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: var(--secondary-bg);
+        }
+
+        .quiz-scope {
+            background: #ffd93d;
+            color: #1a1a2e;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .interactive-demo {
+            border: 2px solid var(--accent-color);
+            padding: 2rem;
+            margin: 2rem 0;
+            border-radius: 8px;
+            background: var(--secondary-bg);
+        }
+
+        .diagram-container {
+            margin: 2rem 0;
+            padding: 2rem;
+            background: var(--secondary-bg);
+            border-radius: 8px;
+        }
+
+        canvas {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            display: block;
+            margin: 1rem auto;
+        }
+
+        .controls {
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .controls button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            margin: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .controls button:hover {
+            opacity: 0.8;
+        }
+
+        .controls input[type="range"] {
+            width: 200px;
+            margin: 0 1rem;
+        }
+
+        .label {
+            display: inline-block;
+            margin: 0.5rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../index.html">Home</a> /
+            <a href="../index.html#cpsc440">CPSC_440</a> /
+            <span>Quiz 1 Study Guide</span>
+        </nav>
+
+        <div class="study-guide-header">
+            <h1>📚 Quiz 1 Study Guide</h1>
+            <p style="margin: 0.5rem 0; font-size: 1.1em;">CPSC 440 - Advanced Machine Learning</p>
+            <p style="margin: 0; opacity: 0.9;">Comprehensive review of lectures through 2026-01-12</p>
+        </div>
+
+        <!-- ========================================
+             QUIZ SCOPE & FORMAT
+             ======================================== -->
+        <section>
+            <h2>📋 Quiz Scope & Format</h2>
+
+            <div class="quiz-scope">
+                <h3 style="margin-top: 0;">What's Covered on Quiz 1?</h3>
+
+                <p><strong>Background Topics (general familiarity, not in great detail):</strong></p>
+                <ul>
+                    <li>Hyperparameter tuning (as reviewed in class)</li>
+                    <li>Ensemble methods in general</li>
+                    <li>Linear models in general (no need to memorize normal equations)</li>
+                </ul>
+
+                <p><strong>Main Topics (covered in lectures through 2026-01-12):</strong></p>
+                <ul>
+                    <li>Binary density estimation problem framing and inference tasks</li>
+                    <li>Bernoulli distribution: likelihoods, modes, sampling</li>
+                    <li>Advantage of computing log-probability rather than probability</li>
+                    <li>Maximum Likelihood Estimation (MLE): general idea, Bernoulli result (n₁/n), why it can be a problem</li>
+                    <li>Maximum A Posteriori (MAP): Bayes rule framing, Beta priors, posterior being Beta, mode of Beta</li>
+                    <li>Product of Bernoullis and product distributions</li>
+                    <li>Generative classifiers: solving classification with density estimation</li>
+                    <li>Naive Bayes: motivation, the model, classification, sampling</li>
+                </ul>
+            </div>
+
+            <div class="concept-card">
+                <h3>📝 Quiz Format</h3>
+                <ul>
+                    <li><strong>Time:</strong> 30-50 minutes (Thursday-Saturday, CBTF)</li>
+                    <li><strong>Question types:</strong>
+                        <ul>
+                            <li>Multiple choice</li>
+                            <li>Autograded short answer (numbers or mathematical expressions)</li>
+                            <li>Manually graded short answer (few sentences)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Grading:</strong> Autograded questions allow retries with reduced credit (100% → 50% → 25%)</li>
+                    <li><strong>What to bring:</strong> UBC ID, know your CWL password (no password manager)</li>
+                    <li><strong>Materials provided:</strong> Scratch paper and pencil</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ========================================
+             1. BINARY DENSITY ESTIMATION
+             ======================================== -->
+        <section>
+            <h2>1️⃣ Binary Density Estimation</h2>
+
+            <div class="concept-card">
+                <h3>What is Binary Density Estimation?</h3>
+                <p><strong>Definition:</strong> Given a collection of binary (0 or 1) observations, estimate the probability distribution that generated them.</p>
+
+                <div class="formula-box">
+                    <p><strong>Formal Setup:</strong></p>
+                    <div class="key-formula">Input: x¹, x², ..., xⁿ where xⁱ ∈ {0, 1}</div>
+                    <div class="key-formula">Output: Pr(X = 1) = θ</div>
+                </div>
+
+                <p><strong>Real-world examples:</strong></p>
+                <ul>
+                    <li>Medical testing: What's the probability a random student has COVID?</li>
+                    <li>Clinical trials: What's the probability this treatment works?</li>
+                    <li>Quality control: What's the probability a manufactured part is defective?</li>
+                </ul>
+            </div>
+
+            <div class="analogy-box">
+                <h3>🎯 Mental Model: The Coin Analogy</h3>
+                <p><strong>Think of it like this:</strong> You have a potentially biased coin. You flip it many times and record the results. Binary density estimation is figuring out "How biased is this coin?" based on the flips you observed.</p>
+                <ul>
+                    <li>Each flip is independent</li>
+                    <li>The coin has some true probability θ of landing heads</li>
+                    <li>Your job: estimate θ from the flips you saw</li>
+                </ul>
+            </div>
+
+            <h3>Inference Tasks</h3>
+            <p>Once you have a probability model, you can perform <strong>inference</strong>—answering questions using the model:</p>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Inference Task</th>
+                        <th>Question</th>
+                        <th>How to Compute</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Probability</strong></td>
+                        <td>What's Pr(X = 1)?</td>
+                        <td>Just θ itself</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Likelihood</strong></td>
+                        <td>How likely is this dataset?</td>
+                        <td>p(X | θ) = θⁿ¹(1-θ)ⁿ⁰</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mode</strong></td>
+                        <td>What's the most likely value?</td>
+                        <td>1 if θ > 0.5, else 0</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sampling</strong></td>
+                        <td>Generate new data from model</td>
+                        <td>Draw random numbers, threshold at θ</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Derived events</strong></td>
+                        <td>Pr(at least 1 of 10 is positive)?</td>
+                        <td>1 - (1-θ)¹⁰</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ========================================
+             2. BERNOULLI DISTRIBUTION
+             ======================================== -->
+        <section>
+            <h2>2️⃣ The Bernoulli Distribution</h2>
+
+            <div class="concept-card">
+                <h3>Definition</h3>
+                <p>A random variable X follows a <strong>Bernoulli distribution</strong> with parameter θ, written <code>X ~ Bern(θ)</code>, if:</p>
+
+                <div class="formula-box">
+                    <div class="key-formula">Pr(X = 1 | θ) = θ</div>
+                    <div class="key-formula">Pr(X = 0 | θ) = 1 - θ</div>
+                    <p style="margin-top: 1rem; color: #4ecdc4;">Unified formula:</p>
+                    <div class="key-formula">p(x | θ) = θˣ(1 - θ)¹⁻ˣ</div>
+                </div>
+
+                <p><strong>Key properties:</strong></p>
+                <ul>
+                    <li>θ ∈ [0, 1] (must be a valid probability)</li>
+                    <li>Only one parameter controls the entire distribution</li>
+                    <li>Mean = θ, Variance = θ(1-θ)</li>
+                </ul>
+            </div>
+
+            <div class="analogy-box">
+                <h3>🎯 Remember: The Weighted Coin</h3>
+                <p>A Bernoulli distribution is like a weighted coin:</p>
+                <ul>
+                    <li><strong>θ = 0.5:</strong> Fair coin</li>
+                    <li><strong>θ = 0.8:</strong> Biased coin that lands heads 80% of the time</li>
+                    <li><strong>θ = 0.08:</strong> Heavily biased toward tails (only 8% heads)</li>
+                </ul>
+            </div>
+
+            <h3>Computing Likelihoods</h3>
+            <p>For a dataset of n observations with n₁ ones and n₀ zeros:</p>
+
+            <div class="formula-box">
+                <div class="key-formula">Likelihood: L(θ) = p(X | θ) = θⁿ¹ · (1-θ)ⁿ⁰</div>
+                <p style="margin-top: 1rem; color: #4ecdc4;">where n₁ + n₀ = n</p>
+            </div>
+
+            <div class="tip-box">
+                <h3>💡 Key Insight: Only Counts Matter!</h3>
+                <p>The order of observations doesn't affect the likelihood—only how many 0s and 1s you have. This makes computation super efficient!</p>
+                <p><strong>Example:</strong> [1,0,1,1] and [1,1,1,0] have the same likelihood because both have three 1s and one 0.</p>
+            </div>
+
+            <h3>Mode (Most Likely Value)</h3>
+            <p>The mode of a Bernoulli distribution is the value with highest probability:</p>
+            <ul>
+                <li>If θ > 0.5: mode = 1</li>
+                <li>If θ < 0.5: mode = 0</li>
+                <li>If θ = 0.5: both 0 and 1 are modes (bimodal)</li>
+            </ul>
+
+            <h3>Sampling from Bernoulli</h3>
+            <p><strong>Algorithm:</strong></p>
+            <pre><code class="language-python">import numpy as np
+
+def sample_bernoulli(theta, n_samples=1):
+    """Sample from Bern(theta)"""
+    # Generate uniform random numbers in [0, 1]
+    u = np.random.uniform(0, 1, n_samples)
+    # Return 1 if u < theta, else 0
+    return (u < theta).astype(int)</code></pre>
+        </section>
+
+        <!-- ========================================
+             3. LOG-PROBABILITY
+             ======================================== -->
+        <section>
+            <h2>3️⃣ Why Compute Log-Probabilities?</h2>
+
+            <div class="warning-box">
+                <h3>⚠️ The Underflow Problem</h3>
+                <p><strong>Problem:</strong> Probabilities get TINY for large datasets!</p>
+                <p>Example: If θ = 0.5 and n = 10,000:</p>
+                <ul>
+                    <li>p(X | θ) ≈ 0.5¹⁰⁰⁰⁰ ≈ 10⁻³⁰¹⁰</li>
+                    <li>Computers can only represent down to ~10⁻³⁰⁸</li>
+                    <li><strong>Result:</strong> Numerical underflow → rounds to exactly 0</li>
+                    <li>Once you hit 0, you've lost all information!</li>
+                </ul>
+            </div>
+
+            <div class="concept-card">
+                <h3>The Solution: Log Space</h3>
+                <p>Instead of computing p(X | θ), compute log p(X | θ):</p>
+
+                <div class="formula-box">
+                    <p><strong>Direct computation (BAD):</strong></p>
+                    <div class="key-formula">p(X | θ) = θⁿ¹ · (1-θ)ⁿ⁰</div>
+
+                    <p style="margin-top: 1.5rem;"><strong>Log-space computation (GOOD):</strong></p>
+                    <div class="key-formula">log p(X | θ) = n₁ log(θ) + n₀ log(1-θ)</div>
+                </div>
+
+                <p><strong>Why this works:</strong></p>
+                <ul>
+                    <li><strong>log(ab) = log(a) + log(b)</strong> → Products become sums</li>
+                    <li><strong>log(aᵇ) = b·log(a)</strong> → Exponents become multipliers</li>
+                    <li>log(0.5¹⁰⁰⁰⁰) = 10000 · log(0.5) ≈ -6931 (totally fine!)</li>
+                </ul>
+            </div>
+
+            <div class="tip-box">
+                <h3>💡 Advantages of Log Space</h3>
+                <ol>
+                    <li><strong>Numerical stability:</strong> No underflow issues</li>
+                    <li><strong>Computational efficiency:</strong> Addition is faster than multiplication</li>
+                    <li><strong>Better accuracy:</strong> Floating-point arithmetic is more precise for addition</li>
+                    <li><strong>Optimization:</strong> Gradients are easier to compute</li>
+                </ol>
+            </div>
+
+            <h3>Implementation Best Practices</h3>
+            <pre><code class="language-python">import numpy as np
+
+def compute_log_likelihood(X, theta):
+    """Compute log p(X | theta) for Bernoulli data."""
+    n_1 = X.sum()              # Count the 1's
+    n_0 = X.shape[0] - n_1     # Count the 0's
+
+    # ALWAYS use log1p for numerical stability!
+    log_p = n_1 * np.log(theta) + n_0 * np.log1p(-theta)
+
+    return log_p</code></pre>
+
+            <div class="concept-card">
+                <h3>Why np.log1p(-theta)?</h3>
+                <p><code>np.log1p(x)</code> computes log(1 + x) with better precision when x is small.</p>
+                <ul>
+                    <li>If θ = 0.9999, then 1-θ = 0.0001</li>
+                    <li>Computing 1 - 0.9999 in floating-point can lose precision</li>
+                    <li><code>np.log1p(-0.9999)</code> uses a specialized algorithm that's accurate</li>
+                    <li><strong>Always use it</strong> when computing log(1 - something)!</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ========================================
+             4. MAXIMUM LIKELIHOOD ESTIMATION (MLE)
+             ======================================== -->
+        <section>
+            <h2>4️⃣ Maximum Likelihood Estimation (MLE)</h2>
+
+            <div class="concept-card">
+                <h3>The MLE Principle</h3>
+                <p><strong>Core idea:</strong> Choose the parameter θ that makes the observed data most likely.</p>
+
+                <div class="formula-box">
+                    <div class="key-formula">θ̂<sub>MLE</sub> ∈ arg max<sub>θ</sub> p(X | θ)</div>
+                    <p style="margin-top: 1rem; color: #4ecdc4;">In words: Find the θ where the data would have been most probable</p>
+                </div>
+            </div>
+
+            <div class="analogy-box">
+                <h3>🎯 Intuition: Matching the Data</h3>
+                <p><strong>Think about it this way:</strong> If you flip a coin 100 times and get 40 heads, your best guess is that the coin has a 40% chance of heads.</p>
+                <p>MLE formalizes this intuition: <em>"The parameter should be whatever makes the data we actually observed most likely."</em></p>
+            </div>
+
+            <h3>MLE for Bernoulli Distribution</h3>
+            <p>For Bernoulli data, the MLE has a beautifully simple form:</p>
+
+            <div class="formula-box">
+                <div class="key-formula">θ̂<sub>MLE</sub> = n₁ / n</div>
+                <p style="margin-top: 1rem; color: #4ecdc4;">Just the fraction of 1s in the dataset!</p>
+            </div>
+
+            <p><strong>Example:</strong> X = [1, 0, 1, 1, 0] → n₁ = 3, n = 5 → θ̂ = 3/5 = 0.6</p>
+
+            <div class="tip-box">
+                <h3>💡 Derivation (For Understanding)</h3>
+                <p><strong>Step 1:</strong> Maximize log-likelihood (easier than plain likelihood)</p>
+                <p style="font-family: monospace;">log L(θ) = n₁ log(θ) + n₀ log(1-θ)</p>
+
+                <p><strong>Step 2:</strong> Take derivative and set to zero</p>
+                <p style="font-family: monospace;">d/dθ log L(θ) = n₁/θ - n₀/(1-θ) = 0</p>
+
+                <p><strong>Step 3:</strong> Solve for θ</p>
+                <p style="font-family: monospace;">n₁(1-θ) = n₀θ → n₁ = nθ → θ = n₁/n</p>
+
+                <p><strong>Step 4:</strong> Verify it's a maximum (second derivative < 0 ✓)</p>
+            </div>
+
+            <h3>Problems with MLE</h3>
+
+            <div class="warning-box">
+                <h3>⚠️ Problem 1: Extreme Overfitting</h3>
+                <p><strong>Scenario:</strong> X = [1, 1, 1] (all 1s)</p>
+                <ul>
+                    <li>MLE: θ̂ = 3/3 = 1.0</li>
+                    <li>Model says: "Probability of 1 is 100%"</li>
+                    <li><strong>Disaster:</strong> If test data has a 0, p(0 | θ̂=1) = 0</li>
+                    <li>Zero likelihood → infinite negative log-likelihood</li>
+                    <li>Model comparison breaks, gradients explode</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <h3>⚠️ Problem 2: Sensitivity to Small Datasets</h3>
+                <p><strong>Scenario:</strong> X = [1, 0, 1] → θ̂ = 2/3 ≈ 0.67</p>
+                <ul>
+                    <li>See one more 1: θ̂ = 3/4 = 0.75 (jumped +0.08)</li>
+                    <li>See one more 0: θ̂ = 2/4 = 0.50 (dropped -0.17)</li>
+                    <li>Single data point causes huge swings!</li>
+                </ul>
+            </div>
+
+            <div class="analogy-box">
+                <h3>🎯 Real-World Analogy</h3>
+                <p><strong>Drug trial with 3 people:</strong> If all 3 patients recover, does the drug have a 100% success rate?</p>
+                <p>Of course not! The sample size is too small to conclude certainty. MLE doesn't account for this—it just memorizes the data.</p>
+            </div>
+
+            <h3>When MLE Works Well</h3>
+            <ul>
+                <li><strong>Large datasets (n → ∞):</strong> MLE is asymptotically optimal</li>
+                <li><strong>Simple models:</strong> Less risk of overfitting</li>
+                <li><strong>When you don't have prior knowledge:</strong> No better alternative</li>
+            </ul>
+        </section>
+
+        <!-- ========================================
+             5. BAYES RULE & PROBABILITY REVIEW
+             ======================================== -->
+        <section>
+            <h2>5️⃣ Bayes Rule & Essential Probability</h2>
+
+            <div class="concept-card">
+                <h3>Fundamental Rules (Know These Cold!)</h3>
+
+                <h4>Product Rule</h4>
+                <div class="formula-box">
+                    <div class="key-formula">Pr(A ∩ B) = Pr(A | B) · Pr(B)</div>
+                </div>
+
+                <h4>Bayes Rule</h4>
+                <div class="formula-box">
+                    <div class="key-formula">Pr(A | B) = [Pr(B | A) · Pr(A)] / Pr(B)</div>
+                    <p style="margin-top: 1rem; color: #4ecdc4;">Flips the conditioning!</p>
+                </div>
+
+                <h4>Marginalization</h4>
+                <div class="formula-box">
+                    <div class="key-formula">Pr(A) = Σ<sub>x</sub> Pr(A ∩ (X=x))</div>
+                    <div class="key-formula">Pr(A) = Σ<sub>x</sub> Pr(A | X=x) · Pr(X=x)</div>
+                </div>
+            </div>
+
+            <div class="analogy-box">
+                <h3>🎯 Bayes Rule Intuition</h3>
+                <p><strong>The Setup:</strong> You know Pr(symptoms | disease) but want Pr(disease | symptoms)</p>
+                <ul>
+                    <li><strong>Pr(fever | flu):</strong> Easy to estimate from medical studies</li>
+                    <li><strong>Pr(flu | fever):</strong> What you actually want to know!</li>
+                    <li>Bayes rule lets you flip from one to the other</li>
+                </ul>
+                <p>Key insight: You also need Pr(flu) and Pr(fever) to make the flip work!</p>
+            </div>
+
+            <h3>Proportional-To Notation (∝)</h3>
+
+            <div class="concept-card">
+                <p><strong>Definition:</strong> f(θ) ∝ g(θ) means "f(θ) = κ · g(θ) for some constant κ > 0"</p>
+
+                <p><strong>Examples:</strong></p>
+                <ul>
+                    <li>10θ² ∝ θ²</li>
+                    <li>θ³(1-θ)² ∝ θ³(1-θ)²</li>
+                </ul>
+
+                <p><strong>Why it matters:</strong> When maximizing, constants don't affect the arg max!</p>
+
+                <div class="formula-box">
+                    <p>arg max<sub>θ</sub> f(θ) = arg max<sub>θ</sub> [κ · f(θ)]</p>
+                    <p style="margin-top: 0.5rem; color: #4ecdc4;">The constant κ scales everything equally, so the maximum stays in the same place</p>
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <h3>💡 For Probability Distributions, κ is Unique!</h3>
+                <p>If p(θ) is a probability distribution and p(θ) ∝ g(θ), then:</p>
+                <p style="font-family: monospace; margin: 1rem 0;">κ = 1 / (Σ<sub>θ</sub> g(θ))</p>
+                <p>This is the <strong>normalization constant</strong> that makes probabilities sum to 1.</p>
+            </div>
+        </section>
+
+        <!-- ========================================
+             6. MAXIMUM A POSTERIORI (MAP)
+             ======================================== -->
+        <section>
+            <h2>6️⃣ Maximum A Posteriori (MAP) Estimation</h2>
+
+            <div class="concept-card">
+                <h3>The Philosophical Shift</h3>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Approach</th>
+                            <th>Question</th>
+                            <th>Formula</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>MLE</strong></td>
+                            <td>Which θ makes the data most likely?</td>
+                            <td>arg max<sub>θ</sub> p(X | θ)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>MAP</strong></td>
+                            <td>Which θ is most probable given the data?</td>
+                            <td>arg max<sub>θ</sub> p(θ | X)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="analogy-box">
+                <h3>🎯 MLE vs MAP Analogy</h3>
+                <p><strong>MLE:</strong> "The coin must be biased exactly to match my data"</p>
+                <p><strong>MAP:</strong> "Most coins are fair, so even if I saw 3 heads out of 3 flips, the coin is probably close to fair, not definitely biased"</p>
+                <p>MAP incorporates <em>prior beliefs</em> about what θ values are reasonable!</p>
+            </div>
+
+            <h3>Deriving MAP with Bayes Rule</h3>
+
+            <div class="formula-box">
+                <p><strong>Start with Bayes rule:</strong></p>
+                <div class="key-formula">p(θ | X) = [p(X | θ) · p(θ)] / p(X)</div>
+
+                <p style="margin-top: 1rem;"><strong>For arg max, drop p(X) (doesn't depend on θ):</strong></p>
+                <div class="key-formula">p(θ | X) ∝ p(X | θ) · p(θ)</div>
+
+                <p style="margin-top: 1rem; color: #4ecdc4;"><strong>Posterior ∝ Likelihood × Prior</strong></p>
+            </div>
+
+            <div class="concept-card">
+                <h3>Key Terminology</h3>
+                <ul>
+                    <li><strong>Prior p(θ):</strong> What we believe about θ <em>before</em> seeing data</li>
+                    <li><strong>Likelihood p(X | θ):</strong> How probable the data is for given θ</li>
+                    <li><strong>Posterior p(θ | X):</strong> What we believe about θ <em>after</em> seeing data</li>
+                </ul>
+
+                <p><strong>MAP estimate:</strong></p>
+                <div class="formula-box">
+                    <div class="key-formula">θ̂<sub>MAP</sub> ∈ arg max<sub>θ</sub> [p(X | θ) · p(θ)]</div>
+                </div>
+            </div>
+
+            <h3>Example: Discrete Prior</h3>
+            <p>Let's say X = [1, 1, 0] and we use a discrete prior favoring fair coins:</p>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>θ</th>
+                        <th>Prior p(θ)</th>
+                        <th>Likelihood p(X|θ)</th>
+                        <th>Posterior ∝</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0.25</td>
+                        <td>0.2</td>
+                        <td>0.25² · 0.75 ≈ 0.047</td>
+                        <td>0.009</td>
+                    </tr>
+                    <tr style="background: #51cf6644;">
+                        <td><strong>0.5</strong></td>
+                        <td><strong>0.5</strong></td>
+                        <td>0.5² · 0.5 = 0.125</td>
+                        <td><strong>0.063</strong> ← MAX!</td>
+                    </tr>
+                    <tr>
+                        <td>0.75</td>
+                        <td>0.2</td>
+                        <td>0.75² · 0.25 ≈ 0.14</td>
+                        <td>0.028</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Result:</strong> θ̂<sub>MAP</sub> = 0.5 (vs MLE of 2/3 ≈ 0.67)</p>
+            <p>The strong prior pulled the estimate toward 0.5!</p>
+        </section>
+
+        <!-- ========================================
+             7. BETA DISTRIBUTION
+             ======================================== -->
+        <section>
+            <h2>7️⃣ The Beta Distribution: Perfect Prior for Bernoulli</h2>
+
+            <div class="concept-card">
+                <h3>Definition</h3>
+                <p>The Beta distribution is a continuous probability distribution over θ ∈ [0, 1]:</p>
+
+                <div class="formula-box">
+                    <div class="key-formula">p(θ | α, β) ∝ θ<sup>α-1</sup> (1-θ)<sup>β-1</sup></div>
+                    <p style="margin-top: 1rem; color: #4ecdc4;">where α > 0, β > 0</p>
+
+                    <p style="margin-top: 1.5rem;"><strong>Full formula with normalization:</strong></p>
+                    <div class="key-formula">p(θ | α, β) = θ<sup>α-1</sup> (1-θ)<sup>β-1</sup> / B(α, β)</div>
+                </div>
+
+                <p><strong>Key properties:</strong></p>
+                <ul>
+                    <li>Defined only for θ ∈ [0, 1]</li>
+                    <li>Controlled by two parameters: α and β (shape parameters)</li>
+                    <li>Looks like a Bernoulli likelihood with (α-1) ones and (β-1) zeros</li>
+                    <li>Can take many different shapes depending on α, β</li>
+                </ul>
+            </div>
+
+            <div class="analogy-box">
+                <h3>🎯 Intuition: Imaginary Prior Data</h3>
+                <p><strong>Think of Beta(α, β) as:</strong></p>
+                <p>"I believe θ looks like I've already seen (α-1) ones and (β-1) zeros"</p>
+                <ul>
+                    <li>Beta(1, 1): No prior information (uniform)</li>
+                    <li>Beta(2, 2): Like seeing 1 one and 1 zero before (mild bias to 0.5)</li>
+                    <li>Beta(10, 10): Like seeing 9 ones and 9 zeros (strong bias to 0.5)</li>
+                    <li>Beta(8, 3): Like seeing 7 ones and 2 zeros (bias toward high θ)</li>
+                </ul>
+            </div>
+
+            <h3>Different Shapes of Beta Distributions</h3>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Parameters</th>
+                        <th>Shape</th>
+                        <th>What it means</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>α = β = 1</td>
+                        <td>Flat (uniform)</td>
+                        <td>All θ equally likely</td>
+                    </tr>
+                    <tr>
+                        <td>α = β = 2</td>
+                        <td>Gentle hill at 0.5</td>
+                        <td>Mild preference for fair values</td>
+                    </tr>
+                    <tr>
+                        <td>α = β > 2</td>
+                        <td>Peaked at 0.5</td>
+                        <td>Strong belief in fairness</td>
+                    </tr>
+                    <tr>
+                        <td>α = β < 1</td>
+                        <td>U-shaped</td>
+                        <td>Prefers extremes (near 0 or 1)</td>
+                    </tr>
+                    <tr>
+                        <td>α > β</td>
+                        <td>Skewed right</td>
+                        <td>Believes θ is probably high</td>
+                    </tr>
+                    <tr>
+                        <td>α < β</td>
+                        <td>Skewed left</td>
+                        <td>Believes θ is probably low</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="diagram-container">
+                <h3>Interactive: Beta Distribution Shapes</h3>
+                <canvas id="betaCanvas" width="800" height="400"></canvas>
+                <div class="controls">
+                    <div>
+                        <span class="label">α:</span>
+                        <input type="range" id="alphaSlider" min="0.5" max="10" step="0.5" value="2">
+                        <span id="alphaValue">2.0</span>
+                    </div>
+                    <div>
+                        <span class="label">β:</span>
+                        <input type="range" id="betaSlider" min="0.5" max="10" step="0.5" value="2">
+                        <span id="betaValue">2.0</span>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <button onclick="setParams(1, 1)">Uniform (1,1)</button>
+                        <button onclick="setParams(2, 2)">Laplace (2,2)</button>
+                        <button onclick="setParams(5, 5)">Strong Fair (5,5)</button>
+                        <button onclick="setParams(0.5, 0.5)">U-Shape (0.5,0.5)</button>
+                        <button onclick="setParams(8, 2)">Biased High (8,2)</button>
+                        <button onclick="setParams(2, 8)">Biased Low (2,8)</button>
+                    </div>
+                </div>
+            </div>
+
+            <h3>The Magic: Conjugacy</h3>
+
+            <div class="concept-card">
+                <p><strong>Conjugate Prior:</strong> When the prior and posterior are in the same family of distributions</p>
+
+                <div class="formula-box">
+                    <p><strong>Prior:</strong> θ ~ Beta(α, β)</p>
+                    <p><strong>Likelihood:</strong> X | θ ~ Bern(θ) with n₁ ones, n₀ zeros</p>
+                    <p style="margin-top: 1rem; color: #4ecdc4;"><strong>Posterior:</strong></p>
+                    <div class="key-formula">θ | X ~ Beta(α + n₁, β + n₀)</div>
+                </div>
+
+                <p><strong>Why it works:</strong></p>
+                <pre style="background: #1a1a2e; padding: 1rem; border-radius: 4px; overflow-x: auto;"><code>p(θ | X) ∝ p(X | θ) · p(θ)
+         ∝ [θⁿ¹(1-θ)ⁿ⁰] · [θ^(α-1)(1-θ)^(β-1)]
+         = θ^(n₁+α-1) · (1-θ)^(n₀+β-1)
+         = θ^((n₁+α)-1) · (1-θ)^((n₀+β)-1)
+
+This is Beta(n₁+α, n₀+β) !!</code></pre>
+            </div>
+
+            <div class="tip-box">
+                <h3>💡 Pseudocount Interpretation</h3>
+                <p>The posterior parameters are just:</p>
+                <ul>
+                    <li><strong>New α = α + n₁:</strong> Prior "ones" + observed ones</li>
+                    <li><strong>New β = β + n₀:</strong> Prior "zeros" + observed zeros</li>
+                </ul>
+                <p>The prior acts like "imaginary data" that you add to your real data!</p>
+            </div>
+
+            <h3>MAP Estimate with Beta Prior</h3>
+
+            <div class="formula-box">
+                <div class="key-formula">θ̂<sub>MAP</sub> = (n₁ + α - 1) / (n + α + β - 2)</div>
+                <p style="margin-top: 0.5rem; color: #4ecdc4;">where n = n₁ + n₀</p>
+            </div>
+
+            <p><strong>Special cases:</strong></p>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Prior (α, β)</th>
+                        <th>MAP Formula</th>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>α = 1, β = 1</td>
+                        <td>n₁ / n</td>
+                        <td><strong>MLE</strong></td>
+                    </tr>
+                    <tr>
+                        <td>α = 2, β = 2</td>
+                        <td>(n₁ + 1) / (n + 2)</td>
+                        <td><strong>Laplace smoothing</strong></td>
+                    </tr>
+                    <tr>
+                        <td>α = β > 2</td>
+                        <td>Closer to 0.5</td>
+                        <td>Stronger regularization</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <h3>⚠️ Mode of Beta Distribution</h3>
+                <p><strong>You do NOT need to memorize special cases for the mode!</strong></p>
+                <p>The quiz says: "You do not need to memorize the special cases for the mode of a Beta distribution"</p>
+                <p>If needed, the formula will be provided.</p>
+            </div>
+        </section>
+
+        <!-- ========================================
+             8. PRODUCT DISTRIBUTIONS
+             ======================================== -->
+        <section>
+            <h2>8️⃣ Product of Bernoullis & Product Distributions</h2>
+
+            <div class="concept-card">
+                <h3>Multivariate Binary Data</h3>
+                <p><strong>Setup:</strong> Instead of one binary variable, we have d binary variables</p>
+                <ul>
+                    <li>Example: Image with d pixels, each pixel is on (1) or off (0)</li>
+                    <li>Example: Survey with d yes/no questions</li>
+                    <li>Data: x = (x₁, x₂, ..., x_d) where each x_j ∈ {0, 1}</li>
+                </ul>
+            </div>
+
+            <h3>The Independence Assumption</h3>
+
+            <div class="formula-box">
+                <p><strong>Product of Bernoullis:</strong></p>
+                <div class="key-formula">p(x₁, ..., x_d | θ₁, ..., θ_d) = ∏<sub>j=1</sub><sup>d</sup> p(x_j | θ_j)</div>
+                <div class="key-formula">= ∏<sub>j=1</sub><sup>d</sup> θ_j^(x_j) (1-θ_j)^(1-x_j)</div>
+            </div>
+
+            <p><strong>What this means:</strong> All dimensions are independent of each other</p>
+            <ul>
+                <li>Each dimension j has its own parameter θ_j</li>
+                <li>Knowing x₁ doesn't tell you anything about x₂</li>
+                <li>Total of d parameters to estimate</li>
+            </ul>
+
+            <div class="analogy-box">
+                <h3>🎯 Analogy: Independent Coin Flips</h3>
+                <p>Imagine you have d different coins, each with its own bias θ_j. You flip all d coins independently.</p>
+                <p>The product of Bernoullis assumes each feature is like a separate coin flip—completely independent of the others.</p>
+            </div>
+
+            <h3>MLE for Product of Bernoullis</h3>
+
+            <div class="formula-box">
+                <div class="key-formula">θ̂_j = n_{j1} / n</div>
+                <p style="margin-top: 0.5rem; color: #4ecdc4;">where n_{j1} = number of times dimension j equals 1</p>
+            </div>
+
+            <p><strong>Training complexity:</strong> O(nd) time (scan all n data points, d dimensions)</p>
+            <p>If data is sparse: O(nnz) where nnz = number of non-zeros</p>
+
+            <h3>Problems with This Model</h3>
+
+            <div class="warning-box">
+                <h3>⚠️ Terrible Assumption!</h3>
+                <p><strong>Real-world data is almost never independent!</strong></p>
+                <ul>
+                    <li><strong>Images:</strong> Neighboring pixels are highly correlated</li>
+                    <li><strong>Text:</strong> Words appearing together aren't independent</li>
+                    <li><strong>Medical:</strong> Symptoms often occur together</li>
+                </ul>
+
+                <p><strong>MNIST example:</strong> If you sample from a product-of-Bernoullis model trained on digit images, you get <em>random noise</em>, not digits!</p>
+                <p>Why? The model doesn't capture that "if pixel (10,10) is on, pixel (10,11) is probably also on"</p>
+            </div>
+
+            <div class="tip-box">
+                <h3>💡 When Product Models Are Still Useful</h3>
+                <p>Despite the terrible independence assumption, product models can work for:</p>
+                <ul>
+                    <li><strong>Fast baseline:</strong> Train in O(nd), very quick</li>
+                    <li><strong>High-dimensional data:</strong> More complex models might overfit</li>
+                    <li><strong>As a component:</strong> Used inside more sophisticated models (like Naive Bayes!)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ========================================
+             9. GENERATIVE CLASSIFIERS
+             ======================================== -->
+        <section>
+            <h2>9️⃣ Generative Classifiers</h2>
+
+            <div class="concept-card">
+                <h3>The Big Idea</h3>
+                <p><strong>Standard classification:</strong> Learn p(y | x) directly (discriminative)</p>
+                <p><strong>Generative classification:</strong> Learn p(x, y) jointly, then derive p(y | x)</p>
+
+                <div class="formula-box">
+                    <p><strong>Classification rule:</strong></p>
+                    <div class="key-formula">ŷ = arg max<sub>y</sub> p(y | x)</div>
+
+                    <p style="margin-top: 1rem;"><strong>Using Bayes rule:</strong></p>
+                    <div class="key-formula">p(y | x) = p(x, y) / p(x) ∝ p(x, y)</div>
+
+                    <p style="margin-top: 1rem; color: #4ecdc4;"><strong>Therefore:</strong></p>
+                    <div class="key-formula">ŷ = arg max<sub>y</sub> p(x, y)</div>
+                </div>
+            </div>
+
+            <div class="analogy-box">
+                <h3>🎯 Intuition: Modeling the Whole World</h3>
+                <p><strong>Discriminative models:</strong> "Given features, what's the label?"</p>
+                <ul>
+                    <li>Direct approach</li>
+                    <li>Only learns the decision boundary</li>
+                    <li>Examples: logistic regression, SVM</li>
+                </ul>
+
+                <p><strong>Generative models:</strong> "What does the whole world (features + labels) look like?"</p>
+                <ul>
+                    <li>Indirect approach</li>
+                    <li>Models the full data distribution</li>
+                    <li>Can generate new samples!</li>
+                    <li>Examples: Naive Bayes, Gaussian Discriminant Analysis</li>
+                </ul>
+            </div>
+
+            <h3>Why Use Generative Classifiers?</h3>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Advantage</th>
+                        <th>Why it matters</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Can incorporate costs</strong></td>
+                        <td>Different types of mistakes have different costs (spam filtering!)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Can generate data</strong></td>
+                        <td>Sample new x from p(x | y) to see what each class looks like</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Uncertainty quantification</strong></td>
+                        <td>Get full probabilities p(y | x), not just classifications</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Missing features</strong></td>
+                        <td>Can still classify if some x_j are missing (marginalize them out)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Prior knowledge</strong></td>
+                        <td>Can incorporate beliefs about what data should look like</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Cost-Sensitive Classification</h3>
+
+            <div class="concept-card">
+                <p><strong>Setup:</strong> Different mistakes have different costs</p>
+
+                <p><strong>Example: Email spam filtering</strong></p>
+                <ul>
+                    <li>False positive (good email marked spam): Very bad! User misses important email</li>
+                    <li>False negative (spam gets through): Annoying, but not terrible</li>
+                </ul>
+
+                <p><strong>Cost matrix:</strong></p>
+                <table class="comparison-table">
+                    <tr>
+                        <th></th>
+                        <th>True: Not Spam</th>
+                        <th>True: Spam</th>
+                    </tr>
+                    <tr>
+                        <td><strong>Predict: Not Spam</strong></td>
+                        <td>0 (correct)</td>
+                        <td>1 (missed spam)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Predict: Spam</strong></td>
+                        <td>50 (!!)</td>
+                        <td>0 (correct)</td>
+                    </tr>
+                </table>
+
+                <p><strong>Decision rule with costs:</strong></p>
+                <div class="formula-box">
+                    <p>Predict spam (y=1) if:</p>
+                    <div class="key-formula">p(y=1 | x) ≥ C<sub>FP</sub> / (C<sub>FP</sub> + C<sub>FN</sub>)</div>
+                    <p style="margin-top: 0.5rem; color: #4ecdc4;">With costs 50 and 1: threshold = 50/51 ≈ 0.98</p>
+                </div>
+
+                <p>Only classify as spam if you're 98% sure!</p>
+            </div>
+        </section>
+
+        <!-- ========================================
+             10. NAIVE BAYES
+             ======================================== -->
+        <section>
+            <h2>🔟 Naive Bayes Classifier</h2>
+
+            <div class="concept-card">
+                <h3>The Key Assumption</h3>
+                <p><strong>Conditional Independence:</strong> Features are independent <em>given the class label</em></p>
+
+                <div class="formula-box">
+                    <div class="key-formula">p(x₁, ..., x_d | y) = ∏<sub>j=1</sub><sup>d</sup> p(x_j | y)</div>
+                </div>
+
+                <p>This is much weaker than assuming all features are independent!</p>
+            </div>
+
+            <div class="analogy-box">
+                <h3>🎯 Conditional Independence Intuition</h3>
+                <p><strong>Product of Bernoullis:</strong> "Flip d independent coins"</p>
+                <ul>
+                    <li>X₁, X₂, ..., X_d, Y all mutually independent</li>
+                    <li>Knowing anything about X₁ tells you nothing about X₂</li>
+                </ul>
+
+                <p><strong>Naive Bayes:</strong> "Pick a class, then flip d coins specific to that class"</p>
+                <ul>
+                    <li>X₁, X₂, ..., X_d are independent <em>given Y</em></li>
+                    <li>Knowing Y affects all the X's</li>
+                    <li>But once you know Y, the X's don't tell you about each other</li>
+                </ul>
+
+                <p><strong>Example:</strong> Medical symptoms</p>
+                <ul>
+                    <li>Fever and cough aren't independent in general</li>
+                    <li>But <em>given</em> you have the flu, fever and cough might be independent</li>
+                    <li>The disease (Y) causes both symptoms, but they don't cause each other</li>
+                </ul>
+            </div>
+
+            <h3>The Full Naive Bayes Model</h3>
+
+            <div class="formula-box">
+                <p><strong>Joint distribution:</strong></p>
+                <div class="key-formula">p(x₁, ..., x_d, y) = p(y) · ∏<sub>j=1</sub><sup>d</sup> p(x_j | y)</div>
+
+                <p style="margin-top: 1rem;"><strong>For binary features and binary labels:</strong></p>
+                <div class="key-formula">p(x_j | y) = θ_{j|y}^(x_j) (1 - θ_{j|y})^(1-x_j)</div>
+            </div>
+
+            <p><strong>Parameters:</strong></p>
+            <ul>
+                <li><strong>θ_y = p(y):</strong> Probability of class y (2 values: θ₀, θ₁)</li>
+                <li><strong>θ_{j|y}:</strong> Probability that feature j = 1 given class y (2d values)</li>
+                <li><strong>Total:</strong> 2 + 2d parameters</li>
+            </ul>
+
+            <h3>MLE for Naive Bayes</h3>
+
+            <div class="formula-box">
+                <p><strong>Class prior:</strong></p>
+                <div class="key-formula">θ̂_y = n_y / n</div>
+                <p style="color: #4ecdc4;">(fraction of training examples with label y)</p>
+
+                <p style="margin-top: 1rem;"><strong>Feature probabilities:</strong></p>
+                <div class="key-formula">θ̂_{j|y} = n_{x_j=1,y} / n_y</div>
+                <p style="color: #4ecdc4;">(among examples with label y, fraction where feature j = 1)</p>
+            </div>
+
+            <p><strong>Training algorithm:</strong></p>
+            <pre><code class="language-python">def train_naive_bayes(X, y):
+    """
+    X: (n, d) binary feature matrix
+    y: (n,) binary labels
+    """
+    n, d = X.shape
+
+    # Estimate class probabilities
+    theta_0 = (y == 0).sum() / n
+    theta_1 = (y == 1).sum() / n
+
+    # Estimate feature probabilities for each class
+    theta_j_given_0 = X[y == 0].sum(axis=0) / (y == 0).sum()
+    theta_j_given_1 = X[y == 1].sum(axis=0) / (y == 1).sum()
+
+    return theta_0, theta_1, theta_j_given_0, theta_j_given_1</code></pre>
+
+            <p><strong>Complexity:</strong> O(nd) time, same as product of Bernoullis!</p>
+
+            <h3>Classification with Naive Bayes</h3>
+
+            <div class="formula-box">
+                <p><strong>Prediction:</strong></p>
+                <div class="key-formula">ŷ = arg max<sub>y</sub> p(y | x) = arg max<sub>y</sub> p(x, y)</div>
+
+                <p style="margin-top: 1rem;"><strong>Computing p(x, y):</strong></p>
+                <div class="key-formula">p(x, y) = p(y) · ∏<sub>j=1</sub><sup>d</sup> p(x_j | y)</div>
+
+                <p style="margin-top: 1rem; color: #4ecdc4;"><strong>In log space (better!):</strong></p>
+                <div class="key-formula">log p(x, y) = log p(y) + Σ<sub>j=1</sub><sup>d</sup> log p(x_j | y)</div>
+            </div>
+
+            <pre><code class="language-python">def predict_naive_bayes(x, params):
+    """Classify a single example x"""
+    theta_0, theta_1, theta_j_0, theta_j_1 = params
+
+    # Compute log p(x, y=0)
+    log_p_0 = np.log(theta_0)
+    for j in range(len(x)):
+        if x[j] == 1:
+            log_p_0 += np.log(theta_j_0[j])
+        else:
+            log_p_0 += np.log1p(-theta_j_0[j])
+
+    # Compute log p(x, y=1)
+    log_p_1 = np.log(theta_1)
+    for j in range(len(x)):
+        if x[j] == 1:
+            log_p_1 += np.log(theta_j_1[j])
+        else:
+            log_p_1 += np.log1p(-theta_j_1[j])
+
+    # Return class with higher log-probability
+    return 1 if log_p_1 > log_p_0 else 0</code></pre>
+
+            <h3>Sampling from Naive Bayes</h3>
+
+            <div class="concept-card">
+                <p><strong>Algorithm to generate new samples:</strong></p>
+                <ol>
+                    <li>Sample class label: y ~ Bern(θ_y)</li>
+                    <li>For each feature j = 1 to d:
+                        <ul>
+                            <li>Sample x_j ~ Bern(θ_{j|y})</li>
+                        </ul>
+                    </li>
+                    <li>Return (x₁, ..., x_d, y)</li>
+                </ol>
+            </div>
+
+            <pre><code class="language-python">def sample_naive_bayes(params, n_samples=1):
+    """Generate samples from Naive Bayes model"""
+    theta_0, theta_1, theta_j_0, theta_j_1 = params
+    d = len(theta_j_0)
+
+    samples = []
+    for _ in range(n_samples):
+        # Sample class label
+        y = 1 if np.random.rand() < theta_1 else 0
+
+        # Sample features given class
+        x = np.zeros(d)
+        theta_j = theta_j_1 if y == 1 else theta_j_0
+        for j in range(d):
+            x[j] = 1 if np.random.rand() < theta_j[j] else 0
+
+        samples.append((x, y))
+
+    return samples</code></pre>
+
+            <div class="tip-box">
+                <h3>💡 Why Naive Bayes Works</h3>
+                <p><strong>The "naive" assumption is wrong, but the classifier still works!</strong></p>
+                <ul>
+                    <li>Features are rarely truly independent given the class</li>
+                    <li>But Naive Bayes doesn't need perfect density estimation</li>
+                    <li>It just needs to get the <em>relative</em> probabilities right</li>
+                    <li>Even with wrong p(x | y), often gets arg max correct!</li>
+                </ul>
+
+                <p><strong>MNIST example:</strong></p>
+                <ul>
+                    <li>Product of Bernoullis: samples look like noise</li>
+                    <li>Naive Bayes (1 vs 2): samples actually look like digits!</li>
+                    <li>The class label Y captures the main dependencies</li>
+                </ul>
+            </div>
+
+            <h3>Naive Bayes vs Product of Bernoullis</h3>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>Product of Bernoullis</th>
+                        <th>Naive Bayes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Assumption</strong></td>
+                        <td>All X₁,...,X_d,Y independent</td>
+                        <td>X₁,...,X_d independent given Y</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Parameters</strong></td>
+                        <td>d parameters (θ₁,...,θ_d)</td>
+                        <td>2 + 2d parameters</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Training</strong></td>
+                        <td>O(nd)</td>
+                        <td>O(nd)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Quality</strong></td>
+                        <td>Terrible for correlated data</td>
+                        <td>Much better! Y captures dependencies</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Use case</strong></td>
+                        <td>Baseline, truly independent features</td>
+                        <td>Text classification, spam filtering</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ========================================
+             11. HYPERPARAMETER TUNING (BACKGROUND)
+             ======================================== -->
+        <section>
+            <h2>1️⃣1️⃣ Hyperparameter Tuning (Background Review)</h2>
+
+            <div class="concept-card">
+                <h3>What Are Hyperparameters?</h3>
+                <p><strong>Parameters:</strong> Learned from training data (θ in our Bernoulli models)</p>
+                <p><strong>Hyperparameters:</strong> Control the learning process but aren't directly learned</p>
+
+                <p><strong>Examples:</strong></p>
+                <ul>
+                    <li>Prior parameters: α and β in Beta distribution</li>
+                    <li>Model complexity: degree of polynomial, depth of tree</li>
+                    <li>Regularization: λ in ridge regression</li>
+                    <li>Architecture: number of layers in neural network</li>
+                    <li>Training: learning rate, batch size, number of epochs</li>
+                </ul>
+            </div>
+
+            <div class="analogy-box">
+                <h3>🎯 Analogy: Teaching a Student</h3>
+                <p><strong>Parameters:</strong> What the student learns (facts, skills)</p>
+                <p><strong>Hyperparameters:</strong> How you teach them (study time, teaching method, amount of practice)</p>
+                <p>You don't learn the teaching method from the material—you choose it based on what works best for the student!</p>
+            </div>
+
+            <h3>Why Not Just Learn Hyperparameters?</h3>
+
+            <div class="warning-box">
+                <h3>⚠️ Overfitting to Training Data</h3>
+                <p>If we optimize hyperparameters on training data, we'll overfit!</p>
+
+                <p><strong>Example with Beta priors:</strong></p>
+                <ul>
+                    <li>MAP with Beta(α, β): θ̂ = (n₁+α-1)/(n+α+β-2)</li>
+                    <li>Maximize training likelihood over α, β</li>
+                    <li>Optimal choice: α → 1, β → 1</li>
+                    <li>This just gives MLE! No regularization benefit</li>
+                </ul>
+            </div>
+
+            <h3>Cross-Validation</h3>
+
+            <div class="concept-card">
+                <p><strong>Standard approach:</strong></p>
+                <ol>
+                    <li><strong>Split data:</strong> Training, Validation, Test sets</li>
+                    <li><strong>Grid search:</strong> Try different hyperparameter values</li>
+                    <li><strong>For each setting:</strong>
+                        <ul>
+                            <li>Train on training set</li>
+                            <li>Evaluate on validation set</li>
+                        </ul>
+                    </li>
+                    <li><strong>Select best:</strong> Hyperparameters with best validation performance</li>
+                    <li><strong>Final evaluation:</strong> Test on held-out test set (only once!)</li>
+                </ol>
+            </div>
+
+            <div class="tip-box">
+                <h3>💡 K-Fold Cross-Validation</h3>
+                <p>When data is limited, use k-fold CV:</p>
+                <ol>
+                    <li>Split data into k equal parts (folds)</li>
+                    <li>For each hyperparameter setting:
+                        <ul>
+                            <li>Train k times, each time using k-1 folds for training and 1 for validation</li>
+                            <li>Average the k validation scores</li>
+                        </ul>
+                    </li>
+                    <li>Choose hyperparameters with best average score</li>
+                </ol>
+                <p>Common choices: k = 5 or k = 10</p>
+            </div>
+        </section>
+
+        <!-- ========================================
+             QUICK REFERENCE & FORMULAS
+             ======================================== -->
+        <section>
+            <h2>📋 Quick Reference: Key Formulas</h2>
+
+            <div class="formula-box">
+                <h3 style="color: white; margin-top: 0;">Bernoulli Distribution</h3>
+                <div class="key-formula">p(x | θ) = θˣ(1-θ)¹⁻ˣ</div>
+                <div class="key-formula">Likelihood: L(θ) = θⁿ¹(1-θ)ⁿ⁰</div>
+                <div class="key-formula">Log-likelihood: log L(θ) = n₁ log(θ) + n₀ log(1-θ)</div>
+            </div>
+
+            <div class="formula-box">
+                <h3 style="color: white; margin-top: 0;">Maximum Likelihood (MLE)</h3>
+                <div class="key-formula">θ̂<sub>MLE</sub> = n₁ / n</div>
+            </div>
+
+            <div class="formula-box">
+                <h3 style="color: white; margin-top: 0;">Beta Distribution</h3>
+                <div class="key-formula">p(θ | α, β) ∝ θ^(α-1) (1-θ)^(β-1)</div>
+            </div>
+
+            <div class="formula-box">
+                <h3 style="color: white; margin-top: 0;">Beta-Bernoulli Posterior</h3>
+                <div class="key-formula">Prior: θ ~ Beta(α, β)</div>
+                <div class="key-formula">Posterior: θ | X ~ Beta(α+n₁, β+n₀)</div>
+            </div>
+
+            <div class="formula-box">
+                <h3 style="color: white; margin-top: 0;">MAP Estimation</h3>
+                <div class="key-formula">θ̂<sub>MAP</sub> = (n₁+α-1) / (n+α+β-2)</div>
+                <div class="key-formula">Special case: Beta(2,2) → (n₁+1)/(n+2) (Laplace)</div>
+            </div>
+
+            <div class="formula-box">
+                <h3 style="color: white; margin-top: 0;">Bayes Rule</h3>
+                <div class="key-formula">p(θ | X) = p(X | θ) p(θ) / p(X)</div>
+                <div class="key-formula">p(θ | X) ∝ p(X | θ) p(θ)</div>
+            </div>
+
+            <div class="formula-box">
+                <h3 style="color: white; margin-top: 0;">Naive Bayes</h3>
+                <div class="key-formula">p(x, y) = p(y) ∏<sub>j=1</sub><sup>d</sup> p(x_j | y)</div>
+                <div class="key-formula">ŷ = arg max<sub>y</sub> [log p(y) + Σ<sub>j</sub> log p(x_j | y)]</div>
+                <div class="key-formula">θ̂_{j|y} = n_{x_j=1,y} / n_y</div>
+            </div>
+        </section>
+
+        <!-- ========================================
+             STUDY TIPS & COMMON MISTAKES
+             ======================================== -->
+        <section>
+            <h2>💡 Study Tips & Common Mistakes</h2>
+
+            <div class="warning-box">
+                <h3>⚠️ Common Mistakes to Avoid</h3>
+                <ol>
+                    <li><strong>Confusing likelihood and probability:</strong>
+                        <ul>
+                            <li>L(θ) is NOT a probability distribution over θ</li>
+                            <li>∫ L(θ) dθ ≠ 1 in general</li>
+                        </ul>
+                    </li>
+                    <li><strong>Forgetting log space:</strong>
+                        <ul>
+                            <li>Always compute log-probabilities for stability</li>
+                            <li>Use np.log1p(-x) instead of np.log(1-x)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Mixing up prior and posterior:</strong>
+                        <ul>
+                            <li>p(θ) = prior (before data)</li>
+                            <li>p(θ | X) = posterior (after data)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Confusing independence:</strong>
+                        <ul>
+                            <li>Product of Bernoullis: X₁,...,X_d all independent</li>
+                            <li>Naive Bayes: X₁,...,X_d independent <em>given Y</em></li>
+                        </ul>
+                    </li>
+                    <li><strong>Beta parameters as counts:</strong>
+                        <ul>
+                            <li>Beta(α, β) acts like (α-1) ones and (β-1) zeros</li>
+                            <li>Not α ones and β zeros!</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="tip-box">
+                <h3>💡 How to Study Effectively</h3>
+                <ol>
+                    <li><strong>Work through derivations by hand:</strong>
+                        <ul>
+                            <li>MLE for Bernoulli (take derivative, solve)</li>
+                            <li>Beta-Bernoulli posterior (multiply, identify form)</li>
+                            <li>MAP formula (take derivative of posterior)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Practice with concrete examples:</strong>
+                        <ul>
+                            <li>Compute MLE for X = [1,0,1,1,0]</li>
+                            <li>Compute MAP with Beta(2,2) prior</li>
+                            <li>Compare the results</li>
+                        </ul>
+                    </li>
+                    <li><strong>Understand the "why" not just "what":</strong>
+                        <ul>
+                            <li>Why does MLE overfit? (No regularization)</li>
+                            <li>Why log space? (Numerical stability)</li>
+                            <li>Why Beta prior? (Conjugacy makes math easy)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Test your understanding:</strong>
+                        <ul>
+                            <li>Can you explain each concept to someone else?</li>
+                            <li>Can you derive formulas without looking?</li>
+                            <li>Can you identify when to use each method?</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="concept-card">
+                <h3>🎯 Key Concepts to Master</h3>
+                <ul>
+                    <li>✅ Bernoulli distribution and its likelihood formula</li>
+                    <li>✅ Why we use log-probabilities (underflow prevention)</li>
+                    <li>✅ MLE formula (n₁/n) and when it fails</li>
+                    <li>✅ Bayes rule and how it relates to MAP</li>
+                    <li>✅ Beta distribution as a prior for Bernoulli</li>
+                    <li>✅ Conjugacy and the Beta-Bernoulli posterior</li>
+                    <li>✅ MAP formula and special cases (MLE, Laplace)</li>
+                    <li>✅ Difference between product of Bernoullis and Naive Bayes</li>
+                    <li>✅ Conditional independence in Naive Bayes</li>
+                    <li>✅ How to classify with Naive Bayes (arg max)</li>
+                    <li>✅ How to sample from Naive Bayes</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer style="margin-top: 3rem; padding: 2rem; background: var(--secondary-bg); border-radius: 8px; text-align: center;">
+            <p><strong>Good luck on Quiz 1! 🍀</strong></p>
+            <p style="margin-top: 0.5rem;">Remember: Understanding > Memorization</p>
+            <a href="../index.html#cpsc440" style="color: var(--accent-color); text-decoration: none; font-weight: bold;">← Back to CPSC 440</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <!-- Beta Distribution Interactive Visualization -->
+    <script>
+        const canvas = document.getElementById('betaCanvas');
+        const ctx = canvas.getContext('2d');
+        const alphaSlider = document.getElementById('alphaSlider');
+        const betaSlider = document.getElementById('betaSlider');
+        const alphaValue = document.getElementById('alphaValue');
+        const betaValue = document.getElementById('betaValue');
+
+        // Beta function (for normalization)
+        function logGamma(z) {
+            // Stirling's approximation for log(gamma(z))
+            return (z - 0.5) * Math.log(z) - z + 0.5 * Math.log(2 * Math.PI);
+        }
+
+        function betaFunction(alpha, beta) {
+            return Math.exp(logGamma(alpha) + logGamma(beta) - logGamma(alpha + beta));
+        }
+
+        // Beta PDF
+        function betaPDF(theta, alpha, beta) {
+            if (theta <= 0 || theta >= 1) return 0;
+            const B = betaFunction(alpha, beta);
+            return Math.pow(theta, alpha - 1) * Math.pow(1 - theta, beta - 1) / B;
+        }
+
+        function drawBeta() {
+            const alpha = parseFloat(alphaSlider.value);
+            const beta = parseFloat(betaSlider.value);
+
+            alphaValue.textContent = alpha.toFixed(1);
+            betaValue.textContent = beta.toFixed(1);
+
+            // Clear canvas
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const x = i * canvas.width / 10;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+
+                const y = i * canvas.height / 10;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // Draw axes
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - 40);
+            ctx.lineTo(canvas.width, canvas.height - 40);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(40, 0);
+            ctx.lineTo(40, canvas.height);
+            ctx.stroke();
+
+            // Calculate PDF values
+            const numPoints = 500;
+            let maxPDF = 0;
+            const pdfValues = [];
+
+            for (let i = 0; i <= numPoints; i++) {
+                const theta = i / numPoints;
+                const pdf = betaPDF(theta, alpha, beta);
+                pdfValues.push(pdf);
+                maxPDF = Math.max(maxPDF, pdf);
+            }
+
+            // Draw curve
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            const scaleX = (canvas.width - 50) / numPoints;
+            const scaleY = (canvas.height - 50) / maxPDF;
+
+            for (let i = 0; i <= numPoints; i++) {
+                const x = 40 + i * scaleX;
+                const y = canvas.height - 40 - pdfValues[i] * scaleY;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+
+            // Fill area under curve
+            ctx.fillStyle = 'rgba(78, 205, 196, 0.2)';
+            ctx.lineTo(canvas.width, canvas.height - 40);
+            ctx.lineTo(40, canvas.height - 40);
+            ctx.closePath();
+            ctx.fill();
+
+            // Labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px Arial';
+            ctx.fillText('θ', canvas.width - 20, canvas.height - 20);
+            ctx.fillText('p(θ)', 10, 20);
+            ctx.fillText('0', 35, canvas.height - 20);
+            ctx.fillText('0.5', canvas.width / 2 - 10, canvas.height - 20);
+            ctx.fillText('1', canvas.width - 15, canvas.height - 20);
+
+            // Display parameters
+            ctx.font = '18px Arial';
+            ctx.fillText(`Beta(α=${alpha.toFixed(1)}, β=${beta.toFixed(1)})`, 60, 30);
+
+            // Calculate and display mode (if α, β > 1)
+            if (alpha > 1 && beta > 1) {
+                const mode = (alpha - 1) / (alpha + beta - 2);
+                ctx.fillStyle = '#ff6b6b';
+                const modeX = 40 + mode * (canvas.width - 50);
+                ctx.beginPath();
+                ctx.arc(modeX, canvas.height - 40, 5, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillText(`Mode ≈ ${mode.toFixed(3)}`, 60, 50);
+            }
+        }
+
+        function setParams(a, b) {
+            alphaSlider.value = a;
+            betaSlider.value = b;
+            drawBeta();
+        }
+
+        alphaSlider.addEventListener('input', drawBeta);
+        betaSlider.addEventListener('input', drawBeta);
+
+        // Initial draw
+        drawBeta();
+    </script>
+</body>
+</html>

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_404 - Lecture 2026-01-08</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc404">CPSC_404</a> /
+            <span>2026-01-08</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Relational Databases</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-08</span>
+                <span class="instructor">👤 Ed Knorr</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <p><strong>Storage Architecture Overview:</strong></p>
+                    <ul>
+                        <li>RAM divided into 4KB page frames</li>
+                        <li>Multiple buffer pools: DBMS BP1, User Code BP2, Firefox BP3, OS Code</li>
+                        <li><strong>Key rule:</strong> When you say "buffer," think RAM</li>
+                    </ul>
+
+                    <p><strong>Query Example:</strong></p>
+                    <pre><code>SELECT * FROM appointment WHERE aDate = 20260115</code></pre>
+                    <ul>
+                        <li>Returns ROW IDs (RIDs) for matching appointments</li>
+                        <li>Must fetch pages from disk into RAM to access actual data</li>
+                        <li><strong>COUNT(*) optimization:</strong> Can count using indexes only, never need to touch data table rows!</li>
+                    </ul>
+
+                    <p><strong>Disk Drive Components:</strong></p>
+                    <ul>
+                        <li>Platters spin (e.g., 15,000 RPM)</li>
+                        <li>Arm assembly moves in/out to position head on desired track k</li>
+                        <li>All tracks with same track # = cylinder k</li>
+                        <li>Only one head reads/writes at a time</li>
+                        <li>One head per surface (platters have 2 surfaces: top/bottom)</li>
+                        <li>Block size is multiple of sector size (sector size is fixed)</li>
+                    </ul>
+
+                    <p><strong>Example Problem (12,000 tracks/surface, 4 double-sided platters):</strong></p>
+                    <ul>
+                        <li>Cylinder 500 has: 8 tracks (4 platters × 2 surfaces)</li>
+                        <li>One track on one surface = 1 cylinder</li>
+                        <li>Total cylinders = 12,000</li>
+                        <li>Total track capacity = 12,000 tracks/surface × 8 surfaces = 96,000 tracks</li>
+                    </ul>
+
+                    <p><strong>Disk Access Time Components:</strong></p>
+                    <ol>
+                        <li><strong>Seek time:</strong> Move arm to position head above desired cylinder</li>
+                        <li><strong>Rotational delay:</strong> Wait for desired block to rotate under head</li>
+                        <li><strong>Transfer time:</strong> Transmit data between disk and RAM</li>
+                    </ol>
+
+                    <p><strong>Example Calculations (8192 tracks, 3840 RPM):</strong></p>
+                    <ul>
+                        <li><strong>Seek time:</strong> Min = 0ms, Max = 17.38ms, Avg = 6.46ms</li>
+                        <li><strong>Rotational latency:</strong> Min = 0ms, Max = 15.63ms/rev, Avg = 7.82ms</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+
+                    <!-- ===== STORAGE ARCHITECTURE ===== -->
+                    <article>
+                        <h3>Database Storage Architecture: Understanding the Memory Hierarchy</h3>
+
+                        <p>Understanding how databases manage data storage across the memory hierarchy is fundamental to database performance optimization. Today we explore the relationship between files, disks, RAM, buffer pools, the DBMS, and the operating system.</p>
+
+                        <h4>The Memory Hierarchy</h4>
+
+                        <p>Modern database systems operate across multiple layers of storage, each with different characteristics:</p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Storage Level</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Speed</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Volatility</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Typical Size</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>CPU Cache</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Fastest (nanoseconds)</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Volatile</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">MBs</td>
+                                </tr>
+                                <tr style="background: var(--secondary-bg);">
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>RAM (Buffer Pool)</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Very Fast (nanoseconds)</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Volatile</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">GBs</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>SSD</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Fast (microseconds)</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Persistent</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">100s of GBs - TBs</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>HDD</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Slow (milliseconds)</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Persistent</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">TBs</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><mark>The performance gap between RAM and disk is enormous</mark>—accessing data in RAM is approximately <strong>100,000 times faster</strong> than accessing it from a spinning disk!</p>
+
+                        <h4>RAM Organization: The 4KB Page Frame Model</h4>
+
+                        <p>RAM is divided into fixed-size chunks called <strong>page frames</strong>, typically 4KB in size. This matches the typical page size used by both the operating system and database systems.</p>
+
+                        <blockquote>
+                            <p><strong>Key Terminology:</strong> When database professionals say "buffer," they mean <strong>RAM</strong>. The buffer pool is the portion of RAM dedicated to caching database pages.</p>
+                        </blockquote>
+
+                        <h4>Buffer Pools: Partitioning RAM</h4>
+
+                        <p>RAM is partitioned into multiple buffer pools, each serving different purposes:</p>
+
+                        <ul>
+                            <li><strong>DBMS BP1 (Buffer Pool 1):</strong> The primary database buffer pool—caches frequently accessed database pages</li>
+                            <li><strong>User Code BP2:</strong> Application-level buffer pool for user processes</li>
+                            <li><strong>Firefox BP3:</strong> Browser cache (example of other applications competing for RAM)</li>
+                            <li><strong>OS Code:</strong> Operating system kernel and core services</li>
+                        </ul>
+
+                        <p><strong>Why multiple buffer pools?</strong> Partitioning prevents different workloads from interfering with each other. The DBMS can tune its buffer pool independently of other system components.</p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">💡 The Buffer Pool is the Heart of Database Performance</h5>
+                            <p>The buffer pool is arguably the most important component for database performance. A larger buffer pool means:</p>
+                            <ul>
+                                <li>More pages cached in RAM → fewer disk I/Os</li>
+                                <li>Better query response times (orders of magnitude faster)</li>
+                                <li>Higher throughput for concurrent queries</li>
+                            </ul>
+                            <p>This is why database servers typically have enormous amounts of RAM—512GB or more is common in production!</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== QUERY EXECUTION ===== -->
+                    <article>
+                        <h3>Query Execution and Data Access: From Index to Data</h3>
+
+                        <h4>Example Query Walkthrough</h4>
+
+                        <p>Let's trace how a database executes a simple query:</p>
+
+                        <pre><code class="language-sql">SELECT * FROM appointment WHERE aDate = 20260115</code></pre>
+
+                        <p><strong>Step 1: Index Scan</strong></p>
+                        <p>Assuming an index exists on the <code>aDate</code> column:</p>
+                        <ul>
+                            <li>The database scans the index to find matching entries</li>
+                            <li>For each match, the index returns a <strong>RID (Row ID)</strong></li>
+                            <li>RID format typically: <code>(PageID, SlotNumber)</code></li>
+                            <li>Example: RID (1523, 7) means "Page 1523, Slot 7"</li>
+                        </ul>
+
+                        <p><strong>Step 2: Extract Page IDs</strong></p>
+                        <p>From the list of RIDs, extract the unique page IDs:</p>
+                        <ul>
+                            <li>RIDs: (1523, 7), (1523, 12), (1524, 3), (1524, 9), (1600, 2)</li>
+                            <li>Unique pages needed: 1523, 1524, 1600</li>
+                        </ul>
+
+                        <p><strong>Step 3: Fetch Pages from Disk to RAM</strong></p>
+                        <p>For each required page not already in the buffer pool:</p>
+                        <ul>
+                            <li>Issue a disk I/O request to read the page</li>
+                            <li>Load the page into a free buffer pool frame</li>
+                            <li>If no free frames exist, evict a page using replacement policy (LRU, Clock, etc.)</li>
+                        </ul>
+
+                        <p><strong>Step 4: Extract Rows</strong></p>
+                        <p>Now that pages are in RAM:</p>
+                        <ul>
+                            <li>For each RID (PageID, SlotNumber), access the slot within the page</li>
+                            <li>Extract the complete row data</li>
+                            <li>Return the row to the query processor</li>
+                        </ul>
+
+                        <h4>COUNT(*) Optimization: The Index-Only Scan</h4>
+
+                        <p>Now consider this modified query:</p>
+
+                        <pre><code class="language-sql">SELECT COUNT(*) FROM appointment WHERE aDate = 20260115</code></pre>
+
+                        <p><strong>Critical optimization:</strong> We don't need to access the actual data pages at all!</p>
+
+                        <blockquote>
+                            <p><strong>The Rule:</strong> Every single record in the table <em>must have</em> an entry in the index. This means for <code>COUNT(*)</code>, you can count index entries without ever touching the data table.</p>
+                        </blockquote>
+
+                        <p><strong>Why this works:</strong></p>
+                        <ol>
+                            <li>Scan the index on <code>aDate</code> for value 20260115</li>
+                            <li>Count the number of index entries found</li>
+                            <li>Return the count</li>
+                            <li><strong>Never access the data pages!</strong></li>
+                        </ol>
+
+                        <p><strong>Performance impact:</strong></p>
+                        <ul>
+                            <li>Index pages are much smaller than data pages (only store keys + RIDs)</li>
+                            <li>Index pages are often cached in RAM due to frequent access</li>
+                            <li>Even if not cached, reading index pages is faster (fewer pages to read)</li>
+                            <li><strong>Result:</strong> COUNT(*) with an index can be 10-100× faster than a full table scan!</li>
+                        </ul>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🎯 Index-Only Scans: A Powerful Optimization</h5>
+                            <p>This "index-only scan" pattern extends beyond COUNT(*):</p>
+                            <ul>
+                                <li><code>SELECT COUNT(*)</code> — count index entries</li>
+                                <li><code>SELECT MAX(column)</code> — read last index entry (if index is ordered)</li>
+                                <li><code>SELECT MIN(column)</code> — read first index entry</li>
+                                <li><code>SELECT column</code> — if column is in index, no table access needed!</li>
+                            </ul>
+                            <p>This is why covering indexes (indexes containing all columns needed for a query) are so valuable!</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== DISK DRIVE ANATOMY ===== -->
+                    <article>
+                        <h3>Anatomy of a Hard Disk Drive (HDD)</h3>
+
+                        <p>While SSDs are increasingly common, understanding HDD mechanics is crucial because:</p>
+                        <ul>
+                            <li>Many production databases still use HDDs for archival/cold storage</li>
+                            <li>HDD concepts inform understanding of I/O performance in general</li>
+                            <li>The performance characteristics shape database algorithm design</li>
+                        </ul>
+
+                        <h4>Physical Components</h4>
+
+                        <p><strong>1. Platters</strong></p>
+                        <ul>
+                            <li>Circular disks coated with magnetic material</li>
+                            <li>Spin at constant speed (e.g., 7,200 RPM, 10,000 RPM, 15,000 RPM)</li>
+                            <li>Each platter has two surfaces: top and bottom</li>
+                            <li>Data is stored in concentric circles called <strong>tracks</strong></li>
+                        </ul>
+
+                        <p><strong>2. Read/Write Heads</strong></p>
+                        <ul>
+                            <li>One head per surface (so a disk with 4 platters has 8 heads)</li>
+                            <li>Heads are attached to a single arm assembly</li>
+                            <li>All heads move together as the arm moves in/out</li>
+                            <li><strong>Only one head reads or writes at a time</strong></li>
+                        </ul>
+
+                        <p><strong>3. Arm Assembly</strong></p>
+                        <ul>
+                            <li>Moves the heads in and out to position them over different tracks</li>
+                            <li>Actuator motor controls the arm position</li>
+                            <li>The movement is called <strong>seeking</strong></li>
+                        </ul>
+
+                        <h4>Organizing Data on Disk</h4>
+
+                        <p><strong>Tracks:</strong> Concentric circles on a single surface where data is stored</p>
+                        <ul>
+                            <li>Numbered from 0 (outermost) to N-1 (innermost)</li>
+                            <li>Example: a disk might have 12,000 tracks per surface</li>
+                        </ul>
+
+                        <p><strong>Sectors:</strong> Fixed-size subdivisions of a track</p>
+                        <ul>
+                            <li>Typically 512 bytes or 4KB</li>
+                            <li>The fundamental unit of disk I/O</li>
+                            <li>Sector size is <strong>fixed</strong> by the hardware</li>
+                        </ul>
+
+                        <p><strong>Blocks (Pages):</strong> Logical grouping of sectors</p>
+                        <ul>
+                            <li>Database and OS work with blocks/pages, not individual sectors</li>
+                            <li>Block size is a <strong>multiple of sector size</strong></li>
+                            <li>Common block sizes: 4KB, 8KB, 16KB, 32KB</li>
+                            <li>Example: 8KB block = 16 sectors (if sectors are 512 bytes)</li>
+                        </ul>
+
+                        <p><strong>Cylinders:</strong> All tracks with the same track number across all surfaces</p>
+                        <ul>
+                            <li><strong>Cylinder k</strong> = track k on surface 0 + track k on surface 1 + ... + track k on surface N</li>
+                            <li>Important because heads move together, so accessing all tracks in a cylinder requires no additional seek</li>
+                        </ul>
+
+                        <h4>Example Problem: Disk Geometry</h4>
+
+                        <p>Given a disk drive with:</p>
+                        <ul>
+                            <li>4 double-sided platters</li>
+                            <li>12,000 tracks per surface</li>
+                        </ul>
+
+                        <p><strong>Question 1: How many tracks does cylinder 500 have?</strong></p>
+                        <pre><code class="language-plaintext">Answer: 8 tracks
+Reasoning:
+- 4 platters × 2 surfaces/platter = 8 surfaces
+- Cylinder 500 includes track 500 on each of the 8 surfaces
+- Therefore, 8 tracks total</code></pre>
+
+                        <p><strong>Question 2: How many cylinders are represented by one track on one surface?</strong></p>
+                        <pre><code class="language-plaintext">Answer: 1 cylinder
+Reasoning:
+- A single track (e.g., track 500 on surface 0) is part of exactly one cylinder
+- That track, together with track 500 on all other surfaces, forms cylinder 500</code></pre>
+
+                        <p><strong>Question 3: How many cylinders are there on the disk drive?</strong></p>
+                        <pre><code class="language-plaintext">Answer: 12,000 cylinders
+Reasoning:
+- Number of cylinders = number of tracks per surface
+- Since there are 12,000 tracks per surface, there are cylinders 0 through 11,999</code></pre>
+
+                        <p><strong>Question 4: What is the capacity of the disk drive in terms of the number of tracks?</strong></p>
+                        <pre><code class="language-plaintext">Answer: 96,000 tracks
+Reasoning:
+- 12,000 tracks/surface × 8 surfaces = 96,000 total tracks</code></pre>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">📐 Key Geometric Relationships</h5>
+                            <ul>
+                                <li><strong>Number of surfaces</strong> = Number of platters × 2</li>
+                                <li><strong>Number of cylinders</strong> = Number of tracks per surface</li>
+                                <li><strong>Tracks per cylinder</strong> = Number of surfaces</li>
+                                <li><strong>Total tracks</strong> = Tracks per surface × Number of surfaces</li>
+                            </ul>
+                        </aside>
+                    </article>
+
+                    <!-- ===== DISK ACCESS TIME ===== -->
+                    <article>
+                        <h3>Disk Access Time: The Three Components</h3>
+
+                        <p>Reading or writing a block of data from/to disk involves three distinct time components. Understanding these is essential for predicting and optimizing database performance.</p>
+
+                        <h4>The Three Components of Access Time</h4>
+
+                        <blockquote>
+                            <p><strong>Access Time = Seek Time + Rotational Delay + Transfer Time</strong></p>
+                        </blockquote>
+
+                        <h4>1. Seek Time: Moving the Arm</h4>
+
+                        <p><strong>Definition:</strong> The time required to move the disk arm to position the read/write head over the desired track (cylinder).</p>
+
+                        <p><strong>Factors affecting seek time:</strong></p>
+                        <ul>
+                            <li><strong>Startup time:</strong> Time to accelerate the arm from rest (~1ms)</li>
+                            <li><strong>Distance:</strong> Number of tracks to traverse</li>
+                            <li><strong>Track density:</strong> Tracks per millimeter</li>
+                        </ul>
+
+                        <p><strong>Seek time formula (simplified model):</strong></p>
+                        <pre><code class="language-plaintext">SeekTime = StartupTime + (TracksToMove / SeekRate)</code></pre>
+
+                        <h4>Example Calculation: Seek Time</h4>
+
+                        <p>Given:</p>
+                        <ul>
+                            <li>Startup time: 1ms</li>
+                            <li>8,192 total tracks (numbered 0-8191)</li>
+                            <li>Seek rate: 500 tracks/ms</li>
+                        </ul>
+
+                        <p><strong>Minimum seek time:</strong></p>
+                        <pre><code class="language-plaintext">Min seek = 0ms
+When? When the head is already on the desired track (0 tracks to move)</code></pre>
+
+                        <p><strong>Maximum seek time:</strong></p>
+                        <pre><code class="language-plaintext">Max seek = 1ms + (8192 - 1) / 500 tracks/ms
+         = 1ms + 8191 / 500
+         = 1ms + 16.382ms
+         = 17.382ms ≈ 17.38ms
+
+When? When seeking from track 0 to track 8191 (or vice versa)</code></pre>
+
+                        <p><strong>Average seek time:</strong></p>
+                        <pre><code class="language-plaintext">Avg seek = 1ms + (1/3) × (8192 - 1) / 500 tracks/ms
+         = 1ms + (1/3) × 16.382ms
+         = 1ms + 5.461ms
+         = 6.461ms ≈ 6.46ms
+
+Why 1/3? On average, we seek across 1/3 of the disk diameter</code></pre>
+
+                        <h4>2. Rotational Delay (Rotational Latency): Waiting for the Block</h4>
+
+                        <p><strong>Definition:</strong> The time required for the desired block to rotate into position under the head after the seek completes.</p>
+
+                        <p><strong>Depends on:</strong></p>
+                        <ul>
+                            <li><strong>Rotational speed:</strong> RPM (revolutions per minute)</li>
+                            <li><strong>Current position:</strong> Where is the desired block relative to the head?</li>
+                        </ul>
+
+                        <h4>Example Calculation: Rotational Latency</h4>
+
+                        <p>Given: 3,840 RPM (revolutions per minute)</p>
+
+                        <p><strong>First, convert RPM to time per revolution:</strong></p>
+                        <pre><code class="language-plaintext">3840 rev/min × (1 min / 60 sec) × (1 sec / 1000 ms) = 0.064 rev/ms
+
+Therefore: 1 revolution = 1 / 0.064 ms/rev = 15.625ms/rev ≈ 15.63ms</code></pre>
+
+                        <p><strong>Minimum rotational latency:</strong></p>
+                        <pre><code class="language-plaintext">Min rotational delay = 0ms
+When? When the desired block is directly under the head after the seek</code></pre>
+
+                        <p><strong>Maximum rotational latency:</strong></p>
+                        <pre><code class="language-plaintext">Max rotational delay = Time for 1 full rotation = 15.63ms
+When? When the desired block just passed under the head, requiring a full rotation</code></pre>
+
+                        <p><strong>Average rotational latency:</strong></p>
+                        <pre><code class="language-plaintext">Avg rotational delay = Time for 1/2 rotation
+                     = 15.63ms / 2
+                     = 7.815ms ≈ 7.82ms
+
+Why 1/2? On average, the block is halfway around the track</code></pre>
+
+                        <h4>3. Transfer Time: Moving the Data</h4>
+
+                        <p><strong>Definition:</strong> The time required to transfer data between the disk and RAM once the head is positioned over the correct block.</p>
+
+                        <p><strong>Formula:</strong></p>
+                        <pre><code class="language-plaintext">TransferTime = BlockSize / TransferRate</code></pre>
+
+                        <p><strong>Example:</strong></p>
+                        <ul>
+                            <li>Block size: 4KB = 4,096 bytes</li>
+                            <li>Transfer rate: 100 MB/s = 100,000 KB/s</li>
+                            <li>Transfer time = 4KB / 100,000 KB/s = 0.00004 seconds = 0.04ms</li>
+                        </ul>
+
+                        <p><strong>Key observation:</strong> Transfer time is typically <em>negligible</em> compared to seek time and rotational delay!</p>
+
+                        <h4>Total Access Time Example</h4>
+
+                        <p>For a random disk I/O with the parameters above:</p>
+
+                        <pre><code class="language-plaintext">Access Time = Seek + Rotation + Transfer
+            = 6.46ms + 7.82ms + 0.04ms
+            = 14.32ms
+
+Breakdown:
+- Seek time: 45% of total
+- Rotational delay: 55% of total
+- Transfer time: < 1% of total</code></pre>
+
+                        <p><strong>Implication:</strong> The mechanical movements (seek + rotation) dominate access time. This is why:</p>
+                        <ul>
+                            <li>Sequential access is much faster than random access (no seeking between blocks)</li>
+                            <li>Larger block sizes can amortize seek/rotation costs</li>
+                            <li>Caching in RAM provides 100-1000× speedup</li>
+                        </ul>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">⚡ Why SSDs Changed Everything</h5>
+                            <p>SSDs eliminate both seek time and rotational delay:</p>
+                            <ul>
+                                <li><strong>HDD random access:</strong> ~14ms (as calculated above)</li>
+                                <li><strong>SSD random access:</strong> ~0.1ms (100× faster!)</li>
+                                <li><strong>RAM access:</strong> ~0.0001ms (100,000× faster than HDD!)</li>
+                            </ul>
+                            <p>This is why modern databases on SSDs can handle workloads that were impossible with HDDs, and why buffer pool sizing remains critical even with SSDs.</p>
+                        </aside>
+                    </article>
+
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Memory hierarchy: CPU cache, RAM (buffer pool), SSD, and HDD characteristics</li>
+                    <li>RAM organization with 4KB page frames and multiple buffer pools (DBMS, user code, OS)</li>
+                    <li>Query execution flow: index scan → RID extraction → page fetching → row retrieval</li>
+                    <li>COUNT(*) optimization: index-only scans without accessing data table pages</li>
+                    <li>Hard disk drive anatomy: platters, heads, arm assembly, and mechanical operation</li>
+                    <li>Disk organization: tracks, sectors, blocks/pages, and cylinders</li>
+                    <li>Disk geometry calculations: cylinders, surfaces, and track capacity</li>
+                    <li>Disk access time components: seek time, rotational latency, and transfer time</li>
+                    <li>Performance calculations: minimum, maximum, and average access times</li>
+                    <li>HDD vs SSD performance comparison and implications for database design</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li>Practice disk geometry calculations with different configurations (platters, tracks/surface, RPM)</li>
+                    <li>Calculate seek time, rotational latency, and total access time for various scenarios</li>
+                    <li>Understand why buffer = RAM and why buffer pool size is critical for performance</li>
+                    <li>Work through the cylinder/track relationship problems from lecture</li>
+                    <li>Memorize the access time formula: Access Time = Seek + Rotation + Transfer</li>
+                    <li>Remember the 1/3 rule for average seek time (seek across 1/3 of disk diameter)</li>
+                    <li>Remember the 1/2 rule for average rotational latency (1/2 rotation on average)</li>
+                    <li>Understand when index-only scans can be used (COUNT, MIN, MAX, covering indexes)</li>
+                    <li>Be able to explain why sequential I/O is much faster than random I/O</li>
+                    <li>Compare HDD vs SSD vs RAM access times and understand magnitude differences</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc404" class="back-link">← Back to CPSC_404</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

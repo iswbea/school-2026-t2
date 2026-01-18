@@ -1,0 +1,135 @@
+What is a domain specific language?
+
+A special language written for a sepcific domain.
+
+Think of a user specific language, specific to skill set
+
+Imagine a friend comes to ask for youe help
+They want to make a website where they can keep a schedule of their day
+
+You help them and send them a finished website.
+
+But
+    They realize they want to add a column
+    They try and edit html
+    They break everything
+You help them again and send them the new version
+But they realize they wan a second table
+They break everything and ask for help again
+
+How can this friendship be saved?
+    LEt's face it, the friend does not want to learn HTML, they just want to make tables in HTML.
+    So you make them a dsl, lets call it tinyhtml that generates html for them from 
+
+
+One of our favourites is awk! 
+Simple use: extract files ive modified to batch add/restore/rm
+grep modified: awk `{print $2}`
+
+DSLs can be embedded into more complex systems
+ex: excel formulas
+Makefiles
+
+DSL's can augment existing languages
+JUnit eg @Before and @Test annotations. Its a very small language in syntax but has powerful semantics and is easy for programmers to use
+
+AspectJ Created a language that would interewave code into your code. 
+Could add before and after to function calls for automated logging.
+
+Why not make it an API or library?
+    Some DSLs are actually just really well designed APIs
+    -> Requires that your users can work in the host language your API is.
+    Ex. Tensorflow requires python knowledge.
+    Internal DSL or embedded DSL is one that the users use directly within the host language, typically via some combination of:
+        Restricted syntax within the base language (calls to specific api)
+        Base language features for extending syntax (operator overloading)
+    Some languages are better suited as host languages for internal DSLs
+        Racket
+        Macros,operator overloading, infix functional calls
+
+    But if you want a UI that completely shields the user from the underlying base language (What were doing in this course)
+    We will focus on external DSLs
+
+    APIs ve Languages: Tensorflow vs Swift for Tensorflow
+
+    Identify target users and use-cases. What should your dsl enable?
+    Talk to an example target user of the language.
+    Figure what it is they want to say: DSL Syntax; how would they express it?
+    and what they expect to have happen when they say it (DSL Semantics)
+
+    Try out example scenarios with yourselves and your target users. Start from adesired output/result and work backwards. What would you expect to have to do?
+    Design a set of features and their syntax
+
+
+Think about how these features could be made more general-purpose powerful 
+
+IMPORTANT:
+    Your DSL needs to asupport at least 3 language featurures that add expressivitity and interact with each other.
+        eg. mutaable variables, loops, ocnditionalls, functions/procedures, recurison, complex data types (tuples, sets, or arrys)
+        Your DSL will have domain-specific elements that allow users to do domain specific tasks more easily than a generic programing language
+
+
+        For project 1 were expecitng dsls which provide users with some dimensions of creativity, they should be real languages and not eg disguised web formulas
+        consider natural language, constructs can be combined in essentially infinite ways vs ordering from a restaurant menu (only limited use options)
+
+        Making your language rich enough:
+            Has some language features with infinite potential usages (procedures, macros, loops) that alter each others behavior (dynamic events, mutable state, etc).
+                Rule of thumb; at least 3, must be able to describe their interaction
+            Has some domain specific elements that make it useful for the domain.
+
+            Sometimes a simple initial can be extended into suitable ideas
+
+        Recall DSL example 1: awk
+        Language features: Mutable state, conditionals
+        lunch-and-dins.tsv
+        Domain specific elements:\
+        Acccess to row elements, every line block, end of file block.
+
+        Semantics vs Syntax
+        Exit tickets:
+        q1. You are creating a DSL for meting planning. Your group member suggests adding a built in function allowing users to find non-conflciting times between two schedules:
+            find_non_conflicting_times(schedule_1,schedule_2)
+            Is this a language feature or domain-sepcfici elements?
+            Its a domain specific element
+
+        Q2. You are creating a DSL that allows users to define custom functions eg  define-func add1 (x) -> x + 1
+            q2a Your team is debating whether you can only call a function after its definition.
+                ie. debating whether is this ok:
+                add1(3)
+                define-funct add1(x) -> x+ 1
+                Is this a question of syntax or semantics?
+                Yes
+            q2b. Your team member suggests replacing the "->" in deifne-func with a ":" is this change syntax or semantics?
+                Syntax
+
+
+        Is our language design any good?
+            Most authors like thier own language!
+            Also, they may not be thetarget users and have too much prior knowledge/bias
+
+            Directly asking for others opinions is problematic for several reasons
+                If theyre friends they'll tell you they like it, if in a bad mood they wont.
+
+            Project 1. Mock up your language, and test that
+            Don't assume the initial design is perfect and forge ahead with implementation
+            First, try out what you're planning to build on auser (or a few)
+            Prototype Testing: User Study Design 
+            Consider specifically for is your language for? What is a single concrete programming task you would like users to be able ot in your languafe?
+            Write the concret tasks down clearly (you may want to show the intended result)
+            Prepare several other examples of code in your language, used to illustrate and explain its featuures without solving the specific task. Write them our clearly.
+
+            Next Stage: PErform user Testing
+                Find youtself at least 203 users to ry out yyuor prototype user study on. 
+                    If its feasible to get some users from your target user group, this is better!
+
+                Reflect carefully on the outcomes of your study
+                Did your user provide suggestions? Don't necessarily take them!
+
+                Identify instead where your users got confused. What caused the confusion (to make this more precise,you may want to refer to the 5 language quality factors)
+                Was their confusion show-topping? Were they able to complete the task?
+                What errors did they make? Was anything awkward to express?
+
+            Don't use the same user twice between studies as learning bias.
+            
+            Q1. Why should you ask your users to think aloud while they perform their task?
+            Q2. Should you give your users an easy task in a subset of the DSL your whole team has agreed upon, or a harder task using features you are unsure? Both

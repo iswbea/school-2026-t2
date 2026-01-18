@@ -1,0 +1,21 @@
+Low level details matter a lot, one misplaced character and you can have a security vulnerability
+
+for (i=0; i<= buffer_length; i++) 
+malloc(strlen(string))
+if (err != 0) goto fail; goto fail;
+
+Grading: 
+CTF-style assignments (10): 25%
+Clicker questions: 3%
+In-class activities: 7%
+Midterm (1): 25%
+Final Exam: 40%
+
+Secure system:
+Confidentiality: making information available only to authorized parties
+Integrity: Ensuring information is always accurate and complete
+Availability: PRovding servies when needed by any authorized parties.
+
+Example: 
+Sending a message securely: 
+Wikipedia:

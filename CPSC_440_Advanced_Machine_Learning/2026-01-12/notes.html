@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_440 - Lecture 2026-01-12</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc440">CPSC_440</a> /
+            <span>2026-01-12</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Machine Learning</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-12</span>
+                <span class="instructor">👤 Danica Sutherland</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <h3>Multivariate Models & Generative Classifiers</h3>
+
+                    <h4>Admin & Logistics</h4>
+                    <ul>
+                        <li>Tutorials start this week (optional, any section)</li>
+                        <li>Quiz Thu–Sat: schedule slot soon; debugging on Piazza @19</li>
+                        <li>Assignment 1 due Friday 11:59pm (not 5pm!)</li>
+                        <li>Office hours on Piazza calendar (Prof. Sutherland: Thursday this week)</li>
+                        <li>Topic bullet points posted tonight on Piazza</li>
+                    </ul>
+
+                    <h4>Review: Bernoulli Model (MLE & MAP)</h4>
+                    <ul>
+                        <li><strong>Bernoulli distribution:</strong> Binary data, X ∼ Bern(θ)</li>
+                        <li>Pr(X = x | θ) = θ<sup>x</sup>(1 − θ)<sup>1−x</sup></li>
+                        <li><strong>MLE:</strong> θ̂ = n₁/n (just count and normalize)</li>
+                        <li><strong>MAP:</strong> With Beta(α, β) prior → α−1 "fake" ones, β−1 "fake" zeros</li>
+                    </ul>
+
+                    <h4>Product of Bernoullis</h4>
+                    <ul>
+                        <li><strong>Goal:</strong> Model multivariate binary data (d dimensions, each binary)</li>
+                        <li><strong>Assumption:</strong> All dimensions are independent: p(x₁,...,x_d) = p(x₁)···p(x_d)</li>
+                        <li><strong>Parameters:</strong> d parameters θ₁,...,θ_d (one per dimension)</li>
+                        <li><strong>MLE:</strong> θ̂_j = n_{j1}/n (fraction of times dimension j is 1)</li>
+                        <li><strong>Pros:</strong> Very fast O(nd) training; easy inference</li>
+                        <li><strong>Cons:</strong> Terrible assumption! Dimensions usually aren't independent</li>
+                        <li><strong>MNIST example:</strong> Samples don't look like digits (pixels are correlated)</li>
+                    </ul>
+
+                    <h4>Generative Classifiers</h4>
+                    <ul>
+                        <li><strong>Idea:</strong> Model p(x, y) jointly, then use p(y|x) ∝ p(x, y) to classify</li>
+                        <li><strong>Learning:</strong> Fit density p(x₁,...,x_d, y) from data</li>
+                        <li><strong>Inference:</strong> Compute p(y|x) to predict class label</li>
+                        <li>Can incorporate asymmetric costs (spam false positives vs false negatives)</li>
+                    </ul>
+
+                    <h4>Naïve Bayes Classifier</h4>
+                    <ul>
+                        <li><strong>Key assumption:</strong> Features are conditionally independent given class label y</li>
+                        <li>p(x₁,...,x_d | y) = p(x₁|y)···p(x_d|y)</li>
+                        <li><strong>Full model:</strong> p(x₁,...,x_d, y) = p(x₁|y)···p(x_d|y)p(y)</li>
+                        <li><strong>Parameters:</strong> 2d parameters: θ_{j|0} and θ_{j|1} for each feature</li>
+                        <li><strong>MLE:</strong> θ̂_{j|1} = n_{x_j=1,y=1}/n_{y=1} (count conditionally)</li>
+                        <li><strong>Training:</strong> O(nd) time (can be O(nnz) with sparse data)</li>
+                        <li><strong>Classification:</strong> arg max_y p(y|x) = arg max_y p(x,y)</li>
+                    </ul>
+
+                    <h4>Key Insights</h4>
+                    <ul>
+                        <li>Product of Bernoullis: assumes X₁,...,X_d, Y all mutually independent (too strong!)</li>
+                        <li>Naïve Bayes: assumes X₁,...,X_d conditionally independent given Y (better!)</li>
+                        <li>Naïve Bayes doesn't need perfect density estimation to classify well</li>
+                        <li>Can handle cost-sensitive learning with expected cost minimization</li>
+                        <li>MNIST 1 vs 2: samples look digit-ish (unlike product of Bernoullis)</li>
+                    </ul>
+
+                    <h4>Spam Filtering Example</h4>
+                    <ul>
+                        <li>Features: bag of words (x_j = 1 if word j in email)</li>
+                        <li>Cost asymmetry: Missing spam < Flagging good email</li>
+                        <li>Example: Cost matrix with 50× penalty for false positive</li>
+                        <li>Decision rule: predict spam only if p(y=1|x) ≥ 50/51 ≈ 98%</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+                    <p>Expanded notes will be added here...</p>
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Topics will be listed here</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li>No assignments yet</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc440" class="back-link">← Back to CPSC_440</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

@@ -1,0 +1,517 @@
+Binary Density Estimation: MLE and MAP
+CPSC 440/550: Advanced Machine Learning
+cs.ubc.ca/~dsuth/440/25w2
+University of British Columbia, on unceded Musqueam land
+2025-26 Winter Term 2 (Jan–Apr 2026)
+1 / 27
+Admin
+Sign up for Piazza from the link on cs.ubc.ca/~dsuth/440
+Lecture recordings are now linked from Piazza
+Monday’s class wasn’t recorded (sorry!) but this one is
+CBTF quiz booking should be available soon
+Will post instructions on Piazza once it’s available
+May push quiz schedule back a week if CBTF isn’t set up yet
+Again, I expect everyone to get in off the waitlist
+But it’ll take a bit to confirm and sort through everything
+Assignment 1 will be out “tonight” (by tomorrow morning)
+If you’re on the waitlist (and want to join the class), do the assignment
+Office hours starting next week – will link calendar from Piazza
+2 / 27
+Last time: binary density estimation
+Density estimation: going from data → probability model
+Inference: “doing things” with a probability model
+Computing probabilities of “derived events”
+Computing likelihoods
+Finding the mode
+Sampling
+Bernoulli distribution: simple parameterized probability model for binary data
+If X ∼ Bern(θ), then for x ∈ {0, 1} we have
+Pr(X = x | θ) = (
+θ if x = 1
+1 − θ if x = 0
+= θ
+1(x=1)(1 − θ)
+1(x=0) = θ
+x
+(1 − θ)
+1−x
+Also write this as p(x | θ) or even p(x), if context is clear
+3 / 27
+Outline
+1 Maximum likelihood estimation (MLE)
+2 MAP estimation
+4 / 27
+MLE: binary density estimation
+We know how to use a Bernoulli model (inference) for a bunch of tasks
+How can we train a Bernoulli model (learning) from data?
+X =
+
+
+
+
+
+
+1
+0
+0
+1
+0
+
+
+
+
+
+
+MLE
+−−−→ θ = 0.4
+Recall X collects the data points x
+(1), . . . , x(n)
+We assume these are iid samples from a random variable X
+Classic way: maximum likelihood estimation (MLE)
+5 / 27
+The likelihood function
+The likelihood function is a function from parameters θ
+to the probability (density) of the data under those parameters
+L(θ) = p(X | θ), which for Bernoullis we saw is θ
+n1 (1 − θ)
+n0
+Here’s the likelihood for X = (1, 0, 1), i.e. θ
+2
+(1 − θ):
+0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1
+0
+0.1
+θ
+L(θ)
+L(0.5) = p(1, 0, 1 | θ = 0.5) = 1
+2
+·
+1
+2
+·
+1
+2 = 0.125
+L(0.75) = 3
+4
+·
+3
+4
+·
+1
+4 ≈ 0.14: X is more likely for θ = 0.75 than θ = 0.5
+L(0) = 0 = L(1): X is impossible for θ = 0 or 1, since we have some 1s and some 0s
+Maximum is at θ = 2/3 – back to this in a second
+Likelihood is not a distribution over θ, i.e. R
+L(θ) dθ ̸= 1
+We do have R
+p(X | θ) dX = 1, but that’s not really relevant if we only have one X
+6 / 27
+Maximizing the likelihood
+Maximum likelihood estimation (MLE): pick the θ with the highest likelihood
+“Find the parameters θ where the data X would have been most likely to be seen”
+For Bernoullis, the MLE is ˆθ =
+n1
+n
+=
+n1
+n1 + n0
+“If you flip a coin 50 times and get 23 heads, guess that Pr(heads) = 23
+50 ”
+Code: theta = np.mean(X) takes O(n) time
+Let’s derive this result
+It’s going to seem overly complicated for this really simple result
+But the steps we use will be applicable to much harder situations
+7 / 27
+MLE for Bernoullis
+Notationally, we can write maximizing the likelihood as
+ˆθ ∈ arg max
+θ
+L(θ) = arg max
+θ
+θ
+n1
+(1 − θ)
+n0
+arg maxx f(x) means “the set of x that maximize f”: might be more than one!
+Usually, instead of maximizing the likelihood we maximize the log-likelihood
+Same solution set, since if α > β then log α > log β (log is strictly monotonic)
+See “Max and Argmax” notes from the course site
+Usually easier mathematically (also numerically much more stable)
+ˆθ ∈ arg max
+θ
+n1 log(θ) + n0 log(1 − θ)
+The maximum will have a zero derivative:
+0 =
+n1
+θ
+−
+n0
+1 − θ
+and so n1(1 − θ) = n0θ or n1 = (n0 + n1)
+| {z }
+n
+θ or θ =
+n1
+n
+8 / 27
+MLE for Bernoullis
+We’re looking for
+ˆθ ∈ arg max
+θ
+log L(θ) = arg max
+θ
+n1 log(θ) + n0 log(1 − θ)
+Derivative of n1 log(θ) + n0 log(1 − θ) is zero only if θ =
+n1
+n0+n1
+=
+n1
+n
+But is this actually a maximum?
+Yes: it’s a concave function (second derivative is negative): −
+n1
+θ
+2 −
+n0
+(1−θ)
+2 ≤ 0
+What if n1 = 0 or n0 = 0? Then we just divided by zero!
+log(0) = −∞ makes things complicated; go back to plain likelihood θ
+n1 (1 − θ)
+n0
+If (n1 = 0, n0 > 0), find θ = 0; if (n1 > 0, n0 = 0), get θ = 1
+So same n1/n formula still works
+9 / 27
+MLE for binary data estimation
+Given iid binary data X, we can train/learn a probability model with MLE:
+X
+MLE
+−−−→ ˆθ =
+1
+n
+Xn
+i=1
+x
+(i)
+Given this Bern(ˆθ) model, can then ask inference questions
+“If I eat lunch with three randomly selected UBC students, what’s the probability
+any of them are COVID-positive?”
+One minus the probability none of them are: 1 − (1 − θ)
+3 ≈ 1 − (1 − ˆθ)
+3
+10 / 27
+Outline
+1 Maximum likelihood estimation (MLE)
+2 MAP estimation
+11 / 27
+Problems with MLE
+Often (including here), the MLE is asymptotically optimal as n → ∞
+In particular, if we see X ∼ Bern(θ
+∗
+), then ˆθ converges to the true θ
+∗
+as n → ∞
+These kinds of properties are covered in honours/grad stat classes
+But for small n, it can do really bad things
+Before we considered x
+(1) = 1, x(2) = 0, x(3) = 1, with ˆθMLE ≈ 0.67
+If we see an x
+(4) = 1, we get an MLE of 0.75
+If we see an x
+(4) = 0, get an MLE of 0.5
+If you get an “unlucky” X, the MLE might be really bad
+For Bernoullis, this sensitivity decreases quickly with n
+But for more complex models, the MLE can tend to overfit
+12 / 27
+Problems with MLE
+Imagine instead we’d seen a (barely-different) dataset, x
+(1) = 1, x
+(2) = 1, x
+(3) = 1
+Then the MLE is ˆθ = 1
+Now imagine we see a test dataset with a 0 in it
+Our likelihood of that test dataset is zero, because 1 − ˆθ = 0
+Serious overfitting to this small dataset
+If your drug works for everyone in a trial of three people, does it always work?
+Common solution (340 does this for Naive Bayes): Laplace smoothing
+ˆθLap =
+n1 + 1
+(n1 + 1) + (n0 + 1) =
+n1 + 1
+n + 2
+MLE for a dataset with an extra “imaginary” 0 and 1 in it; avoids zero counts
+This is a special case of MAP estimation
+13 / 27
+Following a MAP
+In MLE we maximize the probability of the data given the parameters:
+ˆθ ∈ arg max
+θ
+p(X | θ)
+“Find the θ that makes X have the highest probability given θ”
+But. . . this is kind of weird
+Data could be most likely for a really weird θ: get overfitting
+If θ allows highly-complex models, could be one that just memorizes the data exactly
+What we really want is the “best” θ
+“After seeing the data X, which θ is most likely?”
+ˆθ ∈ arg max
+θ
+p(θ | X)
+This is called maximum a posteriori (MAP) estimation
+14 / 27
+Probability review (make sure you know all of this)
+Product rule: Pr(A ∩ B) = Pr(A | B) Pr(B)
+Rearrange into conditional probability formula: Pr(A | B) = Pr(A ∩ B)/Pr(B)
+Order doesn’t matter for joints: Pr(A ∩ B) = Pr(B ∩ A)
+Using twice, get Bayes rule: Pr(A | B) = Pr(B | A) Pr(A)/Pr(B)
+Flips order of conditionals, depending on the marginals Pr(A) and Pr(B)
+Marginalization rule:
+If X is discrete: Pr(A) = P
+x Pr (A ∩ (X = x))
+If X is continuous: Pr(A) = R
+p (A ∩ (X = x)) dx
+These two rules are close friends:
+p(a) = X
+b
+p(a, b) = X
+b
+p(a | b)p(b); p(a | b) = p(b | a)p(a)
+p(b)
+=
+p(b | a)p(a)
+P
+a
+′ p(b | a
+′)p(a
+′)
+Still work if you condition everything:
+p(a, b | c) = p(a | b, c)p(b | c) and p(a | c) = P
+b
+p(a, b | c)
+See probability notes on the course site if you need them (catch up quick!)
+15 / 27
+Maximum a Posteriori (MAP) estimation
+Posterior probability is “what we believe after seeing the data”: p(θ | X)
+Using Bayes rule,
+p(θ | X) = p(X | θ)p(θ)
+p(X)
+∝ p(X | θ) p(θ)
+Constant in terms of θ Likelihood Prior
+To use this, we need a prior distribution for θ
+What we believe about θ before seeing the data
+If we’re flipping coins: might want p(θ) higher for values close to/exactly equal to 1
+2
+For COVID, maybe a separate study estimated Lower Mainland rate at 0.02
+Then could use a prior that prefers θ not too different from that number
+In CPSC 340, priors on linear models’ weights correspond to regularizers
+Choose smaller p(θ) for models more likely to overfit
+16 / 27
+MAP for Bernoulli with a discrete prior
+Consider x
+(1) = 1, x
+(2) = 1, x
+(3) = 0, where MLE is 2
+3
+Using a prior that looks like Gives posterior proportional to
+Pr(θ = 0 ) = 0.05 Pr(θ = 0 | X) ∝ (0 · 0 · 1 ) · 0.05 = 0
+Pr(θ = 0.25) = 0.2 Pr(θ = 0.25 | X) ∝ (0.25 · 0.25 · 0.75) · 0.2 ≈ 0.01
+Pr(θ = 0.5 ) = 0.5 Pr(θ = 0.5 | X) ∝ (0.5 · 0.5 · 0.5 ) · 0.5 ≈ 0.06
+Pr(θ = 0.75) = 0.2 Pr(θ = 0.75 | X) ∝ (0.75 · 0.75 · 0.25) · 0.2 ≈ 0.03
+Pr(θ = 1 ) = 0.05 Pr(θ = 1 | X) ∝ (1 · 1 · 0 ) · 0.05 = 0
+So our MAP estimate is ˆθ = 0.5
+. . . using this choice of prior, which favours a fair coin
+Notice that p(X) didn’t matter: it’s the same for all θ
+17 / 27
+Digression: proportional-to (∝) notation
+In math, the notation f(θ) ∝ g(θ) means
+“there is some κ > 0 such that f(θ) = κg(θ) for all θ”
+There are many possible κ: we have both 10θ
+2 ∝ θ
+2
+and √
+πθ2 ∝ θ
+2
+For probability distributions, if p ∝ g, the constant κ is unique
+This is because we know that probability distributions sum/integrate to 1:
+Say θ is discrete, and p(θ) = κg(θ) ∝ g(θ)
+We know that P
+θ
+p(θ) = 1, so P
+θ
+κg(θ) = 1: thus κ = 1/ (
+P
+θ
+g(θ))
+Plugging back in, this means p(θ) = g(θ)
+P
+θ
+′ g(θ
+′)
+Plugging in on the previous slide, we could find that e.g.
+Pr(θ = 0.5 | X) ≈
+0.06
+0 + 0.01 + 0.06 + 0.03 + 0
+= 60%
+Using ∝ can make our life a lot easier!
+18 / 27
+Continuous distributions
+Recall that θ could be any number between 0 and 1
+But our previous prior only allowed θ ∈ {0, 0.25, 0.5, 0.75, 1}
+Instead, it’d be nicer to allow any value of θ from [0, 1]
+Usually want a continuous distribution
+Convenient to work with their probability density function (pdf)
+A function p(θ) with p(θ) ≥ 0 and R ∞
+−∞ p(θ)dθ = 1
+Note: can have p(θ) > 1 for some θ!
+Get probabilities by integrating over a range: Pr(0.45 ≤ θ ≤ 0.55) = Z 0.55
+0.45
+p(θ) dθ
+Probability of any individual θ is 0: Pr(θ = 0.5) = Z 0.5
+0.5
+p(θ) dθ = 0
+Note that if p ∝ g, 1 = R
+p(θ)dθ = κ
+R
+g(θ)dθ
+Proportionality constant is still unique, p(θ) = g(θ)/
+R
+g(θ
+′
+)dθ
+′
+19 / 27
+Continuous posteriors
+Recall the posterior, likelihood, prior are related as
+p(θ | X) ∝ p(X | θ) p(θ)
+If we have a continuous prior on θ, p(θ) is a probability density
+But even so, for binary X, likelihood p(X | θ) is a probability:
+p(X | θ) = Pr(X(1) = x
+(1), . . . , X(n) = x
+(n)
+| θ)
+Later, for continuous X, likelihood will also be a density function
+p(θ | X) is also a posterior density
+20 / 27
+What prior to use for Bernoulli?
+Want a continuous distribution on [0, 1] that works well with a Bernoulli likelihood
+Most common choice is the beta distribution:
+p(θ | α, β) ∝ θ
+α−1
+(1 − θ)
+β−1
+for 0 ≤ θ ≤ 1, α > 0, β > 0
+Density is 0 if θ /∈ [0, 1]
+Looks like a Bernoulli likelihood, with (α − 1) ones and (β − 1) zeroes
+But a key difference: the argument is θ, not α or β
+Probability distribution over θ ∈ [0, 1] – “probability over probabilities”
+We know what’s hidden in the ∝ sign:
+p(θ | α, β) = θ
+α−1
+(1 − θ)
+β−1
+R
+θ
+α−1
+(1 − θ)
+β−1dθ
+Beta function B(α, β)
+21 / 27
+Beta distribution
+Beta distribution can take many shapes for different α and β: animation
+https://en.wikipedia.org/wiki/File:Beta_distribution_pdf.svg
+Why such a popular choice? Partial reason: it’s pretty flexible
+Can prefer 0.5, 0, 0.23561, towards “0 or 1”, can be uniform (α = β = 1), . . .
+Can’t bias towards “0.25 or 0.75”, can’t say “half the time it’ll be exactly 0.5”, . . .
+22 / 27
+Beta-Bernoulli model
+Beta is “flexible enough,” but mostly posterior and MAP have really simple forms
+Posterior when θ ∼ Beta(α, β), X ∼ Bern(θ):
+p(θ | X, α, β) ∝ p(X | θ, α, β) p(θ | α, β) = p(X | θ)p(θ | α, β)
+∝ θ
+n1
+(1 − θ)
+n0 θ
+α−1
+(1 − θ)
+β−1
+= θ
+(n1+α)−1
+(1 − θ)
+(n0+β)−1
+which is another beta distribution! (θ | X, α, β) ∼ Beta(α + n1, β + n0)
+Why does it have to be a beta? Because ∝ is unique
+If p(t) ∝ t
+α˜−1
+(1 − t)
+β˜−1
+, we necessarily have t ∼ Beta(˜α, β˜)
+Make sure this makes sense to you!
+23 / 27
+MAP in the Beta-Bernoulli model
+The posterior with a Bernoulli likelihood and beta prior is beta
+That is, with α˜ = n1 + α, β˜ = n0 + β,
+p(θ | X, α, β) = θ
+α˜−1
+(1 − θ)
+β˜−1
+B( ˜α, β˜)
+Taking the log and setting the derivative to zero gives
+θ =
+α˜ − 1
+α˜ + β˜ − 2
+=
+n1 + α − 1
+n + α + β − 2
+or θ ∈ {0, 1}
+If α >˜ 1, β >˜ 1 (always true if n0, n1 ≥ 1), then MAP is first expression above
+If α = 1, β = 1 (a uniform prior), we get the MLE
+If α = β = 2 (mild preference towards 1/2), we get Laplace smoothing
+If α = β > 2, we bias more strongly towards ˆθ = 0.5 than Laplace smoothing
+If α = β < 1, we bias away from 1/2 (towards either 0 or 1)
+If α > β, we bias towards 1
+As n → ∞, the prior stops mattering and MAP → MLE
+But using a prior means we behave differently with relatively small n
+24 / 27
+Existence of MAP estimate under beta prior
+Our MAP estimate for Beta(α, β) prior and Bernoulli likelihood was
+ˆθ =
+n1 + α − 1
+(n1 + α − 1) + (n0 + β − 1)
+We assumed that n1 + α > 1, n0 + β > 1
+But what if we don’t have these?
+By checking likelihood, get pretty quickly that:
+If n1 + α > 1 and n0 + β ≤ 1,
+ˆθ = 1
+If n1 + α ≤ 1 and n0 + β > 1,
+ˆθ = 0
+If n1 + α < 1 and n0 + β < 1, density is infinite at both ˆθ = 0 and ˆθ = 1
+If n1 + α = 1 and n0 + β = 1, anything in [0, 1] works
+25 / 27
+Hyper-parameters and (cross)-validation
+We call the parameters of the prior, α and β, the hyper-parameters
+Parameters that “affect the complexity of the model”
+340 examples: degree of a polynomial, depth of a decision tree, neural network
+architecture, regularization weight, number of rounds of gradient boosting
+Also anything hard to fit with your learning algorithm, e.g. gradient descent step size
+Trying to fit α and β based on training likelihood doesn’t work: would just
+become MLE by making α, β → 1
+Default 340-type approach: use a validation set (or cross-validation)
+Split X into “training” and “validation” sets
+For different values of α and β:
+Find the MAP on the training set, evaluate its validation likelihood
+Pick the hyper-parameters with highest validation likelihood
+Approximates maximizing the held-out generalization error on totally-new data
+340 covers many things that can go wrong, like overfitting to the validation set
+Happens all the time, including in UBC PhD theses and in top conferences!
+CPSC 532D covers this more mathematically :)
+26 / 27
+Summary
+Maximum likelihood estimation (MLE):
+Estimates θ by finding the setting that maximizes the data likelihood, p(X | θ)
+For Bernoulli, just ˆθ = (number of 1s)/(number of examples)
+Maximum a posteriori (MAP) estimation:
+Maximizes posterior probability of parameters given data
+Can avoid bad behaviour of MLE, but requires choosing a prior
+Probability review: product rule, marginalization, Bayes rule, α for probabilities
+Beta distribution: “cooperates well” with Bernoulli likelihood
+Next time: everything(ish) from 340 but with probabilities
+27 / 27

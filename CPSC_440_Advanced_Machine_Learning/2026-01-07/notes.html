@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_440 - Lecture 2026-01-07</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc440">CPSC_440</a> /
+            <span>2026-01-07</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Machine Learning</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-07</span>
+                <span class="instructor">👤 Danica Sutherland</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <p><strong>Admin Updates:</strong></p>
+                    <ul>
+                        <li>Sign up for Piazza from cs.ubc.ca/~dsuth/440 - lecture recordings now linked</li>
+                        <li>CBTF quiz booking coming soon (may push quiz schedule back a week)</li>
+                        <li>Assignment 1 out tonight/tomorrow morning</li>
+                        <li>Office hours starting next week - calendar on Piazza</li>
+                    </ul>
+
+                    <p><strong>Last Time Recap:</strong></p>
+                    <ul>
+                        <li>Density estimation: data → probability model</li>
+                        <li>Inference: using probability model for tasks (computing probabilities, likelihoods, sampling)</li>
+                        <li>Bernoulli distribution: p(x|θ) = θˣ(1-θ)¹⁻ˣ</li>
+                    </ul>
+
+                    <p><strong>Maximum Likelihood Estimation (MLE):</strong></p>
+                    <ul>
+                        <li>Likelihood function: L(θ) = p(X|θ) = θⁿ¹(1-θ)ⁿ⁰</li>
+                        <li>MLE: pick θ with highest likelihood</li>
+                        <li>For Bernoulli: θ̂ = n₁/n (just the sample mean!)</li>
+                        <li>Derivation: maximize log-likelihood, set derivative to zero</li>
+                        <li>Problem: Can overfit on small datasets</li>
+                    </ul>
+
+                    <p><strong>Maximum A Posteriori (MAP) Estimation:</strong></p>
+                    <ul>
+                        <li>Instead of maximizing p(X|θ), maximize p(θ|X)</li>
+                        <li>Using Bayes rule: p(θ|X) ∝ p(X|θ) · p(θ)</li>
+                        <li>Requires choosing a prior distribution p(θ)</li>
+                        <li>Beta prior: p(θ|α,β) ∝ θᵅ⁻¹(1-θ)ᵝ⁻¹</li>
+                        <li>Beta-Bernoulli posterior is also Beta: θ|X ~ Beta(α+n₁, β+n₀)</li>
+                        <li>MAP estimate: θ̂ = (n₁+α-1)/(n+α+β-2)</li>
+                        <li>Special cases: α=β=1 → MLE, α=β=2 → Laplace smoothing</li>
+                    </ul>
+
+                    <p><strong>Key Concepts:</strong></p>
+                    <ul>
+                        <li>Proportional-to notation: f(θ) ∝ g(θ) means f(θ) = κg(θ) for some κ>0</li>
+                        <li>Continuous distributions: use probability density functions (pdfs)</li>
+                        <li>Hyperparameters (α, β): chose via validation/cross-validation</li>
+                        <li>As n→∞, MAP converges to MLE</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+
+                    <!-- ===== REVIEW FROM LAST TIME ===== -->
+                    <article>
+                        <h3>Review: From Density Estimation to Parameter Learning</h3>
+
+                        <p>In the last lecture, we established the foundation: <strong>binary density estimation</strong> using the Bernoulli distribution. Today we tackle the next natural question: <em>how do we actually learn the parameter θ from data?</em></p>
+
+                        <h4>Quick Refresher: What We Know</h4>
+
+                        <p><strong>Density Estimation:</strong> The process of going from data to a probability model</p>
+                        <ul>
+                            <li><strong>Input:</strong> Binary data <code>X = [x⁽¹⁾, x⁽²⁾, ..., x⁽ⁿ⁾]</code> where each <code>x⁽ⁱ⁾ ∈ {0, 1}</code></li>
+                            <li><strong>Output:</strong> A parameterized model that describes the data's probability distribution</li>
+                        </ul>
+
+                        <p><strong>Inference:</strong> Using a probability model to "do things"</p>
+                        <ul>
+                            <li>Computing probabilities of derived events (e.g., "What's the probability 3+ out of 10 are positive?")</li>
+                            <li>Computing likelihoods (how probable is this dataset?)</li>
+                            <li>Finding the mode (most likely value)</li>
+                            <li>Sampling (generating new data from the distribution)</li>
+                        </ul>
+
+                        <p><strong>The Bernoulli Distribution:</strong></p>
+
+                        <blockquote>
+                            <p>If <code>X ~ Bern(θ)</code>, then for <code>x ∈ {0, 1}</code> we have:</p>
+                            <p style="text-align: center; font-size: 1.1em;"><code>Pr(X = x | θ) = θˣ(1 - θ)¹⁻ˣ</code></p>
+                        </blockquote>
+
+                        <p>We can write this more explicitly:</p>
+                        <ul>
+                            <li><code>Pr(X = 1 | θ) = θ</code></li>
+                            <li><code>Pr(X = 0 | θ) = 1 - θ</code></li>
+                        </ul>
+
+                        <p><strong>Notation reminder:</strong> We might also write <code>p(x | θ)</code> or even just <code>p(x)</code> when the context is clear. Be careful to track what's being abbreviated!</p>
+
+                        <h4>The Learning Problem</h4>
+
+                        <p>Last time we learned how to <em>use</em> a Bernoulli model (inference). Today's question: <mark>How do we <em>train</em> or <em>learn</em> a Bernoulli model from data?</mark></p>
+
+                        <p><strong>The setup:</strong></p>
+                        <pre><code class="language-plaintext">Data:  X = [1, 0, 0, 1, 0]
+
+Learning Algorithm: ???
+
+Output: θ̂ = 0.4</code></pre>
+
+                        <p>We need a principled way to estimate θ from the observed data. Today we'll explore two fundamental approaches:</p>
+                        <ol>
+                            <li><strong>Maximum Likelihood Estimation (MLE)</strong> — Pick the θ that makes the data most likely</li>
+                            <li><strong>Maximum A Posteriori (MAP) Estimation</strong> — Pick the θ that is most probable given the data</li>
+                        </ol>
+
+                        <p>These might sound similar, but they're subtly different—and that difference matters a lot in practice!</p>
+                    </article>
+
+                    <!-- ===== LIKELIHOOD FUNCTION ===== -->
+                    <article>
+                        <h3>The Likelihood Function: Measuring How Well θ Explains the Data</h3>
+
+                        <h4>What is a Likelihood Function?</h4>
+
+                        <blockquote>
+                            <p><strong>Definition:</strong> The likelihood function is a function from parameters θ to the probability (density) of observing the data under those parameters.</p>
+                            <p style="text-align: center; font-size: 1.1em;"><code>L(θ) = p(X | θ)</code></p>
+                        </blockquote>
+
+                        <p><strong>Key insight:</strong> Think of the likelihood as asking: "If the parameter was θ, how probable would it be to observe exactly this data X?"</p>
+
+                        <p>For Bernoulli data with n₁ ones and n₀ zeros:</p>
+                        <p style="text-align: center; font-size: 1.1em;"><code>L(θ) = θⁿ¹ · (1 - θ)ⁿ⁰</code></p>
+
+                        <h4>Example: Visualizing the Likelihood</h4>
+
+                        <p>Let's compute the likelihood for the dataset <code>X = [1, 0, 1]</code> (n₁ = 2, n₀ = 1), which gives us <code>L(θ) = θ²(1-θ)</code>:</p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">θ value</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Calculation</th>
+                                    <th style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);">L(θ)</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Interpretation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">θ = 0</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0² · (1-0) = 0 · 1</td>
+                                    <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);">0</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Impossible (we saw 1s!)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">θ = 0.5</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.5² · 0.5 = 0.25 · 0.5</td>
+                                    <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);">0.125</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Moderately likely</td>
+                                </tr>
+                                <tr style="background: var(--secondary-bg);">
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>θ = 2/3</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">(2/3)² · (1/3)</td>
+                                    <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);"><strong>≈ 0.148</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Maximum!</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">θ = 0.75</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.75² · 0.25 = 0.5625 · 0.25</td>
+                                    <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);">≈ 0.14</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Pretty likely, but not maximum</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">θ = 1</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">1² · (1-1) = 1 · 0</td>
+                                    <td style="padding: 0.75rem; text-align: right; border: 1px solid var(--border-color);">0</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Impossible (we saw a 0!)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>Key observations:</strong></p>
+                        <ul>
+                            <li>The dataset <code>[1, 0, 1]</code> is <em>more likely</em> for θ = 0.75 than θ = 0.5</li>
+                            <li>The dataset is <em>impossible</em> for θ = 0 or θ = 1 (since we have both 0s and 1s)</li>
+                            <li>The maximum likelihood occurs at θ = 2/3 ≈ 0.667</li>
+                        </ul>
+
+                        <h4>Important Distinction: Likelihood is NOT a Probability Distribution</h4>
+
+                        <p>⚠️ <strong>Common misconception:</strong> The likelihood function L(θ) is <strong>not</strong> a probability distribution over θ!</p>
+
+                        <p><strong>Why not?</strong></p>
+                        <ul>
+                            <li>We don't have <code>∫ L(θ) dθ = 1</code></li>
+                            <li>L(θ) is a function of the parameter, not the data</li>
+                            <li>It measures "how likely the data is for different θ values," not "how probable different θ values are"</li>
+                        </ul>
+
+                        <p><strong>What we do have:</strong></p>
+                        <ul>
+                            <li><code>∫ p(X | θ) dX = 1</code> — for a fixed θ, probabilities over data sum/integrate to 1</li>
+                            <li>But when we have one fixed dataset X, this isn't relevant</li>
+                        </ul>
+
+                        <p>This distinction will become crucial when we introduce priors and Bayesian inference!</p>
+                    </article>
+
+                    <!-- ===== MLE ===== -->
+                    <article>
+                        <h3>Maximum Likelihood Estimation (MLE): Pick the Most Explanatory θ</h3>
+
+                        <h4>The MLE Principle</h4>
+
+                        <blockquote>
+                            <p><strong>Maximum Likelihood Estimation (MLE):</strong> Choose the parameter θ that maximizes the likelihood of observing the data.</p>
+                            <p style="text-align: center; font-size: 1.1em;"><code>θ̂ ∈ arg max<sub>θ</sub> L(θ) = arg max<sub>θ</sub> p(X | θ)</code></p>
+                        </blockquote>
+
+                        <p><strong>In words:</strong> "Find the parameters θ where the data X would have been most likely to be observed."</p>
+
+                        <p><strong>The arg max notation:</strong></p>
+                        <ul>
+                            <li><code>arg max<sub>x</sub> f(x)</code> means "the set of x values that maximize f"</li>
+                            <li>There might be more than one! (That's why we write <code>∈</code> instead of <code>=</code>)</li>
+                            <li>Example: <code>arg max<sub>x</sub> x²</code> doesn't exist (no maximum), but <code>arg max<sub>x∈[-1,1]</sub> x² = {-1, 1}</code></li>
+                        </ul>
+
+                        <h4>MLE for Bernoulli Distribution</h4>
+
+                        <p>For Bernoulli data, the MLE has a beautiful, intuitive form:</p>
+
+                        <blockquote>
+                            <p style="text-align: center; font-size: 1.2em;"><code>θ̂<sub>MLE</sub> = n₁/n = n₁/(n₁ + n₀)</code></p>
+                        </blockquote>
+
+                        <p><strong>In other words:</strong> The MLE is just the <em>sample proportion</em> of 1s!</p>
+
+                        <p><strong>Intuitive example:</strong> "If you flip a coin 50 times and get 23 heads, guess that Pr(heads) = 23/50 = 0.46"</p>
+
+                        <p><strong>Python implementation:</strong></p>
+                        <pre><code class="language-python">theta_mle = np.mean(X)  # Takes O(n) time</code></pre>
+
+                        <p>That's it! For Bernoulli, MLE is trivially simple to compute.</p>
+
+                        <h4>Deriving the MLE (The Hard Way)</h4>
+
+                        <p>While the result is simple, let's derive it rigorously. This derivation technique generalizes to much more complex models.</p>
+
+                        <p><strong>Step 1: Write the optimization problem</strong></p>
+                        <p style="text-align: center;"><code>θ̂ ∈ arg max<sub>θ</sub> θⁿ¹(1 - θ)ⁿ⁰</code></p>
+
+                        <p><strong>Step 2: Take the log (makes math easier)</strong></p>
+                        <p>Instead of maximizing L(θ), we maximize log L(θ). Since log is strictly monotonic (if α > β then log α > log β), the arg max is the same:</p>
+
+                        <p style="text-align: center;"><code>θ̂ ∈ arg max<sub>θ</sub> log L(θ) = arg max<sub>θ</sub> [n₁ log(θ) + n₀ log(1 - θ)]</code></p>
+
+                        <p><strong>Why use log-likelihood?</strong></p>
+                        <ul>
+                            <li><strong>Mathematically easier:</strong> Products become sums, exponents become coefficients</li>
+                            <li><strong>Numerically stable:</strong> Prevents underflow with very small probabilities</li>
+                            <li><strong>Standard practice:</strong> Almost all ML optimization is done in log space</li>
+                        </ul>
+
+                        <p><strong>Step 3: Take the derivative and set it to zero</strong></p>
+
+                        <pre><code class="language-plaintext">d/dθ [n₁ log(θ) + n₀ log(1-θ)] = n₁/θ - n₀/(1-θ)
+
+Setting equal to zero:
+n₁/θ - n₀/(1-θ) = 0
+n₁(1-θ) = n₀θ
+n₁ = n₀θ + n₁θ
+n₁ = (n₀ + n₁)θ
+n₁ = nθ
+
+Therefore: θ = n₁/n</code></pre>
+
+                        <p><strong>Step 4: Verify it's a maximum (not a minimum or saddle point)</strong></p>
+
+                        <p>Check the second derivative:</p>
+                        <pre><code class="language-plaintext">d²/dθ² [n₁ log(θ) + n₀ log(1-θ)] = -n₁/θ² - n₀/(1-θ)² ≤ 0</code></pre>
+
+                        <p>Since the second derivative is negative (for n₁, n₀ > 0), the function is <strong>concave</strong>, which means our critical point is indeed a <strong>maximum</strong>. ✓</p>
+
+                        <h4>Edge Cases: What if n₁ = 0 or n₀ = 0?</h4>
+
+                        <p>If all data points are 1s (n₁ = n, n₀ = 0) or all are 0s (n₁ = 0, n₀ = n), we have a problem:</p>
+                        <ul>
+                            <li>log(0) = -∞ makes the derivative approach undefined</li>
+                            <li>We'd be dividing by zero in our formula</li>
+                        </ul>
+
+                        <p><strong>Solution:</strong> Go back to the plain likelihood θⁿ¹(1-θ)ⁿ⁰ without logs:</p>
+                        <ul>
+                            <li>If n₁ = 0, n₀ > 0: Likelihood is (1-θ)ⁿ⁰, maximized at <strong>θ = 0</strong></li>
+                            <li>If n₁ > 0, n₀ = 0: Likelihood is θⁿ¹, maximized at <strong>θ = 1</strong></li>
+                        </ul>
+
+                        <p>Fortunately, the formula θ̂ = n₁/n still works in these edge cases!</p>
+
+                        <h4>Using the MLE for Inference</h4>
+
+                        <p>Once we've learned θ̂ from data, we can use it for inference tasks:</p>
+
+                        <p><strong>Example:</strong> "If I eat lunch with three randomly selected UBC students, what's the probability any of them are COVID-positive?"</p>
+
+                        <p><strong>Solution:</strong></p>
+                        <pre><code class="language-plaintext">Pr(at least 1 positive) = 1 - Pr(all negative)
+                         = 1 - (1 - θ)³
+                         ≈ 1 - (1 - θ̂)³</code></pre>
+
+                        <p>We've gone full circle: <strong>Data → Learn θ̂ → Use θ̂ for predictions</strong></p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🎯 The MLE Philosophy</h5>
+                            <p>MLE embodies a simple, intuitive principle: <strong>"The parameter should be whatever makes the data we actually observed most likely."</strong></p>
+                            <p>If you see 40% heads in 100 coin flips, guess that the coin has a 40% chance of heads. Simple, elegant, and often works remarkably well!</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== PROBLEMS WITH MLE ===== -->
+                    <article>
+                        <h3>Problems with MLE: Overfitting and Unlucky Data</h3>
+
+                        <p>While MLE is elegant and often effective, it has serious limitations—especially with small datasets.</p>
+
+                        <h4>Asymptotic Optimality (The Good News)</h4>
+
+                        <p>MLE has excellent <strong>asymptotic properties</strong> as n → ∞:</p>
+
+                        <blockquote>
+                            <p><strong>Consistency:</strong> If data truly comes from X ~ Bern(θ*), then θ̂<sub>MLE</sub> converges to the true θ* as n → ∞</p>
+                        </blockquote>
+
+                        <p>These kinds of properties are covered in honors/graduate statistics classes. But the key word is <em>asymptotic</em>—what happens when n is <strong>small</strong>?</p>
+
+                        <h4>Problem 1: Sensitivity to Unlucky Data</h4>
+
+                        <p>Consider the dataset <code>X = [1, 0, 1]</code> with θ̂<sub>MLE</sub> = 2/3 ≈ 0.67</p>
+
+                        <p><strong>Scenario A:</strong> We see one more data point, x⁽⁴⁾ = 1</p>
+                        <ul>
+                            <li>New MLE: θ̂ = 3/4 = 0.75 (increased by 0.08)</li>
+                        </ul>
+
+                        <p><strong>Scenario B:</strong> We see one more data point, x⁽⁴⁾ = 0</p>
+                        <ul>
+                            <li>New MLE: θ̂ = 2/4 = 0.5 (decreased by 0.17)</li>
+                        </ul>
+
+                        <p><strong>The problem:</strong> A single data point causes a huge swing in our estimate! With small n, getting an "unlucky" X can make the MLE very poor.</p>
+
+                        <p>For Bernoullis, this sensitivity decreases quickly with n. But for more complex models, the MLE can severely <strong>overfit</strong>.</p>
+
+                        <h4>Problem 2: Extreme Overfitting on Small Datasets</h4>
+
+                        <p>Now consider a slightly different dataset: <code>X = [1, 1, 1]</code></p>
+
+                        <p><strong>MLE estimate:</strong> θ̂ = 3/3 = 1 (we estimate Pr(X = 1) = 100%)</p>
+
+                        <p><strong>Seems reasonable?</strong> All our observations were 1s, so maybe the probability really is 1...</p>
+
+                        <p><strong>The catastrophe:</strong> Now imagine we see a test dataset with a 0 in it.</p>
+
+                        <pre><code class="language-plaintext">Likelihood of test data = p(0 | θ̂ = 1) = 1 - θ̂ = 1 - 1 = 0</code></pre>
+
+                        <p><mark>Our model assigns ZERO probability to the test data!</mark></p>
+
+                        <p><strong>Why this is terrible:</strong></p>
+                        <ul>
+                            <li>Zero likelihood means infinite negative log-likelihood</li>
+                            <li>Model comparison breaks (can't compare infinities)</li>
+                            <li>Gradient-based optimization fails</li>
+                            <li>The model has memorized the training data and can't generalize</li>
+                        </ul>
+
+                        <p><strong>Real-world analogy:</strong> If a drug works for everyone in a trial of three people, does it <em>always</em> work? Of course not! The sample size is too small to conclude certainty.</p>
+
+                        <h4>Common Solution: Laplace Smoothing</h4>
+
+                        <p>A simple fix (introduced in CPSC 340 for Naive Bayes) is <strong>Laplace smoothing</strong>:</p>
+
+                        <blockquote>
+                            <p style="text-align: center; font-size: 1.1em;"><code>θ̂<sub>Lap</sub> = (n₁ + 1)/(n + 2) = (n₁ + 1)/((n₁ + 1) + (n₀ + 1))</code></p>
+                        </blockquote>
+
+                        <p><strong>Interpretation:</strong> This is the MLE for a dataset with one extra "imaginary" 0 and one extra "imaginary" 1 added to it!</p>
+
+                        <p><strong>Benefits:</strong></p>
+                        <ul>
+                            <li>Avoids zero counts (even if n₁ = 0, we get θ̂ = 1/2 instead of 0)</li>
+                            <li>Reduces sensitivity to small datasets</li>
+                            <li>Simple and computationally efficient</li>
+                        </ul>
+
+                        <p><strong>Example with X = [1, 1, 1]:</strong></p>
+                        <ul>
+                            <li>MLE: θ̂ = 3/3 = 1 (dangerous!)</li>
+                            <li>Laplace: θ̂ = 4/5 = 0.8 (more reasonable)</li>
+                        </ul>
+
+                        <p>Now if we see a 0 in test data, <code>p(0 | θ̂ = 0.8) = 0.2</code>—small but not zero!</p>
+
+                        <h4>Laplace Smoothing is a Special Case of MAP</h4>
+
+                        <p>It turns out that Laplace smoothing is not just an ad-hoc fix—it's a special case of <strong>Maximum A Posteriori (MAP) estimation</strong> with a specific prior. Let's explore that next!</p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">⚠️ When MLE Fails</h5>
+                            <p><strong>Small datasets + complex models = overfitting disaster</strong></p>
+                            <p>MLE has no "regularization"—it will happily fit all the data perfectly, even if that means creating a model that generalizes terribly. The solution? Add prior knowledge through MAP estimation.</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== PROBABILITY REVIEW ===== -->
+                    <article>
+                        <h3>Essential Probability Review: Bayes Rule and Friends</h3>
+
+                        <p>Before we dive into MAP estimation, let's review some fundamental probability concepts. <mark>Make sure you know all of these cold—they're essential for the rest of the course!</mark></p>
+
+                        <h4>The Product Rule (Conditional Probability)</h4>
+
+                        <blockquote>
+                            <p><strong>Product Rule:</strong> <code>Pr(A ∩ B) = Pr(A | B) · Pr(B)</code></p>
+                        </blockquote>
+
+                        <p>This can be rearranged to give the definition of conditional probability:</p>
+                        <p style="text-align: center;"><code>Pr(A | B) = Pr(A ∩ B) / Pr(B)</code></p>
+
+                        <h4>Symmetry of Joints</h4>
+
+                        <p>The order doesn't matter for joint probabilities:</p>
+                        <p style="text-align: center;"><code>Pr(A ∩ B) = Pr(B ∩ A)</code></p>
+
+                        <h4>Bayes Rule (The Fundamental Tool of Bayesian Inference)</h4>
+
+                        <p>Using the product rule twice and the symmetry of joints:</p>
+
+                        <blockquote>
+                            <p><strong>Bayes Rule:</strong></p>
+                            <p style="text-align: center; font-size: 1.1em;"><code>Pr(A | B) = [Pr(B | A) · Pr(A)] / Pr(B)</code></p>
+                        </blockquote>
+
+                        <p><strong>Why it's powerful:</strong> This "flips" the order of conditionals! If we know Pr(B | A) but want Pr(A | B), Bayes rule tells us how to convert between them using the marginal probabilities.</p>
+
+                        <h4>Marginalization Rule</h4>
+
+                        <blockquote>
+                            <p><strong>For discrete X:</strong> <code>Pr(A) = Σ<sub>x</sub> Pr(A ∩ (X = x))</code></p>
+                            <p><strong>For continuous X:</strong> <code>Pr(A) = ∫ p(A ∩ (X = x)) dx</code></p>
+                        </blockquote>
+
+                        <p><strong>In words:</strong> To get the probability of A, sum/integrate over all possible values of X.</p>
+
+                        <h4>Combining Bayes and Marginalization</h4>
+
+                        <p>These two rules are "close friends" and combine beautifully:</p>
+
+                        <pre><code class="language-plaintext">p(a) = Σ<sub>b</sub> p(a, b) = Σ<sub>b</sub> p(a | b) · p(b)
+
+p(a | b) = [p(b | a) · p(a)] / p(b) = [p(b | a) · p(a)] / [Σ<sub>a'</sub> p(b | a') · p(a')]</code></pre>
+
+                        <p>The denominator uses marginalization to "normalize" the probability!</p>
+
+                        <h4>Conditioning on Everything</h4>
+
+                        <p>These rules still work if you condition everything on some event C:</p>
+
+                        <ul>
+                            <li><strong>Product rule:</strong> <code>p(a, b | c) = p(a | b, c) · p(b | c)</code></li>
+                            <li><strong>Marginalization:</strong> <code>p(a | c) = Σ<sub>b</sub> p(a, b | c)</code></li>
+                        </ul>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">📚 If You Need a Refresher</h5>
+                            <p>See the probability notes on the course website. These concepts are <strong>absolutely fundamental</strong> to machine learning. If they're not second nature, catch up quickly—we'll be using them constantly!</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== MAP ESTIMATION ===== -->
+                    <article>
+                        <h3>Maximum A Posteriori (MAP) Estimation: Incorporating Prior Beliefs</h3>
+
+                        <h4>The Philosophical Shift</h4>
+
+                        <p>MLE asks: <em>"Which θ makes the data most likely?"</em></p>
+
+                        <blockquote>
+                            <p><code>θ̂<sub>MLE</sub> ∈ arg max<sub>θ</sub> p(X | θ)</code></p>
+                        </blockquote>
+
+                        <p>But this feels backwards! The data could be most likely for a <em>really weird θ</em>, leading to overfitting. What we really want is:</p>
+
+                        <p><strong>"After seeing the data X, which θ is most likely?"</strong></p>
+
+                        <blockquote>
+                            <p><code>θ̂<sub>MAP</sub> ∈ arg max<sub>θ</sub> p(θ | X)</code></p>
+                        </blockquote>
+
+                        <p>This is called <strong>Maximum A Posteriori (MAP) estimation</strong>.</p>
+
+                        <h4>From Likelihood to Posterior: Using Bayes Rule</h4>
+
+                        <p>How do we compute p(θ | X)? Use Bayes rule!</p>
+
+                        <pre><code class="language-plaintext">p(θ | X) = [p(X | θ) · p(θ)] / p(X)
+         ∝ p(X | θ) · p(θ)
+
+         Likelihood   Prior</code></pre>
+
+                        <p><strong>Key insight:</strong> p(X) doesn't depend on θ—it's constant with respect to the arg max!</p>
+
+                        <blockquote>
+                            <p><strong>MAP Estimation Formula:</strong></p>
+                            <p style="text-align: center; font-size: 1.1em;"><code>p(θ | X) ∝ p(X | θ) · p(θ)</code></p>
+                            <p style="text-align: center;"><code>Posterior ∝ Likelihood × Prior</code></p>
+                        </blockquote>
+
+                        <h4>What is a Prior Distribution?</h4>
+
+                        <p><strong>Prior p(θ):</strong> What we believe about θ <em>before</em> seeing the data</p>
+
+                        <p><strong>Examples of priors:</strong></p>
+                        <ul>
+                            <li><strong>Coin flipping:</strong> Might want p(θ) higher for values close to θ = 0.5 (fair coins are more common than biased coins)</li>
+                            <li><strong>COVID prevalence:</strong> A separate study estimated Lower Mainland rate at 2%. Could use a prior that prefers θ not too different from 0.02</li>
+                            <li><strong>Machine learning models:</strong> Priors on weights correspond to <em>regularizers</em> (from CPSC 340). Smaller p(θ) for models more likely to overfit</li>
+                        </ul>
+
+                        <p><strong>Posterior p(θ | X):</strong> What we believe about θ <em>after</em> seeing the data</p>
+
+                        <p>The posterior combines our prior beliefs with evidence from the data!</p>
+
+                        <h4>Example: MAP with a Discrete Prior</h4>
+
+                        <p>Consider <code>X = [1, 1, 0]</code> with MLE θ̂ = 2/3 ≈ 0.67</p>
+
+                        <p>Let's use a discrete prior that favors a fair coin:</p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">θ</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Prior Pr(θ)</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Likelihood p(X|θ)</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Posterior ∝</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.05</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0 · 0 · 1 = 0</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0 · 0.05 = 0</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.25</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.2</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.25 · 0.25 · 0.75 ≈ 0.047</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.047 · 0.2 ≈ 0.01</td>
+                                </tr>
+                                <tr style="background: var(--secondary-bg);">
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>0.5</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>0.5</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.5 · 0.5 · 0.5 = 0.125</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>0.125 · 0.5 ≈ 0.06</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.75</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.2</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.75 · 0.75 · 0.25 ≈ 0.14</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.14 · 0.2 ≈ 0.03</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">1</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0.05</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">1 · 1 · 0 = 0</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">0 · 0.05 = 0</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>MAP estimate:</strong> θ̂<sub>MAP</sub> = 0.5 (compared to MLE of 0.67)</p>
+
+                        <p>The prior "pulled" our estimate toward 0.5 because we gave that value higher prior probability!</p>
+
+                        <p><strong>Note:</strong> p(X) didn't matter—it's the same constant for all θ, so it cancels out in the arg max.</p>
+
+                        <h4>Understanding the Proportional-To (∝) Notation</h4>
+
+                        <blockquote>
+                            <p><strong>Definition:</strong> <code>f(θ) ∝ g(θ)</code> means "there exists some κ > 0 such that f(θ) = κ · g(θ) for all θ"</p>
+                        </blockquote>
+
+                        <p><strong>Examples:</strong></p>
+                        <ul>
+                            <li><code>10θ² ∝ θ²</code> (with κ = 10)</li>
+                            <li><code>√π · θ² ∝ θ²</code> (with κ = √π)</li>
+                        </ul>
+
+                        <p><strong>For probability distributions, the constant κ is unique!</strong></p>
+
+                        <p>Why? Because probabilities must sum/integrate to 1:</p>
+
+                        <pre><code class="language-plaintext">If p(θ) = κ · g(θ) and Σ<sub>θ</sub> p(θ) = 1, then:
+Σ<sub>θ</sub> κ · g(θ) = 1
+κ · Σ<sub>θ</sub> g(θ) = 1
+κ = 1 / (Σ<sub>θ</sub> g(θ))
+
+Therefore: p(θ) = g(θ) / (Σ<sub>θ'</sub> g(θ'))</code></pre>
+
+                        <p><strong>Practical benefit:</strong> We can write <code>p(θ | X) ∝ p(X | θ) · p(θ)</code> and not worry about the normalization constant until we actually need probabilities (not just arg max)!</p>
+
+                        <p><strong>Example calculation:</strong> From the table above,</p>
+                        <pre><code class="language-plaintext">Pr(θ = 0.5 | X) = 0.06 / (0 + 0.01 + 0.06 + 0.03 + 0) = 0.06/0.10 = 60%</code></pre>
+                    </article>
+
+                    <!-- ===== BETA DISTRIBUTION ===== -->
+                    <article>
+                        <h3>The Beta Distribution: The Perfect Prior for Bernoulli</h3>
+
+                        <h4>From Discrete to Continuous Priors</h4>
+
+                        <p>In the previous example, our prior only allowed θ ∈ {0, 0.25, 0.5, 0.75, 1}. But θ could be <em>any</em> number in [0, 1]!</p>
+
+                        <p>We need a <strong>continuous distribution</strong> over θ ∈ [0, 1].</p>
+
+                        <h4>Continuous Distributions and Probability Density Functions</h4>
+
+                        <blockquote>
+                            <p><strong>Probability Density Function (pdf):</strong> A function p(θ) with:</p>
+                            <ul>
+                                <li><code>p(θ) ≥ 0</code> for all θ</li>
+                                <li><code>∫<sub>-∞</sub><sup>∞</sup> p(θ) dθ = 1</code></li>
+                            </ul>
+                        </blockquote>
+
+                        <p><strong>Important quirk:</strong> We can have p(θ) > 1 for some θ! (Unlike discrete probabilities)</p>
+
+                        <p><strong>Getting probabilities:</strong> Integrate over a range:</p>
+                        <pre><code class="language-plaintext">Pr(0.45 ≤ θ ≤ 0.55) = ∫<sub>0.45</sub><sup>0.55</sup> p(θ) dθ</code></pre>
+
+                        <p><strong>Single point has zero probability:</strong></p>
+                        <pre><code class="language-plaintext">Pr(θ = 0.5) = ∫<sub>0.5</sub><sup>0.5</sup> p(θ) dθ = 0</code></pre>
+
+                        <p><strong>Proportionality for continuous distributions:</strong></p>
+                        <p>If <code>p ∝ g</code>, then <code>κ = 1 / ∫ g(θ) dθ</code>, so:</p>
+                        <p style="text-align: center;"><code>p(θ) = g(θ) / ∫ g(θ') dθ'</code></p>
+
+                        <h4>Introducing the Beta Distribution</h4>
+
+                        <p>For Bernoulli models, the most common continuous prior is the <strong>Beta distribution</strong>:</p>
+
+                        <blockquote>
+                            <p><strong>Beta Distribution:</strong> For 0 ≤ θ ≤ 1, α > 0, β > 0:</p>
+                            <p style="text-align: center; font-size: 1.1em;"><code>p(θ | α, β) ∝ θ<sup>α-1</sup> (1 - θ)<sup>β-1</sup></code></p>
+                        </blockquote>
+
+                        <p><strong>Key properties:</strong></p>
+                        <ul>
+                            <li>Density is 0 if θ ∉ [0, 1] (only defined on the valid range)</li>
+                            <li>Looks like a Bernoulli likelihood with (α-1) ones and (β-1) zeros</li>
+                            <li><strong>But:</strong> The <em>argument</em> is θ, not α or β!</li>
+                            <li>This is a "probability distribution over probabilities"</li>
+                        </ul>
+
+                        <p><strong>Full formula (with normalization):</strong></p>
+                        <p style="text-align: center;"><code>p(θ | α, β) = θ<sup>α-1</sup> (1 - θ)<sup>β-1</sup> / B(α, β)</code></p>
+
+                        <p>where <code>B(α, β) = ∫<sub>0</sub><sup>1</sup> θ<sup>α-1</sup> (1 - θ)<sup>β-1</sup> dθ</code> is the <strong>Beta function</strong> (the normalization constant).</p>
+
+                        <h4>Why is Beta So Popular?</h4>
+
+                        <p><strong>Reason 1: Flexibility</strong></p>
+
+                        <p>The Beta distribution can take many shapes depending on α and β:</p>
+                        <ul>
+                            <li><strong>α = β = 1:</strong> Uniform distribution (all θ equally likely)</li>
+                            <li><strong>α = β = 2:</strong> Mild preference towards θ = 0.5</li>
+                            <li><strong>α = β > 2:</strong> Strong preference towards θ = 0.5</li>
+                            <li><strong>α = β < 1:</strong> Prefers extreme values (near 0 or 1)</li>
+                            <li><strong>α > β:</strong> Prefers larger θ (closer to 1)</li>
+                            <li><strong>α < β:</strong> Prefers smaller θ (closer to 0)</li>
+                        </ul>
+
+                        <p>See the <a href="https://en.wikipedia.org/wiki/File:Beta_distribution_pdf.svg" target="_blank">Wikipedia animation</a> showing Beta distributions for different α, β values.</p>
+
+                        <p><strong>Limitations:</strong></p>
+                        <ul>
+                            <li>Can't bias towards "0.25 or 0.75" (bimodal preferences)</li>
+                            <li>Can't say "half the time it'll be exactly 0.5" (discrete mass)</li>
+                        </ul>
+
+                        <p>But it's "flexible enough" for most use cases!</p>
+
+                        <p><strong>Reason 2: Conjugacy (The Real Magic)</strong></p>
+
+                        <p>The <em>main</em> reason Beta is so popular: the posterior and MAP have <strong>really simple closed-form solutions</strong>. Let's see why!</p>
+
+                        <h4>The Beta-Bernoulli Model: Conjugate Prior Magic</h4>
+
+                        <p>Suppose we use a Beta prior with Bernoulli likelihood:</p>
+
+                        <pre><code class="language-plaintext">Prior:      θ ~ Beta(α, β)
+Likelihood: X | θ ~ Bern(θ)
+
+Posterior:
+p(θ | X, α, β) ∝ p(X | θ) · p(θ | α, β)
+             ∝ [θ<sup>n₁</sup> (1-θ)<sup>n₀</sup>] · [θ<sup>α-1</sup> (1-θ)<sup>β-1</sup>]
+             = θ<sup>n₁+α-1</sup> (1-θ)<sup>n₀+β-1</sup>
+             = θ<sup>(n₁+α)-1</sup> (1-θ)<sup>(n₀+β)-1</sup></code></pre>
+
+                        <p><mark>This is another Beta distribution!</mark></p>
+
+                        <blockquote>
+                            <p><strong>Beta-Bernoulli Posterior:</strong></p>
+                            <p style="text-align: center; font-size: 1.1em;"><code>θ | X, α, β ~ Beta(α + n₁, β + n₀)</code></p>
+                        </blockquote>
+
+                        <p><strong>Why does it have to be Beta?</strong> Because the proportionality constant κ is unique for probability distributions! If <code>p(θ) ∝ θ<sup>α̃-1</sup>(1-θ)<sup>β̃-1</sup></code>, then by definition <code>θ ~ Beta(α̃, β̃)</code>.</p>
+
+                        <p><strong>This property is called conjugacy:</strong> The prior and posterior are in the same family of distributions.</p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🎯 Conjugacy Intuition</h5>
+                            <p><strong>Prior:</strong> "I believe θ looks like I've seen (α-1) ones and (β-1) zeros"</p>
+                            <p><strong>Data:</strong> "I actually observed n₁ ones and n₀ zeros"</p>
+                            <p><strong>Posterior:</strong> "Now I believe θ looks like I've seen (α-1 + n₁) ones and (β-1 + n₀) zeros"</p>
+                            <p>The prior acts like "pseudocounts" that you add to your actual counts!</p>
+                        </aside>
+
+                        <h4>MAP Estimation with Beta Prior</h4>
+
+                        <p>The posterior is <code>θ | X ~ Beta(α̃, β̃)</code> where α̃ = n₁ + α, β̃ = n₀ + β.</p>
+
+                        <p>The full pdf is:</p>
+                        <p style="text-align: center;"><code>p(θ | X, α, β) = θ<sup>α̃-1</sup> (1-θ)<sup>β̃-1</sup> / B(α̃, β̃)</code></p>
+
+                        <p>Taking the log and setting the derivative to zero:</p>
+
+                        <pre><code class="language-plaintext">log p(θ | X) = (α̃-1) log(θ) + (β̃-1) log(1-θ) - log B(α̃, β̃)
+
+d/dθ log p(θ | X) = (α̃-1)/θ - (β̃-1)/(1-θ) = 0
+
+(α̃-1)(1-θ) = (β̃-1)θ
+α̃ - 1 - α̃θ + θ = β̃θ - θ
+α̃ - 1 = (α̃ + β̃ - 2)θ
+
+θ = (α̃ - 1) / (α̃ + β̃ - 2)</code></pre>
+
+                        <blockquote>
+                            <p><strong>MAP Estimate with Beta Prior:</strong></p>
+                            <p style="text-align: center; font-size: 1.1em;"><code>θ̂<sub>MAP</sub> = (n₁ + α - 1) / (n + α + β - 2)</code></p>
+                        </blockquote>
+
+                        <p>(assuming α̃ > 1 and β̃ > 1; edge cases possible otherwise)</p>
+
+                        <h4>Special Cases: Recovering MLE and Laplace Smoothing</h4>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Prior (α, β)</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">MAP Estimate</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Interpretation</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">α = 1, β = 1</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">n₁/n</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Uniform prior → MLE</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">α = 2, β = 2</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">(n₁+1)/(n+2)</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Laplace smoothing</strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">α = β > 2</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Closer to 0.5</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Stronger bias towards fair coin</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">α = β < 1</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Away from 0.5</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Bias towards extreme values</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">α > β</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Towards 1</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Bias towards more 1s</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>As n → ∞:</strong> The prior stops mattering and MAP → MLE</p>
+
+                        <p>The data overwhelms the prior! But with relatively small n, the prior significantly affects our estimate.</p>
+                    </article>
+
+                    <!-- ===== HYPERPARAMETERS ===== -->
+                    <article>
+                        <h3>Hyperparameters and Cross-Validation</h3>
+
+                        <h4>What Are Hyperparameters?</h4>
+
+                        <blockquote>
+                            <p><strong>Hyperparameters:</strong> The parameters of the prior (α and β in our case), which "affect the complexity of the model"</p>
+                        </blockquote>
+
+                        <p><strong>Examples from CPSC 340:</strong></p>
+                        <ul>
+                            <li>Degree of a polynomial</li>
+                            <li>Depth of a decision tree</li>
+                            <li>Neural network architecture</li>
+                            <li>Regularization weight (λ in ridge regression)</li>
+                            <li>Number of rounds of gradient boosting</li>
+                            <li>Gradient descent step size</li>
+                        </ul>
+
+                        <p>In general: <em>anything hard to fit with your learning algorithm</em> becomes a hyperparameter.</p>
+
+                        <h4>Why Not Just Fit Hyperparameters from Data?</h4>
+
+                        <p>You might think: "Why not just maximize training likelihood over α and β?"</p>
+
+                        <p><strong>Problem:</strong> This would just recover MLE!</p>
+
+                        <pre><code class="language-plaintext">θ̂<sub>MAP</sub> = (n₁ + α - 1) / (n + α + β - 2)
+
+As α, β → 1: θ̂<sub>MAP</sub> → n₁/n = θ̂<sub>MLE</sub></code></pre>
+
+                        <p>Maximizing training likelihood would drive α, β → 1, eliminating the regularization benefit of the prior!</p>
+
+                        <h4>The Solution: Validation Sets and Cross-Validation</h4>
+
+                        <p>The standard approach from CPSC 340:</p>
+
+                        <ol>
+                            <li><strong>Split data:</strong> Divide X into "training" and "validation" sets</li>
+                            <li><strong>Grid search:</strong> For different values of hyperparameters (α, β):
+                                <ul>
+                                    <li>Find the MAP estimate on the training set</li>
+                                    <li>Evaluate its likelihood on the validation set</li>
+                                </ul>
+                            </li>
+                            <li><strong>Select best:</strong> Pick the hyperparameters with highest validation likelihood</li>
+                        </ol>
+
+                        <p><strong>Why this works:</strong> Validation likelihood approximates performance on totally new, unseen data (generalization error).</p>
+
+                        <h4>Common Pitfalls</h4>
+
+                        <p>⚠️ <strong>Overfitting to the validation set</strong> happens all the time!</p>
+
+                        <ul>
+                            <li>If you try too many hyperparameter combinations, you'll eventually find one that just got "lucky" on validation</li>
+                            <li>This shows up in UBC PhD theses, top-tier conferences, and production ML systems</li>
+                            <li>Solutions: Nested cross-validation, held-out test sets, Bayesian optimization</li>
+                        </ul>
+
+                        <p><strong>For more depth:</strong> CPSC 532D covers this more rigorously from a Bayesian perspective!</p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">💡 The Hyperparameter Hierarchy</h5>
+                            <p><strong>Data → Parameters (via learning) → Predictions</strong></p>
+                            <p><strong>Validation data → Hyperparameters (via validation) → Parameters → Predictions</strong></p>
+                            <p>There's a "meta-level" where we're learning how to learn!</p>
+                        </aside>
+                    </article>
+
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Understanding the likelihood function L(θ) = p(X|θ) and why it's not a probability distribution</li>
+                    <li>Maximum Likelihood Estimation (MLE): θ̂ = n₁/n for Bernoulli distributions</li>
+                    <li>Deriving MLE using calculus: log-likelihood maximization and verifying concavity</li>
+                    <li>Problems with MLE: sensitivity to small datasets and overfitting (zero probability catastrophe)</li>
+                    <li>Probability review: Bayes rule, marginalization, product rule, and proportional-to notation</li>
+                    <li>Maximum A Posteriori (MAP) estimation: maximizing p(θ|X) instead of p(X|θ)</li>
+                    <li>The Beta distribution as a conjugate prior for Bernoulli likelihood</li>
+                    <li>Beta-Bernoulli posterior: θ|X ~ Beta(α+n₁, β+n₀) and MAP formula</li>
+                    <li>Special cases: uniform prior (α=β=1) recovers MLE, α=β=2 gives Laplace smoothing</li>
+                    <li>Hyperparameter selection via cross-validation and avoiding validation set overfitting</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li><strong>Sign up for Piazza</strong> from cs.ubc.ca/~dsuth/440 for announcements and recordings</li>
+                    <li><strong>Assignment 1 coming out tonight/tomorrow</strong> - start it even if you're on the waitlist</li>
+                    <li><strong>CBTF quiz booking</strong> will be available soon - watch Piazza for instructions</li>
+                    <li>Practice deriving MLE for Bernoulli by hand: take log, set derivative to zero, verify concavity</li>
+                    <li>Work through the discrete prior MAP example with different prior values</li>
+                    <li>Understand why Laplace smoothing = Beta(2,2) prior</li>
+                    <li>Verify the Beta-Bernoulli posterior derivation: multiply likelihood × prior and identify the Beta form</li>
+                    <li>Review Bayes rule, product rule, and marginalization - these are fundamental!</li>
+                    <li>Explore Beta distribution shapes at different (α,β) values using the Wikipedia animation</li>
+                    <li>Think about: when does the prior matter more vs. when does data overwhelm the prior?</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc440" class="back-link">← Back to CPSC_440</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

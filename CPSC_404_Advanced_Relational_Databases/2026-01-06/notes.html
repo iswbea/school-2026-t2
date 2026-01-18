@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_404 - Lecture 2026-01-06</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc404">CPSC_404</a> /
+            <span>2026-01-06</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Relational Databases</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-06</span>
+                <span class="instructor">👤 Ed Knorr</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="resources">
+                <h2>📚 Lecture Resources</h2>
+                <div class="resource-links">
+                    <h3>Course Links</h3>
+                    <ul>
+                        <li><a href="https://piazza.com/class/mjrpd16ckd54c0#" target="_blank">🗨️ Piazza Discussion Forum</a></li>
+                        <li><a href="https://canvas.ubc.ca/courses/174825/pages/lecture-slides-handouts-and-annotated-slides?module_item_id=8777222" target="_blank">📑 Canvas - Lecture Slides & Handouts</a></li>
+                    </ul>
+
+                    <h3>Slides</h3>
+                    <ul>
+                        <li><a href="Ch00_Intro_1perPage.pdf" target="_blank">Ch00 Introduction - 1 Slide per Page (Landscape)</a></li>
+                        <li><a href="Ch00_Intro_4perPage.pdf" target="_blank">Ch00 Introduction - 4 Slides per Page (Landscape)</a></li>
+                    </ul>
+
+                    <h3>Handouts</h3>
+                    <ul>
+                        <li><a href="handout_pink_db2_for_zOS.pdf" target="_blank">📄 Pink Handout: Case Study - DB2 for z/OS</a> (IBM DB2 database objects - "What is a database?")</li>
+                        <li><a href="handout_blue_indexes.pdf" target="_blank">📄 Blue Handout: Indexes Example</a> (2 hash indexes, 2 B+ tree indexes, 1 data table - all Alternative 2 with one clustering index)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <p><strong>Crow's Foot Notation:</strong></p>
+                    <ul>
+                        <li>----1&lt; = 1 or more</li>
+                        <li>----0&lt; = 0 or more</li>
+                        <li>------11 = min 1 max 1</li>
+                    </ul>
+
+                    <p><strong>DB2 for z/OS Case Study:</strong></p>
+                    <ul>
+                        <li>DB2P - Production</li>
+                        <li>DB2T - Test</li>
+                        <li>DB2S - Support</li>
+                        <li>Many DBs per database</li>
+                    </ul>
+
+                    <p><strong>Hierarchy:</strong></p>
+                    <ul>
+                        <li>Database → Tablespace → Tables → Data Pages → Rows → Columns</li>
+                        <li>Views: 1-5 per tablespace</li>
+                        <li>Data pages: 1-1,000,000 per table</li>
+                        <li>Records: 1-255 per page</li>
+                        <li>Columns: 1-100 per row</li>
+                        <li>Index pages: 1-10,000 per index</li>
+                        <li>Indexspace: 1 per index, 1-500 per DB</li>
+                    </ul>
+
+                    <p><strong>Indexes Example (Student Table):</strong></p>
+                    <ul>
+                        <li>1. Unique hash index on StudentID</li>
+                        <li>2. Unique hash index on S.I.N.</li>
+                        <li>3. Non-unique clustering B+ tree index on Dept</li>
+                        <li>4. Non-unique non-clustering B+ tree index on LastName</li>
+                    </ul>
+
+                    <p><strong>Key Concept:</strong> Clustered means most data pages are physically ordered in the order of the clustering index.</p>
+                    <p><strong>Why clustering matters:</strong> We don't want our disk arms to be moving like crazy looking for Adams.</p>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+
+                    <!-- ========== CROW'S FOOT NOTATION ========== -->
+                    <article>
+                        <h3>Crow's Foot Notation in ER Diagrams</h3>
+
+                        <p>Crow's foot notation is a widely-used visual language for representing <strong>cardinality</strong> (relationships between entities) in Entity-Relationship (ER) diagrams. Understanding this notation is crucial for database design, as it clearly communicates how many instances of one entity can be associated with instances of another entity.</p>
+
+                        <h4>The Three Basic Notations</h4>
+
+                        <p><strong>1. One or More (----1&lt;):</strong></p>
+                        <ul>
+                            <li>This notation indicates that <em>at least one</em> instance must exist, but there can be many.</li>
+                            <li><strong>In other words:</strong> The relationship is mandatory on this side, and multiple instances are allowed.</li>
+                            <li><strong>Example:</strong> A Department must have at least one Employee, but can have many employees.</li>
+                            <li><strong>Minimum: 1, Maximum: ∞ (infinity)</strong></li>
+                        </ul>
+
+                        <p><strong>2. Zero or More (----0&lt;):</strong></p>
+                        <ul>
+                            <li>This notation indicates that instances are <em>optional</em> – there might be zero, or there might be many.</li>
+                            <li><strong>In other words:</strong> The relationship is optional on this side, and multiple instances are allowed.</li>
+                            <li><strong>Example:</strong> An Employee may be assigned to zero projects (newly hired) or many projects.</li>
+                            <li><strong>Minimum: 0, Maximum: ∞ (infinity)</strong></li>
+                        </ul>
+
+                        <p><strong>3. Exactly One (------11):</strong></p>
+                        <ul>
+                            <li>This notation indicates that <em>exactly one</em> instance must exist – no more, no less.</li>
+                            <li><strong>In other words:</strong> The relationship is mandatory and singular on this side.</li>
+                            <li><strong>Example:</strong> Each Employee must work in exactly one Department (assuming no joint appointments).</li>
+                            <li><strong>Minimum: 1, Maximum: 1</strong></li>
+                        </ul>
+
+                        <h4>Why This Matters</h4>
+                        <p>Understanding cardinality is essential for:</p>
+                        <ul>
+                            <li><strong>Enforcing business rules:</strong> The notation translates business requirements (e.g., "every order must have a customer") into database constraints.</li>
+                            <li><strong>Query optimization:</strong> Knowing cardinality helps the database optimizer make intelligent decisions about join operations.</li>
+                            <li><strong>Data integrity:</strong> Proper constraints prevent invalid data states (e.g., an orphaned record).</li>
+                        </ul>
+
+                        <blockquote>
+                            <strong>💡 Memory Aid:</strong> Think of the "crow's foot" symbol (&lt;) as representing multiple instances – like a bird's foot spreading out in multiple directions. The more spread out, the more instances allowed!
+                        </blockquote>
+                    </article>
+
+                    <!-- ========== DB2 FOR z/OS CASE STUDY ========== -->
+                    <article>
+                        <h3>Case Study: IBM DB2 for z/OS Architecture</h3>
+
+                        <p>IBM's DB2 for z/OS (z/OS is the operating system for IBM mainframes) provides an excellent real-world example of how large-scale enterprise database systems are organized. This case study illustrates the hierarchical structure of database objects and the separation of concerns in production environments.</p>
+
+                        <h4>Environment Separation</h4>
+
+                        <p>In professional database environments, it's standard practice to maintain <strong>separate database instances</strong> for different purposes:</p>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Instance</th>
+                                    <th>Full Name</th>
+                                    <th>Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>DB2P</code></td>
+                                    <td>DB2 Production</td>
+                                    <td>The live, customer-facing database where real business transactions occur. Changes here directly affect users.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>DB2T</code></td>
+                                    <td>DB2 Test</td>
+                                    <td>A safe environment for testing new features, schema changes, or application updates before deploying to production.</td>
+                                </tr>
+                                <tr>
+                                    <td><code>DB2S</code></td>
+                                    <td>DB2 Support</td>
+                                    <td>Used for troubleshooting, debugging, and providing customer support without risking production data.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Why Separate Environments?</h4>
+                        <ul>
+                            <li><strong>Risk Mitigation:</strong> A bug or misconfiguration in test won't crash your production system.</li>
+                            <li><strong>Data Integrity:</strong> Testing with fake data prevents corruption of real customer data.</li>
+                            <li><strong>Compliance:</strong> Many industries (finance, healthcare) legally require separation between production and non-production data.</li>
+                            <li><strong>Performance Isolation:</strong> Heavy testing workloads won't slow down production queries.</li>
+                        </ul>
+
+                        <h4>Terminology: "Many DBs per Database"</h4>
+                        <p>This seemingly confusing phrase highlights an important distinction in DB2 terminology:</p>
+                        <ul>
+                            <li><strong>Database (uppercase 'D'):</strong> In DB2 for z/OS, a "Database" is actually a <em>logical container</em> that groups related tablespaces together. Think of it as a folder or namespace.</li>
+                            <li><strong>database (lowercase 'd'):</strong> In the general sense, this refers to a collection of related data.</li>
+                            <li><strong>In other words:</strong> A single DB2 <em>instance</em> can contain many logical "Databases," each of which contains many tablespaces, which in turn contain tables.</li>
+                        </ul>
+
+                        <blockquote>
+                            <strong>⚠️ Important:</strong> DB2 terminology differs from other DBMS products. In PostgreSQL or MySQL, a "database" is more like what DB2 calls a "Database + all its tablespaces." Always check the documentation for the specific DBMS you're using!
+                        </blockquote>
+                    </article>
+
+                    <!-- ========== DB2 OBJECT HIERARCHY ========== -->
+                    <article>
+                        <h3>Understanding the DB2 Object Hierarchy</h3>
+
+                        <p>DB2 for z/OS organizes database objects in a strict hierarchy. Understanding this structure is crucial for database administration, performance tuning, and troubleshooting.</p>
+
+                        <h4>The Complete Hierarchy (Top to Bottom)</h4>
+
+                        <div style="background: #1e1e1e; padding: 20px; border-radius: 8px; margin: 20px 0; font-family: monospace; color: #d4d4d4;">
+                            <strong style="color: #4ec9b0;">Database</strong><br>
+                            &nbsp;&nbsp;└─ <strong style="color: #4ec9b0;">Tablespace</strong><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├─ <strong style="color: #9cdcfe;">Views</strong> (1-5 per tablespace)<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <strong style="color: #9cdcfe;">Tables</strong> (1-1,000,000 per tablespace)<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <strong style="color: #ce9178;">Data Pages</strong><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <strong style="color: #dcdcaa;">Rows/Records</strong> (1-255 per page)<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <strong style="color: #b5cea8;">Columns</strong> (1-100 per row)<br>
+                            <br>
+                            <strong style="color: #4ec9b0;">Indexspace</strong><br>
+                            &nbsp;&nbsp;└─ <strong style="color: #9cdcfe;">Index</strong> (1 per indexspace, 1-500 per DB)<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <strong style="color: #ce9178;">Index Pages</strong> (1-10,000 per index)<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ <strong style="color: #dcdcaa;">Data Entries</strong> (&lt;key, RID&gt; pairs, 1-255 per index page)
+                        </div>
+
+                        <h4>Breaking Down Each Level</h4>
+
+                        <h5>1. Database</h5>
+                        <p>The top-level logical container. Groups related tablespaces for organizational purposes.</p>
+
+                        <h5>2. Tablespace</h5>
+                        <p>A <strong>tablespace</strong> is a physical storage container – it corresponds to actual files on disk. Think of it as a "parking lot" where tables are stored.</p>
+                        <ul>
+                            <li><strong>Why separate tablespaces?</strong> Performance, backup/recovery, and administrative flexibility. You can take one tablespace offline without affecting others.</li>
+                        </ul>
+
+                        <h5>3. Views (1-5 per tablespace)</h5>
+                        <p><strong>Views</strong> are virtual tables – they don't store data themselves, but provide a saved query that dynamically generates results.</p>
+                        <ul>
+                            <li><strong>Use cases:</strong> Simplifying complex queries, restricting data access (security), presenting data in different formats.</li>
+                            <li><strong>Limit of 5:</strong> This is a DB2 for z/OS implementation detail, not a universal rule.</li>
+                        </ul>
+
+                        <h5>4. Tables (1-1,000,000 per tablespace)</h5>
+                        <p>Tables are the actual data structures that store rows of data. The theoretical maximum of 1 million tables per tablespace is rarely approached in practice – most tablespaces contain dozens or hundreds of tables.</p>
+
+                        <h5>5. Data Pages (variable per table)</h5>
+                        <p>A <strong>page</strong> is the fundamental unit of I/O (input/output) in databases. When DB2 reads data from disk, it reads entire pages, not individual rows.</p>
+                        <ul>
+                            <li><strong>Page size:</strong> Typically 4KB, 8KB, 16KB, or 32KB in DB2.</li>
+                            <li><strong>Why pages matter:</strong> The number of rows per page affects I/O efficiency. Fewer pages = faster queries.</li>
+                        </ul>
+
+                        <h5>6. Rows/Records (1-255 per page)</h5>
+                        <p>The actual data records. The limit of 255 rows per page depends on row size – wider rows mean fewer fit on a page.</p>
+                        <ul>
+                            <li><strong>Example:</strong> If each row is 100 bytes and the page is 4KB (4096 bytes), you can fit approximately 40 rows per page (accounting for page overhead).</li>
+                        </ul>
+
+                        <h5>7. Columns (1-100 per row)</h5>
+                        <p>The individual fields within each row. The limit of 100 columns is a design guideline – excessively wide tables often indicate poor normalization.</p>
+
+                        <h4>Index Storage Hierarchy</h4>
+
+                        <p><strong>Indexes are stored separately from table data</strong> in their own storage structures called <strong>indexspaces</strong>. This separation allows for:</p>
+                        <ul>
+                            <li>Independent backup and recovery</li>
+                            <li>Different storage configurations (e.g., faster SSDs for indexes)</li>
+                            <li>Easier index rebuilding without affecting table data</li>
+                        </ul>
+
+                        <h5>Index Pages (1-10,000 per index)</h5>
+                        <p>Similar to data pages, index pages are the I/O unit for reading index data.</p>
+
+                        <h5>Data Entries (&lt;key, RID&gt; pairs)</h5>
+                        <p>Each index entry contains:</p>
+                        <ul>
+                            <li><strong>Key:</strong> The indexed column value (e.g., StudentID = 44)</li>
+                            <li><strong>RID (Record ID):</strong> A pointer to the actual row's location in the data pages (e.g., [Page 15, Slot 90])</li>
+                        </ul>
+
+                        <blockquote>
+                            <strong>💡 Key Insight:</strong> The limits described here (e.g., 255 rows per page, 100 columns per row) are not arbitrary – they're engineering trade-offs between flexibility, performance, and storage efficiency. Modern databases often increase these limits as hardware improves.
+                        </blockquote>
+                    </article>
+
+                    <!-- ========== INDEXES INTERACTIVE DIAGRAM ========== -->
+                    <article>
+                        <h3>Database Indexes: A Comprehensive Example</h3>
+
+                        <p>Indexes are one of the most important tools for database performance optimization. They work like a book's index – instead of scanning every page (every row) to find information, you can jump directly to the relevant data.</p>
+
+                        <p>Let's explore a realistic example using a <code>Student</code> table with four different indexes, each serving a different purpose.</p>
+
+                        <h4>The Student Table Schema</h4>
+
+                        <pre><code class="language-sql">CREATE TABLE Student (
+    LastName    VARCHAR(50),
+    FirstName   VARCHAR(50),
+    Dept        CHAR(4),
+    StudentID   INTEGER,
+    SIN         CHAR(9),
+    PRIMARY KEY (StudentID)
+);</code></pre>
+
+                        <p><strong>Sample Data (on Data Page 15, Slot 90):</strong></p>
+                        <pre><code class="language-sql">LastName  | FirstName | Dept | StudentID | SIN
+----------|-----------|------|-----------|------------
+ADAMS     | KIM       | APSC | 44        | 123777111</code></pre>
+
+                        <h4>Index 1: Unique Hash Index on StudentID</h4>
+
+                        <p><strong>Type:</strong> Hash Index (Unique)<br>
+                        <strong>Indexed Column:</strong> <code>StudentID</code><br>
+                        <strong>Purpose:</strong> Fast exact-match lookups</p>
+
+                        <p><strong>How it works:</strong></p>
+                        <ol>
+                            <li>A <strong>hash function</strong> takes the StudentID and computes a hash value (e.g., <code>hash(44) → bucket 7</code>)</li>
+                            <li>The hash bucket stores the &lt;key, RID&gt; pair: <code>&lt;44, [Page 15, Slot 90]&gt;</code></li>
+                            <li>When you query <code>SELECT * FROM Student WHERE StudentID = 44;</code>, the database:
+                                <ul>
+                                    <li>Computes <code>hash(44)</code> to find the bucket</li>
+                                    <li>Retrieves the RID <code>[Page 15, Slot 90]</code></li>
+                                    <li>Reads the data page directly – <strong>O(1) average time complexity!</strong></li>
+                                </ul>
+                            </li>
+                        </ol>
+
+                        <p><strong>Why it's unique:</strong> Each StudentID must be unique (enforced by the PRIMARY KEY constraint), so there's exactly one entry per student.</p>
+
+                        <p><strong>Limitation:</strong> Hash indexes only support exact-match queries (<code>=</code>). They cannot efficiently handle range queries (<code>&lt;</code>, <code>&gt;</code>, <code>BETWEEN</code>) or pattern matching (<code>LIKE</code>).</p>
+
+                        <h4>Index 2: Unique Hash Index on SIN</h4>
+
+                        <p><strong>Type:</strong> Hash Index (Unique)<br>
+                        <strong>Indexed Column:</strong> <code>SIN</code> (Social Insurance Number)<br>
+                        <strong>Purpose:</strong> Fast lookups by SIN</p>
+
+                        <p><strong>Example Query:</strong></p>
+                        <pre><code class="language-sql">SELECT * FROM Student WHERE SIN = '123777111';</code></pre>
+
+                        <p><strong>How it works:</strong> Identical to Index 1, but using SIN as the key:</p>
+                        <ul>
+                            <li><code>hash('123777111') → bucket X</code></li>
+                            <li>Bucket X stores <code>&lt;'123777111', [Page 15, Slot 90]&gt;</code></li>
+                        </ul>
+
+                        <p><strong>Why have two unique indexes?</strong> Different access patterns! Sometimes you look up students by ID (internal use), other times by SIN (external verification, government reporting). Having both indexes means <em>both</em> queries are fast.</p>
+
+                        <h4>Index 3: Non-Unique Clustering B+ Tree Index on Dept</h4>
+
+                        <p><strong>Type:</strong> B+ Tree Index (Non-Unique, <mark>Clustering</mark>)<br>
+                        <strong>Indexed Column:</strong> <code>Dept</code> (Department code)<br>
+                        <strong>Purpose:</strong> Efficiently retrieve all students in a department</p>
+
+                        <p><strong>Example Query:</strong></p>
+                        <pre><code class="language-sql">SELECT * FROM Student WHERE Dept = 'APSC';</code></pre>
+
+                        <p><strong>What is a B+ Tree?</strong></p>
+                        <p>A <strong>B+ tree</strong> is a self-balancing tree structure that keeps data sorted. Unlike hash indexes, B+ trees support:</p>
+                        <ul>
+                            <li><strong>Range queries:</strong> <code>Dept BETWEEN 'APSC' AND 'CPSC'</code></li>
+                            <li><strong>Sorted retrieval:</strong> <code>ORDER BY Dept</code> is free!</li>
+                            <li><strong>Prefix matching:</strong> <code>Dept LIKE 'AP%'</code></li>
+                        </ul>
+
+                        <p><strong>Why non-unique?</strong> Many students can be in the same department (e.g., 500 CPSC students). The index will have multiple entries with the same key value but different RIDs.</p>
+
+                        <p><strong>⭐ What does "Clustering" mean?</strong></p>
+                        <p>This is the most important concept in this lecture:</p>
+
+                        <blockquote>
+                            <strong>Clustering Index:</strong> An index where the physical order of data pages on disk <em>matches</em> (or closely matches) the logical order of the index.
+                        </blockquote>
+
+                        <p><strong>In other words:</strong> Because Dept is the clustering index, all APSC students are stored together on adjacent data pages, all CPSC students are together, etc. The data pages are physically organized by department.</p>
+
+                        <p><strong>Why this is powerful:</strong></p>
+                        <ul>
+                            <li>When you query <code>SELECT * FROM Student WHERE Dept = 'APSC'</code>, the database can read consecutive data pages (sequential I/O), which is <strong>much faster</strong> than jumping around the disk (random I/O).</li>
+                            <li><strong>Analogy:</strong> Imagine a library where all Computer Science books are on the same shelf in order. Finding all CS books is easy. Now imagine they're randomly scattered throughout the library – much slower to collect them all!</li>
+                            <li><strong>The disk arm problem:</strong> As Professor Knorr emphasized, we don't want our disk arms to be moving like crazy looking for students with the last name "Adams." With a clustering index, related data is physically adjacent on disk, minimizing mechanical movement and maximizing read speed.</li>
+                        </ul>
+
+                        <blockquote>
+                            <strong>💡 Physical Reality:</strong> In traditional hard disk drives (HDDs), the disk arm is a physical component that must mechanically move to different locations on the spinning disk platter. Sequential reads (clustering) mean the arm barely moves. Random reads (non-clustering) mean the arm constantly seeks to different locations – this is <em>orders of magnitude slower</em>. Even with modern SSDs (which have no moving parts), sequential I/O is still faster due to how data is organized and cached.
+                        </blockquote>
+
+                        <p><strong>⚠️ Important Limitation:</strong> A table can have <strong>only ONE clustering index</strong> because data pages can only be physically ordered one way. All other indexes are non-clustering.</p>
+
+                        <h4>Index 4: Non-Unique, Non-Clustering B+ Tree Index on LastName</h4>
+
+                        <p><strong>Type:</strong> B+ Tree Index (Non-Unique, Non-Clustering)<br>
+                        <strong>Indexed Column:</strong> <code>LastName</code><br>
+                        <strong>Purpose:</strong> Search students by last name</p>
+
+                        <p><strong>Example Query:</strong></p>
+                        <pre><code class="language-sql">SELECT * FROM Student WHERE LastName = 'ADAMS';</code></pre>
+
+                        <p><strong>Why non-clustering?</strong> The table is already clustered by <code>Dept</code>, so it can't also be clustered by <code>LastName</code>. This means students with the same last name might be scattered across different data pages.</p>
+
+                        <p><strong>Performance Trade-off:</strong></p>
+                        <ul>
+                            <li>The B+ tree index itself is still sorted by LastName, so finding "ADAMS" in the index is fast (<code>O(log n)</code>).</li>
+                            <li>However, retrieving the actual rows may require multiple random I/O operations if students named ADAMS are in different departments.</li>
+                            <li>This is slower than a clustering index, but still <strong>much faster</strong> than scanning the entire table.</li>
+                        </ul>
+
+                        <h4>Alternative 2 Index Implementation</h4>
+
+                        <p>All four indexes in this example use <strong>Alternative 2</strong> implementation, which means:</p>
+                        <ul>
+                            <li>Each index entry contains <code>&lt;key, RID&gt;</code> – the indexed value and a pointer to the row</li>
+                            <li>The actual row data is stored separately in the data pages</li>
+                            <li>This is the most common index implementation in relational databases</li>
+                        </ul>
+
+                        <p><strong>Other alternatives exist:</strong></p>
+                        <ul>
+                            <li><strong>Alternative 1:</strong> Store the <em>entire row</em> in the index (called a "clustered index" in SQL Server terminology – confusing!)</li>
+                            <li><strong>Alternative 3:</strong> Store a list of RIDs for each key (useful for non-unique indexes with many duplicates)</li>
+                        </ul>
+
+                        <h4>Choosing the Right Index</h4>
+
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Index</th>
+                                    <th>Best For</th>
+                                    <th>Not Good For</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Hash on StudentID</td>
+                                    <td>Exact lookups: <code>WHERE StudentID = ?</code></td>
+                                    <td>Ranges, sorting, pattern matching</td>
+                                </tr>
+                                <tr>
+                                    <td>Hash on SIN</td>
+                                    <td>Exact lookups: <code>WHERE SIN = ?</code></td>
+                                    <td>Ranges, sorting, pattern matching</td>
+                                </tr>
+                                <tr>
+                                    <td>B+ Tree on Dept (clustering)</td>
+                                    <td>Ranges, sorting, retrieving many rows in same dept</td>
+                                    <td>Exact single-row lookups (B+ tree is slower than hash)</td>
+                                </tr>
+                                <tr>
+                                    <td>B+ Tree on LastName</td>
+                                    <td>Searching by name, ranges, sorting by name</td>
+                                    <td>Very frequent updates (index maintenance overhead)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <blockquote>
+                            <strong>💡 Key Takeaway:</strong> Indexes are not free – they consume storage space and slow down INSERT/UPDATE/DELETE operations (because the indexes must be updated too). The art of database tuning is choosing the <em>right</em> indexes for your workload, not creating indexes on every column!
+                        </blockquote>
+
+                        <!-- Interactive Diagram -->
+                        <div style="margin-top: 30px;">
+                            <h4>Interactive Index Visualization</h4>
+                            <p>Below is an interactive diagram showing how the four indexes point to the same Student table data. Click on an index entry to see how it resolves to the actual data row.</p>
+
+                            <div id="index-diagram" style="background: #f5f5f5; border: 2px solid #333; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                                <style>
+                                    .index-container {
+                                        display: grid;
+                                        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                                        gap: 20px;
+                                        margin-bottom: 30px;
+                                    }
+                                    .index-box {
+                                        background: white;
+                                        border: 2px solid #2c3e50;
+                                        border-radius: 6px;
+                                        padding: 15px;
+                                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                                    }
+                                    .index-box h4 {
+                                        margin: 0 0 10px 0;
+                                        color: #2c3e50;
+                                        font-size: 14px;
+                                        border-bottom: 2px solid #3498db;
+                                        padding-bottom: 5px;
+                                    }
+                                    .index-entry {
+                                        background: #ecf0f1;
+                                        padding: 8px;
+                                        margin: 5px 0;
+                                        border-radius: 4px;
+                                        cursor: pointer;
+                                        transition: all 0.3s;
+                                        font-family: 'Courier New', monospace;
+                                        font-size: 12px;
+                                    }
+                                    .index-entry:hover {
+                                        background: #3498db;
+                                        color: white;
+                                        transform: translateX(5px);
+                                    }
+                                    .index-entry.active {
+                                        background: #e74c3c;
+                                        color: white;
+                                        font-weight: bold;
+                                    }
+                                    .data-table {
+                                        background: white;
+                                        border: 3px solid #27ae60;
+                                        border-radius: 6px;
+                                        padding: 15px;
+                                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                                    }
+                                    .data-table h4 {
+                                        margin: 0 0 15px 0;
+                                        color: #27ae60;
+                                        border-bottom: 2px solid #27ae60;
+                                        padding-bottom: 5px;
+                                    }
+                                    .data-row {
+                                        background: #e8f8f5;
+                                        padding: 10px;
+                                        margin: 8px 0;
+                                        border-radius: 4px;
+                                        font-family: 'Courier New', monospace;
+                                        font-size: 12px;
+                                        border-left: 4px solid #27ae60;
+                                        transition: all 0.3s;
+                                    }
+                                    .data-row.highlighted {
+                                        background: #f39c12;
+                                        border-left-color: #e74c3c;
+                                        transform: scale(1.02);
+                                        box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+                                    }
+                                    .page-label {
+                                        font-size: 10px;
+                                        color: #7f8c8d;
+                                        margin-bottom: 5px;
+                                    }
+                                    .clustering-badge {
+                                        background: #e74c3c;
+                                        color: white;
+                                        padding: 2px 6px;
+                                        border-radius: 3px;
+                                        font-size: 10px;
+                                        font-weight: bold;
+                                        margin-left: 5px;
+                                    }
+                                    .index-type {
+                                        font-size: 11px;
+                                        color: #7f8c8d;
+                                        font-style: italic;
+                                    }
+                                </style>
+
+                                <div class="index-container">
+                                    <!-- Index 1: Hash on StudentID -->
+                                    <div class="index-box">
+                                        <h4>Index 1: StudentID <span class="clustering-badge">UNIQUE</span></h4>
+                                        <div class="index-type">Hash Index</div>
+                                        <div class="index-entry" data-page="15" data-slot="90">
+                                            hash(44) → [15,90]
+                                        </div>
+                                        <div class="index-entry" data-page="3" data-slot="12">
+                                            hash(17) → [3,12]
+                                        </div>
+                                        <div class="index-entry" data-page="22" data-slot="5">
+                                            hash(99) → [22,5]
+                                        </div>
+                                    </div>
+
+                                    <!-- Index 2: Hash on SIN -->
+                                    <div class="index-box">
+                                        <h4>Index 2: SIN <span class="clustering-badge">UNIQUE</span></h4>
+                                        <div class="index-type">Hash Index</div>
+                                        <div class="index-entry" data-page="15" data-slot="90">
+                                            123777111 → [15,90]
+                                        </div>
+                                        <div class="index-entry" data-page="3" data-slot="12">
+                                            987654321 → [3,12]
+                                        </div>
+                                        <div class="index-entry" data-page="22" data-slot="5">
+                                            555666777 → [22,5]
+                                        </div>
+                                    </div>
+
+                                    <!-- Index 3: B+ Tree on Dept -->
+                                    <div class="index-box">
+                                        <h4>Index 3: Dept <span class="clustering-badge">CLUSTERING</span></h4>
+                                        <div class="index-type">B+ Tree (Non-Unique)</div>
+                                        <div class="index-entry" data-page="15" data-slot="90">
+                                            APSC → [15,90]
+                                        </div>
+                                        <div class="index-entry" data-page="15" data-slot="91">
+                                            APSC → [15,91]
+                                        </div>
+                                        <div class="index-entry" data-page="3" data-slot="12">
+                                            CPSC → [3,12]
+                                        </div>
+                                        <div class="index-entry" data-page="22" data-slot="5">
+                                            MATH → [22,5]
+                                        </div>
+                                    </div>
+
+                                    <!-- Index 4: B+ Tree on LastName -->
+                                    <div class="index-box">
+                                        <h4>Index 4: LastName</h4>
+                                        <div class="index-type">B+ Tree (Non-Unique, Non-Clustering)</div>
+                                        <div class="index-entry" data-page="15" data-slot="90">
+                                            ADAMS → [15,90]
+                                        </div>
+                                        <div class="index-entry" data-page="22" data-slot="5">
+                                            CHEN → [22,5]
+                                        </div>
+                                        <div class="index-entry" data-page="3" data-slot="12">
+                                            SMITH → [3,12]
+                                        </div>
+                                        <div class="index-entry" data-page="15" data-slot="91">
+                                            WILSON → [15,91]
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Data Table -->
+                                <div class="data-table">
+                                    <h4>Student Table (Data Pages)</h4>
+
+                                    <div class="page-label">📄 Data Page 3</div>
+                                    <div class="data-row" data-page="3" data-slot="12">
+                                        <strong>Slot 12:</strong> SMITH, JOHN | CPSC | ID:17 | SIN:987654321
+                                    </div>
+
+                                    <div class="page-label" style="margin-top: 15px;">📄 Data Page 15 (APSC students clustered here)</div>
+                                    <div class="data-row" data-page="15" data-slot="90">
+                                        <strong>Slot 90:</strong> ADAMS, KIM | APSC | ID:44 | SIN:123777111
+                                    </div>
+                                    <div class="data-row" data-page="15" data-slot="91">
+                                        <strong>Slot 91:</strong> WILSON, SARA | APSC | ID:45 | SIN:111222333
+                                    </div>
+
+                                    <div class="page-label" style="margin-top: 15px;">📄 Data Page 22</div>
+                                    <div class="data-row" data-page="22" data-slot="5">
+                                        <strong>Slot 5:</strong> CHEN, MICHAEL | MATH | ID:99 | SIN:555666777
+                                    </div>
+                                </div>
+
+                                <script>
+                                    document.querySelectorAll('.index-entry').forEach(entry => {
+                                        entry.addEventListener('click', function() {
+                                            // Remove previous highlights
+                                            document.querySelectorAll('.index-entry').forEach(e => e.classList.remove('active'));
+                                            document.querySelectorAll('.data-row').forEach(r => r.classList.remove('highlighted'));
+
+                                            // Highlight clicked index entry
+                                            this.classList.add('active');
+
+                                            // Get page and slot
+                                            const page = this.dataset.page;
+                                            const slot = this.dataset.slot;
+
+                                            // Highlight corresponding data row
+                                            const dataRow = document.querySelector(`.data-row[data-page="${page}"][data-slot="${slot}"]`);
+                                            if (dataRow) {
+                                                dataRow.classList.add('highlighted');
+                                                dataRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                            }
+                                        });
+                                    });
+                                </script>
+
+                                <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                                    <strong>🎯 Try it:</strong> Click any index entry above to see how it points to the actual data row in the Student table. Notice how Index 3 (Dept) has multiple APSC entries on the same page (15) – that's clustering in action!
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Understanding Crow's Foot Notation for entity-relationship diagrams</li>
+                    <li>Exploring IBM DB2 for z/OS architecture and environment separation</li>
+                    <li>Learning the hierarchical structure of DB2 database objects</li>
+                    <li>Understanding database indexes: hash vs. B+ tree implementations</li>
+                    <li>Mastering the concept of clustering indexes and their performance benefits</li>
+                    <li>Comparing Alternative 2 index implementation with other approaches</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li>Review the pink handout (DB2 for z/OS) and understand the hierarchy of database objects</li>
+                    <li>Study the blue handout (Indexes Example) and compare the different index types</li>
+                    <li>Practice identifying when to use hash indexes vs. B+ tree indexes for different query patterns</li>
+                    <li>Understand why a table can have only ONE clustering index</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc404" class="back-link">← Back to CPSC_404</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

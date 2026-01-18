@@ -1,0 +1,55 @@
+Relationships among files, disks, ram, buffer pool(s), DBMS, OS 
+RAM divided into 4k page frames
+DBMS BP1
+USER Code BP2
+FireFox BP3
+OS Code 
+
+When you say buffer think RAM
+
+Query: Select * from appointment where aDate = 20260115
+
+Now you know the row IDs for every single appointment whose date is 20260105
+
+We know what RIDS we want so we want to grab all the pages from the disk into ram.
+
+What if i said count(*) instead? What would change?
+The rule, is that every single record in the table must have. What that means, you can just count indexes, you never need to look at the rows or touch the data table.
+
+Components of a disk drive.
+The platter spins (eg. 15,000 rpm)
+The whole arm assembly is moved in or our to position a head on a designed track k.
+All tracks with the same track # make up acylinder k
+only one head reads or writes at a time.
+One head per surface (platter could have 2 surfaces, top and bottom)
+
+Block size is a multiple if sector size (Which is fixed).
+
+Questions.
+
+If there are 12,000 tracks per surface, and there are 4 double sided platers
+    How many tracks does cylinder $500 have?
+    How many cylinders are represented by one track on one surface?
+    How many many cylinders are there on the disk drive?
+    What is the capacity of the disk drive, in terms ofthe number of tracks?
+    Note: Technically tracks are grouped into zones, but, we'll assume the same # of sectors/tracks.
+
+
+
+Accessing a Disk page
+Acccess time(the time to read or write a disk page, sometimes called a block)
+1. Seek time (move the arm to position the disk head just above a particualry cylinder (or track, same thing!))
+2. Rotational delay (wait for the start of the desired block to come around and be positioned under the head)
+3. Transfer time (the time to takes to transmit the data between disk and ram)
+
+Access time = sum of seek time, rotationl delay, and transfer time
+What is the min seek time?  0ms
+What is the max seek time? 1ms + (8192-1)/500*1ms = 1 + 16.38 = 17.38ms
+What is the average seek time? 1ms + 1/3(8192 -1/500)*1ms = 6.46
+
+What is the minimum rotation latency time?
+0ms
+What is the max rotational latency time?
+1 spin = 1 rot = 1 rev 
+3840 rev/min *  (1min/60sec)(1sec/1000ms) = 0.064rev/ms = 15.63ms/rev
+What is the average rotational latency time?

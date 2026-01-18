@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_410 - Lecture 2026-01-07</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc410">CPSC_410</a> /
+            <span>2026-01-07</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Software Engineering</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-07</span>
+                <span class="instructor">👤 Caroline Lemieux</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <p><strong>What is a DSL?</strong> A special language written for a specific domain. Think user-specific language, specific to skill set.</p>
+
+                    <p><strong>Motivating Example:</strong> Friend wants schedule website → edits HTML → breaks everything → needs DSL!</p>
+
+                    <p><strong>Examples of DSLs:</strong></p>
+                    <ul>
+                        <li>awk: Extract modified files with <code>grep modified: | awk '{print $2}'</code></li>
+                        <li>Excel formulas</li>
+                        <li>Makefiles</li>
+                        <li>JUnit annotations (@Before, @Test)</li>
+                        <li>AspectJ (interweaving code for logging)</li>
+                    </ul>
+
+                    <p><strong>Internal vs External DSLs:</strong></p>
+                    <ul>
+                        <li>Internal/Embedded: Within host language (e.g., TensorFlow API in Python)</li>
+                        <li>External: Shields user from base language (focus of this course)</li>
+                    </ul>
+
+                    <p><strong>Project 1 Requirements:</strong></p>
+                    <ul>
+                        <li>At least 3 language features (variables, loops, conditionals, functions, recursion, etc.)</li>
+                        <li>Features must interact with each other</li>
+                        <li>Domain-specific elements for easier domain tasks</li>
+                        <li>Dimensions of creativity (not just web forms)</li>
+                    </ul>
+
+                    <p><strong>Syntax vs Semantics:</strong></p>
+                    <ul>
+                        <li>Syntax: How you write it (e.g., "->" vs ":")</li>
+                        <li>Semantics: What it means (e.g., call function before/after definition)</li>
+                    </ul>
+
+                    <p><strong>User Testing:</strong></p>
+                    <ul>
+                        <li>Find 2-3 users from target group</li>
+                        <li>Give concrete task, provide example code</li>
+                        <li>Ask users to think aloud</li>
+                        <li>Identify confusion points, not just suggestions</li>
+                        <li>Don't reuse users between studies (learning bias)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+
+                    <!-- ===== WHAT IS A DSL ===== -->
+                    <article>
+                        <h3>What is a Domain-Specific Language?</h3>
+
+                        <blockquote>
+                            <p><strong>Definition:</strong> A Domain-Specific Language (DSL) is a special-purpose programming language designed for a specific domain or problem space, rather than being a general-purpose language like Python, Java, or C++.</p>
+                        </blockquote>
+
+                        <p>Think of a DSL as a <strong>user-specific language, tailored to a particular skill set</strong>. Instead of forcing users to learn the full complexity of a general-purpose programming language, a DSL provides exactly the constructs and abstractions they need for their specific tasks—nothing more, nothing less.</p>
+
+                        <h4>The Motivating Problem: When General-Purpose Languages Get in the Way</h4>
+
+                        <p>Consider this common scenario:</p>
+
+                        <p><strong>The Friendship-Ending Bug Cycle:</strong></p>
+                        <ol>
+                            <li>Your friend wants to make a website to keep a schedule of their day</li>
+                            <li>You help them and send them a finished HTML website</li>
+                            <li><strong>But...</strong> they realize they want to add a column</li>
+                            <li>They try to edit the HTML directly</li>
+                            <li><mark>They break everything</mark></li>
+                            <li>You help them again and send the new version</li>
+                            <li><strong>But...</strong> they want a second table</li>
+                            <li>They break everything again and ask for help</li>
+                            <li>Repeat indefinitely until friendship dissolves...</li>
+                        </ol>
+
+                        <p><strong>How can this friendship be saved?</strong></p>
+
+                        <p>Let's face it: <strong>your friend doesn't want to learn HTML</strong>. They don't care about <code>&lt;tr&gt;</code>, <code>&lt;td&gt;</code>, closing tags, or CSS styling. They just want to make tables for their schedule!</p>
+
+                        <p><strong>The DSL solution:</strong> Create a simple language (let's call it "TinyHTML") that generates HTML for them. Instead of writing:</p>
+
+                        <pre><code class="language-html">&lt;table&gt;
+  &lt;tr&gt;
+    &lt;th&gt;Time&lt;/th&gt;
+    &lt;th&gt;Activity&lt;/th&gt;
+  &lt;/tr&gt;
+  &lt;tr&gt;
+    &lt;td&gt;9:00 AM&lt;/td&gt;
+    &lt;td&gt;Meeting&lt;/td&gt;
+  &lt;/tr&gt;
+&lt;/table&gt;</code></pre>
+
+                        <p>They write something like:</p>
+
+                        <pre><code class="language-plaintext">table "My Schedule"
+  columns: Time, Activity
+  row: 9:00 AM, Meeting
+  row: 10:00 AM, Coffee Break</code></pre>
+
+                        <p>This is infinitely easier for someone who just wants to describe their schedule—no HTML knowledge required!</p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">💡 The Core Principle of DSLs</h5>
+                            <p><strong>Reduce the distance between the problem domain and the solution domain.</strong></p>
+                            <p>If your users think in terms of "tables" and "schedules," let them <em>write</em> in terms of tables and schedules—not <code>&lt;tr&gt;</code> and <code>&lt;td&gt;</code>.</p>
+                        </aside>
+
+                        <h4>Why DSLs Matter</h4>
+
+                        <p>DSLs provide several key advantages:</p>
+
+                        <ul>
+                            <li><strong>Accessibility</strong>: Non-programmers can express complex ideas in their domain</li>
+                            <li><strong>Productivity</strong>: Domain experts work directly in their language, not a translation</li>
+                            <li><strong>Safety</strong>: Constraining the language prevents many classes of errors</li>
+                            <li><strong>Maintainability</strong>: Code reads like domain documentation</li>
+                            <li><strong>Optimization</strong>: Domain knowledge enables better code generation</li>
+                        </ul>
+                    </article>
+
+                    <!-- ===== EXAMPLES OF DSLS ===== -->
+                    <article>
+                        <h3>Real-World DSL Examples</h3>
+
+                        <p>DSLs are everywhere in software engineering. You've probably used several without realizing they're DSLs!</p>
+
+                        <h4>1. awk: Text Processing Made Simple</h4>
+
+                        <p><strong>awk</strong> is one of the classic DSLs, designed specifically for processing text files line-by-line.</p>
+
+                        <p><strong>Use case:</strong> Extract modified files from git status to batch add/restore/remove them</p>
+
+                        <pre><code class="language-bash">git status | grep modified: | awk '{print $2}'</code></pre>
+
+                        <p><strong>What's happening:</strong></p>
+                        <ul>
+                            <li><code>awk '{print $2}'</code> processes each line of input</li>
+                            <li><code>$2</code> refers to the second whitespace-separated field</li>
+                            <li>awk automatically loops over lines—you don't write a for loop!</li>
+                        </ul>
+
+                        <p>In a general-purpose language, this would require explicit file reading, line splitting, field extraction, and looping. awk makes it a one-liner.</p>
+
+                        <h4>2. Excel Formulas: Spreadsheet Computation</h4>
+
+                        <pre><code class="language-excel">=SUM(A1:A10)
+=IF(B2>100, "High", "Low")
+=VLOOKUP(E2, A1:C10, 3, FALSE)</code></pre>
+
+                        <p>Excel formulas are a DSL for spreadsheet calculations. Accountants and analysts use them daily without thinking of themselves as "programmers."</p>
+
+                        <h4>3. Makefiles: Build Automation</h4>
+
+                        <pre><code class="language-makefile">main: main.o utils.o
+	gcc -o main main.o utils.o
+
+main.o: main.c utils.h
+	gcc -c main.c
+
+clean:
+	rm -f *.o main</code></pre>
+
+                        <p>Makefiles describe <em>dependencies and build rules</em>, not step-by-step instructions. Make figures out what needs to be rebuilt based on file timestamps.</p>
+
+                        <h4>4. JUnit Annotations: Testing DSL</h4>
+
+                        <pre><code class="language-java">@Before
+public void setUp() {
+    database = new TestDatabase();
+}
+
+@Test
+public void testUserCreation() {
+    User user = new User("Alice");
+    assertEquals("Alice", user.getName());
+}
+
+@After
+public void tearDown() {
+    database.close();
+}</code></pre>
+
+                        <p>JUnit's annotations (<code>@Before</code>, <code>@Test</code>, <code>@After</code>) form a <strong>small language with powerful semantics</strong>. The syntax is minimal (just annotations), but it dramatically simplifies test writing.</p>
+
+                        <h4>5. AspectJ: Cross-Cutting Concerns</h4>
+
+                        <p>AspectJ created a language that <strong>interweaves code into your code</strong>. You can add logging, security checks, or performance monitoring without cluttering your business logic.</p>
+
+                        <pre><code class="language-java">// Automatically log all method calls
+aspect Logging {
+    before(): execution(* *(..)) {
+        System.out.println("Calling: " + thisJoinPoint);
+    }
+}</code></pre>
+
+                        <p>This "before" advice automatically runs before every method execution—saving you from manually adding logging to hundreds of methods.</p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🔍 Spotting DSLs in the Wild</h5>
+                            <p>Ask yourself: "Does this notation look different from normal code in this language?" If yes, it might be a DSL!</p>
+                            <p>SQL in a Java program? DSL. Regular expressions? DSL. HTML templates? DSL. They all have specialized syntax for their domain.</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== INTERNAL VS EXTERNAL DSLS ===== -->
+                    <article>
+                        <h3>Internal vs. External DSLs: A Critical Design Decision</h3>
+
+                        <p>When building a DSL, one of the first decisions you'll make is whether to create an <strong>internal (embedded) DSL</strong> or an <strong>external DSL</strong>.</p>
+
+                        <h4>Internal (Embedded) DSLs</h4>
+
+                        <blockquote>
+                            <p><strong>Definition:</strong> An internal DSL uses the syntax and features of an existing "host" programming language, typically combining:</p>
+                            <ul>
+                                <li>Restricted syntax within the base language (calls to specific APIs)</li>
+                                <li>Base language features for extending syntax (operator overloading, macros)</li>
+                            </ul>
+                        </blockquote>
+
+                        <p><strong>Example: TensorFlow (Python)</strong></p>
+
+                        <pre><code class="language-python">import tensorflow as tf
+
+model = tf.keras.Sequential([
+    tf.keras.layers.Dense(128, activation='relu'),
+    tf.keras.layers.Dropout(0.2),
+    tf.keras.layers.Dense(10)
+])
+
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy')</code></pre>
+
+                        <p>This <em>looks</em> like Python—because it <em>is</em> Python! But it's really a DSL for building neural networks, using Python as the host language.</p>
+
+                        <p><strong>Pros of internal DSLs:</strong></p>
+                        <ul>
+                            <li>No need to build a parser—you get the host language's parser for free</li>
+                            <li>Users get IDE support (autocomplete, debugging) automatically</li>
+                            <li>Can leverage the host language's ecosystem (libraries, tools)</li>
+                            <li>Easier to integrate with existing code</li>
+                        </ul>
+
+                        <p><strong>Cons of internal DSLs:</strong></p>
+                        <ul>
+                            <li>Constrained by the host language's syntax</li>
+                            <li>Requires users to know the host language</li>
+                            <li>Can't completely shield users from implementation details</li>
+                            <li>Error messages might expose host language concepts</li>
+                        </ul>
+
+                        <p><strong>Best Host Languages for Internal DSLs:</strong></p>
+                        <ul>
+                            <li><strong>Racket</strong>: Designed specifically for creating languages (macros everywhere!)</li>
+                            <li><strong>Ruby</strong>: Flexible syntax, blocks, operator overloading</li>
+                            <li><strong>Scala</strong>: Infix operators, implicit conversions, flexible syntax</li>
+                            <li><strong>Lisp family</strong>: Homoiconic (code is data), powerful macros</li>
+                        </ul>
+
+                        <h4>External DSLs</h4>
+
+                        <blockquote>
+                            <p><strong>Definition:</strong> An external DSL has its own custom syntax and grammar, completely separate from any host language. You build the entire language stack yourself.</p>
+                        </blockquote>
+
+                        <p><strong>Example: SQL</strong></p>
+
+                        <pre><code class="language-sql">SELECT users.name, COUNT(orders.id) as order_count
+FROM users
+LEFT JOIN orders ON users.id = orders.user_id
+GROUP BY users.name
+HAVING order_count > 5
+ORDER BY order_count DESC;</code></pre>
+
+                        <p>SQL doesn't look like any general-purpose language—and that's intentional! Its syntax is designed specifically for querying databases.</p>
+
+                        <p><strong>Pros of external DSLs:</strong></p>
+                        <ul>
+                            <li>Complete control over syntax—design exactly what users need</li>
+                            <li>Can completely shield users from underlying implementation</li>
+                            <li>Error messages can be domain-specific</li>
+                            <li>Syntax optimized for the domain, not general programming</li>
+                        </ul>
+
+                        <p><strong>Cons of external DSLs:</strong></p>
+                        <ul>
+                            <li>Must build parser, type checker, interpreter/compiler from scratch</li>
+                            <li>Must build IDE support (syntax highlighting, autocomplete, etc.)</li>
+                            <li>Integration with other languages requires bindings/APIs</li>
+                            <li>More work to implement and maintain</li>
+                        </ul>
+
+                        <h4>APIs vs. Languages: TensorFlow vs. Swift for TensorFlow</h4>
+
+                        <p>Consider the evolution of TensorFlow:</p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Approach</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Type</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Trade-offs</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>TensorFlow Python API</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Internal DSL</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Easy to use, but requires Python knowledge. Performance sometimes limited by Python.</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Swift for TensorFlow</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">External DSL (integrated into Swift)</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">First-class language support, better performance, but requires learning Swift-specific features.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>For This Course: External DSLs</h4>
+
+                        <p><mark>We will focus on external DSLs</mark> because:</p>
+                        <ol>
+                            <li>They provide a UI that <strong>completely shields the user from the underlying base language</strong></li>
+                            <li>You'll learn the full language implementation pipeline (parsing, type checking, code generation)</li>
+                            <li>They give you complete design freedom</li>
+                            <li>They're more challenging and educational</li>
+                        </ol>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🎯 Decision Framework</h5>
+                            <p><strong>Choose Internal DSL when:</strong></p>
+                            <ul>
+                                <li>Your users already know the host language</li>
+                                <li>You need quick prototyping</li>
+                                <li>Integration with existing ecosystem is critical</li>
+                            </ul>
+                            <p><strong>Choose External DSL when:</strong></p>
+                            <ul>
+                                <li>Your users don't know programming (or shouldn't need to)</li>
+                                <li>Domain notation is very different from programming languages</li>
+                                <li>You want complete control over syntax and semantics</li>
+                            </ul>
+                        </aside>
+                    </article>
+
+                    <!-- ===== DESIGNING YOUR DSL ===== -->
+                    <article>
+                        <h3>Designing Your DSL: From Users to Features</h3>
+
+                        <p>Creating a successful DSL isn't about showing off your compiler-writing skills—it's about <strong>solving real user problems</strong>. Here's the design process:</p>
+
+                        <h4>Step 1: Identify Target Users and Use Cases</h4>
+
+                        <p><strong>Critical questions:</strong></p>
+                        <ul>
+                            <li>Who will use this language?</li>
+                            <li>What is their background and skill level?</li>
+                            <li>What tasks do they need to accomplish?</li>
+                            <li>What should your DSL enable that's currently difficult or impossible?</li>
+                        </ul>
+
+                        <p><strong>Example:</strong> For a music notation DSL</p>
+                        <ul>
+                            <li><strong>Users:</strong> Musicians (may not be programmers)</li>
+                            <li><strong>Use case:</strong> Write sheet music quickly without mouse clicking</li>
+                            <li><strong>Current pain point:</strong> GUI music software is slow for rapid composition</li>
+                        </ul>
+
+                        <h4>Step 2: Talk to Your Target Users</h4>
+
+                        <p><mark>Don't design in isolation!</mark> Actually talk to someone who would use your language.</p>
+
+                        <p><strong>Ask them:</strong></p>
+                        <ul>
+                            <li>"Show me how you currently solve this problem"</li>
+                            <li>"What's frustrating about the current approach?"</li>
+                            <li>"If you could wave a magic wand, what would the ideal tool look like?"</li>
+                        </ul>
+
+                        <h4>Step 3: Figure Out What They Want to Say (Syntax) and What Should Happen (Semantics)</h4>
+
+                        <p><strong>Syntax:</strong> How would users naturally express their ideas?</p>
+                        <p><strong>Semantics:</strong> What do they expect to happen when they express those ideas?</p>
+
+                        <p><strong>Example: Meeting Planning DSL</strong></p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">What User Wants</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Possible Syntax</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Semantics</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Schedule a meeting</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>meeting "Sprint Planning" on Mon 10am for 2 hours</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Create calendar event, check conflicts, send invites</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Find free time</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>find 1-hour slot this week</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Search calendar, return available times</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Step 4: Work Backwards from Desired Results</h4>
+
+                        <p>Try out example scenarios:</p>
+                        <ol>
+                            <li><strong>Start with the desired output/result</strong></li>
+                            <li><strong>Work backwards</strong>: What would you expect to write to get that result?</li>
+                            <li>Draft syntax and features based on these scenarios</li>
+                        </ol>
+
+                        <p><strong>Example:</strong> HTML table generation</p>
+
+                        <pre><code class="language-plaintext"># Desired output: A styled schedule table
+# Work backwards: What's the simplest way to describe this?
+
+table "My Schedule" {
+    style: blue-theme
+    columns: Time, Activity, Location
+    row: 9:00am, "Team Meeting", "Room 301"
+    row: 11:00am, "Lunch", "Cafeteria"
+}</code></pre>
+
+                        <h4>Step 5: Make Features General-Purpose and Composable</h4>
+
+                        <p>Think about how features can be made more powerful while staying simple:</p>
+
+                        <ul>
+                            <li>Can users define their own abstractions (functions/macros)?</li>
+                            <li>Can they combine simple features to do complex things?</li>
+                            <li>Does adding feature X make feature Y more useful?</li>
+                        </ul>
+
+                        <p><strong>Example evolution:</strong></p>
+                        <pre><code class="language-plaintext"># Version 1: Hardcoded
+row: 9:00am, "Meeting", "Room 301"
+
+# Version 2: Variables
+let room = "Room 301"
+row: 9:00am, "Meeting", room
+
+# Version 3: Functions
+func recurring_meeting(time, name) {
+    for day in ["Mon", "Wed", "Fri"] {
+        row: day time, name, room
+    }
+}
+
+recurring_meeting(9:00am, "Standup")</code></pre>
+
+                        <p>Each version adds composability, making the language more expressive.</p>
+                    </article>
+
+                    <!-- ===== PROJECT 1 REQUIREMENTS ===== -->
+                    <article>
+                        <h3>Project 1: DSL Design Requirements</h3>
+
+                        <p>For your course project, you'll design and implement a DSL. Here are the specific requirements:</p>
+
+                        <h4>Requirement 1: At Least 3 Interacting Language Features</h4>
+
+                        <blockquote>
+                            <p><strong>Your DSL needs to support at least 3 language features that add expressivity and interact with each other.</strong></p>
+                        </blockquote>
+
+                        <p><strong>Acceptable language features include:</strong></p>
+                        <ul>
+                            <li>Mutable variables</li>
+                            <li>Loops (for, while)</li>
+                            <li>Conditionals (if/else)</li>
+                            <li>Functions/procedures</li>
+                            <li>Recursion</li>
+                            <li>Complex data types (tuples, sets, arrays, maps)</li>
+                            <li>Pattern matching</li>
+                            <li>Closures</li>
+                        </ul>
+
+                        <p><strong>The key: Features must INTERACT</strong></p>
+
+                        <p>It's not enough to have three isolated features. They need to work together in interesting ways:</p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">❌ Weak (No Interaction)</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">✅ Strong (Clear Interaction)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Variables + print statements + comments</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Variables + loops + conditionals → loop counter can be checked in if statements</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Three types of loops that don't affect each other</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Functions + recursion + data structures → functions can call themselves on nested data</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>Example: awk</strong></p>
+                        <ul>
+                            <li><strong>Feature 1:</strong> Mutable state (variables like <code>sum</code>)</li>
+                            <li><strong>Feature 2:</strong> Conditionals (<code>if</code> statements)</li>
+                            <li><strong>Interaction:</strong> You can accumulate state across lines and conditionally modify it</li>
+                        </ul>
+
+                        <pre><code class="language-awk">BEGIN { sum = 0 }
+{
+    if ($2 > 100) {
+        sum += $2
+    }
+}
+END { print "Total:", sum }</code></pre>
+
+                        <h4>Requirement 2: Domain-Specific Elements</h4>
+
+                        <blockquote>
+                            <p><strong>Your DSL must have domain-specific elements that allow users to do domain-specific tasks more easily than a generic programming language.</strong></p>
+                        </blockquote>
+
+                        <p><strong>What are domain-specific elements?</strong></p>
+                        <p>Features that are tailored to your specific domain and wouldn't make sense in a general-purpose language.</p>
+
+                        <p><strong>Example: awk's domain-specific elements</strong></p>
+                        <ul>
+                            <li>Access to row elements (<code>$1</code>, <code>$2</code>, etc.)</li>
+                            <li><code>BEGIN</code> block (runs before processing)</li>
+                            <li><code>END</code> block (runs after all lines)</li>
+                            <li>Implicit line-by-line processing</li>
+                        </ul>
+
+                        <p>These features are specific to text processing. You wouldn't find them in Python or Java.</p>
+
+                        <p><strong>Example: Meeting Planning DSL</strong></p>
+                        <ul>
+                            <li>Built-in function: <code>find_non_conflicting_times(schedule_1, schedule_2)</code></li>
+                            <li>Date/time literals: <code>on Mon 10am</code></li>
+                            <li>Duration syntax: <code>for 2 hours</code></li>
+                        </ul>
+
+                        <p><strong>Question from lecture:</strong> Is <code>find_non_conflicting_times(schedule_1, schedule_2)</code> a language feature or domain-specific element?</p>
+                        <p><strong>Answer:</strong> It's a <strong>domain-specific element</strong>. It's specific to meeting planning and wouldn't exist in a general-purpose language.</p>
+
+                        <h4>Requirement 3: Dimensions of Creativity</h4>
+
+                        <blockquote>
+                            <p><strong>Your DSL should provide users with dimensions of creativity. It should be a real language, not a disguised web form.</strong></p>
+                        </blockquote>
+
+                        <p><strong>The restaurant menu analogy:</strong></p>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">❌ Restaurant Menu (Limited)</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">✅ Natural Language (Creative)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Choose from fixed options: appetizer, main course, dessert</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Constructs can be combined in essentially infinite ways</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Limited, predictable outputs</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Unbounded creative potential</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>Bad example (web form disguised as a language):</strong></p>
+                        <pre><code class="language-plaintext">create_website(
+    title: "My Site",
+    background: blue,
+    num_pages: 3
+)</code></pre>
+                        <p>This is just filling out a form. There's no creativity—you're picking from dropdowns.</p>
+
+                        <p><strong>Good example (actual language with creativity):</strong></p>
+                        <pre><code class="language-plaintext">site "My Portfolio" {
+    theme: modern-dark
+
+    page home {
+        banner: "Welcome!"
+        gallery: my_photos
+    }
+
+    for project in my_projects {
+        page project.name {
+            title: project.title
+            content: load(project.markdown_file)
+        }
+    }
+}</code></pre>
+                        <p>Now you can use loops, variables, and logic to generate pages dynamically. Infinite possibilities!</p>
+
+                        <h4>Rule of Thumb for "Rich Enough"</h4>
+
+                        <p>Your language is rich enough if:</p>
+                        <ul>
+                            <li>It has <strong>at least 3 language features</strong> with infinite potential usages (procedures, loops, recursion)</li>
+                            <li>These features <strong>alter each other's behavior</strong> (dynamic events, mutable state, etc.)</li>
+                            <li>You can <strong>describe their interaction</strong> clearly</li>
+                            <li>It has <strong>domain-specific elements</strong> that make it useful for the domain</li>
+                        </ul>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">💡 Extending Simple Ideas</h5>
+                            <p>Sometimes a simple initial idea can be extended into something suitable:</p>
+                            <p><strong>Start:</strong> "A language for making tables"<br>
+                            <strong>Extended:</strong> "A language for making tables... with variables for reusable content... with loops to generate rows... with conditionals to show/hide columns based on data... with functions to define custom table styles."</p>
+                            <p>Now you have a real language!</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== SYNTAX VS SEMANTICS ===== -->
+                    <article>
+                        <h3>Syntax vs. Semantics: Understanding the Difference</h3>
+
+                        <p>These are fundamental concepts in language design that students often confuse.</p>
+
+                        <h4>Syntax: How You Write It</h4>
+
+                        <blockquote>
+                            <p><strong>Syntax</strong> refers to the form and structure of the language—what sequences of characters are valid programs.</p>
+                        </blockquote>
+
+                        <p><strong>Syntax questions:</strong></p>
+                        <ul>
+                            <li>Should we use <code>-></code> or <code>:</code> in function definitions?</li>
+                            <li>Are semicolons required at the end of statements?</li>
+                            <li>Is whitespace significant?</li>
+                            <li>Do we use <code>{}</code> or <code>begin/end</code> for blocks?</li>
+                        </ul>
+
+                        <p><strong>Example from lecture:</strong></p>
+                        <p>Your team debates: Should we write function definitions as:</p>
+                        <pre><code class="language-plaintext">define-func add1(x) -> x + 1</code></pre>
+                        <p>or</p>
+                        <pre><code class="language-plaintext">define-func add1(x) : x + 1</code></pre>
+
+                        <p><strong>Question:</strong> Is changing <code>-></code> to <code>:</code> a syntax or semantics change?<br>
+                        <strong>Answer:</strong> <mark>Syntax</mark> — You're changing how it's written, not what it means.</p>
+
+                        <h4>Semantics: What It Means</h4>
+
+                        <blockquote>
+                            <p><strong>Semantics</strong> refers to the meaning and behavior of the language—what happens when you run a valid program.</p>
+                        </blockquote>
+
+                        <p><strong>Semantic questions:</strong></p>
+                        <ul>
+                            <li>Can you call a function before it's defined?</li>
+                            <li>Are variables passed by value or by reference?</li>
+                            <li>What happens when you divide by zero?</li>
+                            <li>Are variables mutable or immutable?</li>
+                            <li>Is the language statically or dynamically typed?</li>
+                        </ul>
+
+                        <p><strong>Example from lecture:</strong></p>
+                        <p>Your team debates: Can you do this?</p>
+                        <pre><code class="language-plaintext">add1(3)
+define-func add1(x) -> x + 1</code></pre>
+
+                        <p>(Calling <code>add1</code> <em>before</em> defining it)</p>
+
+                        <p><strong>Question:</strong> Is this a syntax or semantics question?<br>
+                        <strong>Answer:</strong> <mark>Semantics</mark> — The syntax is valid either way. The question is about <em>what the language allows</em> at runtime.</p>
+
+                        <h4>Why This Distinction Matters</h4>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Syntax Changes</th>
+                                    <th style="padding: 0.75rem; text-align: left; border: 1px solid var(--border-color);">Semantic Changes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Affect how code looks</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Affect how code behaves</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Implemented in parser/lexer</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Implemented in interpreter/compiler</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Easier to change early</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Harder to change (affects correctness)</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">More about aesthetics/ergonomics</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">More about power/safety</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🎯 Quick Test</h5>
+                            <p><strong>Ask yourself:</strong> "If I change this, does the <em>meaning</em> change, or just the <em>notation</em>?"</p>
+                            <ul>
+                                <li>Just notation → Syntax</li>
+                                <li>Meaning changes → Semantics</li>
+                            </ul>
+                        </aside>
+                    </article>
+
+                    <!-- ===== USER TESTING ===== -->
+                    <article>
+                        <h3>Prototype Testing: Validating Your Design</h3>
+
+                        <p>Here's a harsh truth: <strong>Most designers like their own language</strong>. But that doesn't mean it's actually good!</p>
+
+                        <h4>Why You Can't Trust Your Own Judgment</h4>
+
+                        <ul>
+                            <li>You designed it, so you already understand it (the "curse of knowledge")</li>
+                            <li>You may not be a target user and have too much prior knowledge/bias</li>
+                            <li>You've invested time, so you're emotionally attached</li>
+                        </ul>
+
+                        <p><strong>Directly asking for opinions is problematic:</strong></p>
+                        <ul>
+                            <li>Friends will tell you they like it (to be nice)</li>
+                            <li>People in a bad mood will be overly critical</li>
+                            <li>Opinions are subjective and not actionable</li>
+                        </ul>
+
+                        <h4>The Solution: Prototype Testing with Real Tasks</h4>
+
+                        <blockquote>
+                            <p><strong>For Project 1: Don't assume your initial design is perfect and forge ahead with implementation!</strong></p>
+                            <p>First, try out what you're planning to build on a user (or a few).</p>
+                        </blockquote>
+
+                        <h4>Step 1: Design Your User Study</h4>
+
+                        <p><strong>1. Identify your target users:</strong></p>
+                        <p>Who specifically is your language for?</p>
+                        <ul>
+                            <li>"Musicians who want to write sheet music quickly"</li>
+                            <li>"Event planners who schedule meetings"</li>
+                            <li>"Data scientists who visualize data"</li>
+                        </ul>
+
+                        <p><strong>2. Create a concrete programming task:</strong></p>
+                        <p>What is ONE specific thing you want users to be able to do?</p>
+                        <ul>
+                            <li>Write it down clearly</li>
+                            <li>Show the intended result if helpful</li>
+                            <li>Make it realistic (something they'd actually want to do)</li>
+                        </ul>
+
+                        <p><strong>Example task:</strong></p>
+                        <blockquote>
+                            <p>"Using our music DSL, write a program that generates the first 8 bars of 'Twinkle, Twinkle, Little Star' in C major. The output should be a PDF with standard musical notation."</p>
+                        </blockquote>
+
+                        <p><strong>3. Prepare example code:</strong></p>
+                        <p>Write several other examples that illustrate features WITHOUT solving the specific task:</p>
+                        <pre><code class="language-plaintext">// Example 1: Simple melody
+melody {
+    C4 quarter
+    D4 quarter
+    E4 quarter
+    F4 quarter
+}
+
+// Example 2: Repetition
+repeat 4 times {
+    C4 quarter
+}
+
+// Example 3: Chords
+chord {
+    C4, E4, G4
+} half-note</code></pre>
+
+                        <h4>Step 2: Perform User Testing</h4>
+
+                        <p><strong>Find 2-3 users to try your prototype:</strong></p>
+                        <ul>
+                            <li>If possible, get users from your target group (ideal!)</li>
+                            <li>If not, find people similar to your target users</li>
+                            <li>Don't use developers familiar with compilers (too much bias)</li>
+                        </ul>
+
+                        <p><strong>During the session:</strong></p>
+                        <ol>
+                            <li><strong>Explain the task</strong> (but not how to solve it!)</li>
+                            <li><strong>Show the example code</strong> to illustrate syntax</li>
+                            <li><mark>Ask them to think aloud</mark> as they work</li>
+                            <li><strong>Don't help!</strong> Observe where they struggle</li>
+                            <li>Take notes on confusion, errors, comments</li>
+                        </ol>
+
+                        <p><strong>Question from lecture:</strong> Why should you ask users to think aloud?</p>
+                        <p><strong>Answer:</strong> So you can understand their thought process and identify <em>where</em> and <em>why</em> they get confused—not just that they're confused.</p>
+
+                        <h4>Step 3: Reflect on the Results</h4>
+
+                        <p><strong>Don't just take user suggestions!</strong></p>
+
+                        <blockquote>
+                            <p>"Users are great at identifying problems but often terrible at proposing solutions."</p>
+                        </blockquote>
+
+                        <p><strong>Instead, identify WHERE users got confused:</strong></p>
+                        <ul>
+                            <li>What caused the confusion?</li>
+                            <li>Was the confusion show-stopping, or did they recover?</li>
+                            <li>Were they able to complete the task?</li>
+                            <li>What errors did they make?</li>
+                            <li>Was anything awkward to express?</li>
+                        </ul>
+
+                        <p><strong>Refer to the 5 language quality factors:</strong></p>
+                        <ol>
+                            <li><strong>Learnability:</strong> How easy to learn?</li>
+                            <li><strong>Usability:</strong> How easy to use once learned?</li>
+                            <li><strong>Expressiveness:</strong> Can users say what they need?</li>
+                            <li><strong>Readability:</strong> Can they understand code later?</li>
+                            <li><strong>Error-proneness:</strong> Do they make mistakes?</li>
+                        </ol>
+
+                        <h4>Important Testing Principles</h4>
+
+                        <p><strong>Don't reuse users between studies!</strong></p>
+                        <p>Once someone has learned your language, they have <strong>learning bias</strong>. They can't test learnability again—they already know it!</p>
+
+                        <p><strong>Task difficulty:</strong></p>
+                        <p><em>Question from lecture:</em> Should you give users an easy task in a subset of the DSL your whole team agrees on, or a harder task using features you're unsure about?</p>
+                        <p><em>Answer:</em> <mark>Both!</mark></p>
+                        <ul>
+                            <li><strong>Easy task:</strong> Tests if basics are clear</li>
+                            <li><strong>Hard task:</strong> Tests if uncertain features actually work</li>
+                        </ul>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">⚠️ Common User Testing Mistakes</h5>
+                            <ul>
+                                <li><strong>❌ Testing on yourself:</strong> You already know your language!</li>
+                                <li><strong>❌ Testing on your team:</strong> They helped design it!</li>
+                                <li><strong>❌ Helping when users struggle:</strong> You need to see WHERE they get stuck!</li>
+                                <li><strong>❌ Taking all suggestions:</strong> Users don't know language design!</li>
+                                <li><strong>❌ Testing just once:</strong> First impressions can be misleading!</li>
+                            </ul>
+                        </aside>
+                    </article>
+
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Understanding Domain-Specific Languages (DSLs) and their purpose</li>
+                    <li>Comparing Internal vs. External DSLs with real-world examples</li>
+                    <li>Designing DSLs: User-centered approach and feature interaction</li>
+                    <li>Project 1 requirements: Language features, domain-specific elements, and creativity</li>
+                    <li>Distinguishing between syntax and semantics in language design</li>
+                    <li>Prototype testing methodology and user study design</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li><strong>Project 1 Preparation:</strong> Begin thinking about your DSL domain and target users</li>
+                    <li><strong>Design Task:</strong> Mock up your language syntax before implementation</li>
+                    <li><strong>User Study:</strong> Recruit 2-3 users from your target group for prototype testing</li>
+                    <li><strong>Requirements Checklist:</strong>
+                        <ul style="margin-top: 0.5rem;">
+                            <li>Identify at least 3 interacting language features</li>
+                            <li>Define domain-specific elements for your chosen domain</li>
+                            <li>Ensure your DSL provides creative expressiveness (not just a web form)</li>
+                        </ul>
+                    </li>
+                    <li><strong>Exit Ticket Reflection:</strong> Review the syntax vs. semantics examples and ensure you understand the distinction</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc410" class="back-link">← Back to CPSC_410</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>
