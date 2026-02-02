@@ -1,0 +1,332 @@
+6. Evaluation (Visitors)
+CPSC 410 Advanced Software Engineering - Winter Term 2 2025
+Instructor: Caroline Lemieux
+clemieux@cs.ubc.ca
+This Slide Deck Relates To:
+By the end of this (half of the) course, you will be able to...
+I. identify distinct modules in a software system / its design
+II. reason about how modular design decisions affect the complexity of
+developing and maintaining a software system
+III. decompose the task of implementing a Domain-Specific Language (DSL) into
+distinct modules, explaining the typical stages common to DSLs in general
+IV. evaluate motivations and designs for DSLs vs. alternative approaches
+(e.g. general-purpose programming languages)
+V. design and implement DSLs tailored to assist a target kind of user with a
+specific task, including clear and suitably-robust error-handling.
+VI. evaluate a language design’s effectiveness via user-studies, and incorporate
+user feedback by proposing revisions to a language design
+Recall: how would we make this little language?
+Title: My Day
+Table:
+[Date | Time | Activity ]
+[Sept 1 | 9am | running ]
+[Sept 1 | 11am | eating ]
+Syntax (“What is Written”) Stages
+Tokenization
+Parsing
+Evaluate
+AST Conversion
+(input)
+String
+R
+E
+S
+U
+L
+T
+Tokenizer
+error
+Parse error
+static check
+failed
+dynamic
+check failed
+Dynamic
+Checks
+Static Checks
+List<Token>
+Parse Tree
+AST
+Validated
+AST
+Tokenization
+Parsing
+Evaluate
+AST Conversion
+(input)
+String
+R
+E
+S
+U
+L
+T
+Tokenizer
+error
+Parse error
+static check
+failed
+dynamic
+check failed
+Dynamic
+Checks
+Static Checks
+List<Token>
+Parse Tree
+AST
+Validated
+AST
+Semantic (“What Does it Do”) Stages
+Evaluation: run the input or generate code for it
+Depending on your language and its intended application, this stage might mean:
+● execute the program in your DSL on the fly (producing some side-effect)
+● generate a program in another language or representation for the user to see
+● generate some other artifact entirely (e.g. a visualisation, webpage, etc..)
+Evaluate
+First Approach: Evaluate each AST node recursively
+Starting at the root of the AST:
+● carry out the work needed by the current node,
+● call “evaluate” recursively on all child nodes
+● get the output by returning a value, modifying an existing object, printing etc.
+Evaluate
+Evaluation
+What is the sum
+of my two subfields?
+value: 1 value: 1
+Execute program directly (DSL interpreter), or
+generate code to be run externally (DSL compiler)
+Plus
+Num Num
+1 1
+Let’s walk through recursive evaluation of tinyHTML
+Get the code: it's on Github here:
+https://github.students.cs.ubc.ca/CPSC410-2025W-T2/tinyHTMLColoured
+Now you try: Add colours to tinyHTML (10 mins)
+Step 1: We have added the necessary parsing for a new Colour AST node.
+We have also added tests to EvaluatorTest. Familiarize yourself how
+Table and Title use Colour. Add the evaluation method for Colour.
+Step 2: Both Table and Title should support colours. Add support for
+colours to both by updating their evaluate method. You should call the
+evaluate method of Colour to avoid code duplication!
+Step 0: Get the starter code from Github here:
+https://github.students.cs.ubc.ca/CPSC410-2025W-T2/tinyHTMLColoured
+Title(red): My Day
+Table(green):
+[Date | Time | Activity]
+[Sept 1 | 9am | Get to school]
+{header preamble}
+<h1 style="color: red;">My Day</h1>
+<table style="color: green;" bgcolor=black ...
+{rest of table}
+Now you try: Add colours to tinyHTML (10 mins)
+Step 1: We have added the necessary parsing for a new Colour AST node.
+We have also added tests to EvaluatorTest. Familiarize yourself how
+Table and Title use Colour. Add the evaluation method for Colour.
+Step 2: Both Table and Title should support colours. Add support for
+colours to both by updating their evaluate method. You should call the
+evaluate method of Colour to avoid code duplication!
+Step 0: Get the starter code from Github here:
+https://github.students.cs.ubc.ca/CPSC410-2025W-T2/tinyHTMLColoured
+Title(red): My Day
+Table(green):
+[Date | Time | Activity]
+[Sept 1 | 9am | Get to school]
+{header preamble}
+<h1 style="color: red;">My Day</h1>
+<table style="color: green;" bgcolor=black ...
+{rest of table}
+Is there anything wrong with our current approach?
+Currently each AST node has an evaluate method
+We've made it the responsibility of the AST nodes to know how to do this
+● Suppose we want to add a checker that doesn’t evaluate but checks that all
+rows in a table have the same number of elements. How would we do that?
+● Suppose we want to add a new alternative evaluator mapping TinyHTML
+programs to LaTeX or Markdown files. How would we do that?
+● Real programming languages often have dozens of operations that traverse
+their AST, e.g. checkers, rewriters, optimisers, evaluators, …
+○ Putting all functionality into AST methods bloats the class (Single Responsibility Principle!)
+○ Plus, what if the code for the AST is not yours (e.g. Java AST) / you can't modify it (shipped)?
+2nd Approach:
+The Visitor Pattern
+Evaluate
+Let’s start naïvely:
+Can we just move all evaluate methods of TinyHTML into another class?
+The Visitor Pattern: Why and how?
+Looks superficially good, but consider what happens when we add BoldRow:
+If we try to run a TinyHTML program
+now, all rows get evaluated as regular
+Rows, not BoldRows. Why?
+● Java resolves all overloaded
+method calls at compile time:
+● In particular, with respect to the
+static (i.e. compile-time) types of
+the arguments
+(Table stores a list of Rows)
+● So evaluate(Row row… is
+always chosen!
+The Visitor Pattern: Why and how?
+Rows from the
+perspective of Table:
+The Visitor Pattern: Why and how?
+So is overloading the issue?
+No, the problem becomes even more
+apparent without overloading!
+● How can we get Java to choose
+the evaluate method based on
+the dynamic (runtime) type of an
+argument of the method?
+● We have to make it the receiver
+of the call for dynamic dispatch
+○ But we don't want to put the
+code back into the nodes…
+The Visitor Pattern: Why and how?
+How do we do it?
+● We add an extra level of
+indirection: a new accept
+method for Row and BoldRow
+that just forwards the call to
+the right evaluator method
+● Evaluator methods call the
+accept method of child nodes
+to get dispatched via 2 calls:
+Row:
+BoldRow:
+The Visitor Pattern: Why and how?
+Have we minimized interaction
+between the AST and Evaluator
+modules?
+Row:
+BoldRow:
+How can we generalise this approach to
+multiple AST operations at once?
+The Visitor Pattern: Why and how?
+● We define a Visitor interface
+that declares the necessary
+methods without
+implementing them directly
+● With Java’s generic types we
+can even keep the second
+parameter and the return type
+customisable per visitor!
+Row:
+BoldRow:
+…
+visit
+visit
+visit
+visit
+The Visitor pattern provides:
+(a) an easy way to support multiple kinds of “evaluation” for our AST
+independently, without having to edit every node every time
+(b) the convenience of having all the implementation of our “evaluation”
+in a single file, separate from the AST implementation
+(fine if we can't modify the AST code, if it has the interface!)
+(c) the ability to add completely new AST nodes without breaking existing
+visitors that do not care about those nodes
+(d) The ability to select a method implementation based on the dynamic
+types of two objects (double dispatch): the type of AST object (via the
+accept call) and the type of visitor object (via the visit call)
+Summary
+Bonus: how does the use of the visitor pattern affect modularity? Interface complexity?
+Visitors are used everywhere in DSL design!
+Tokenization
+Parsing
+Evaluate
+AST Conversion
+(input)
+String
+R
+E
+S
+U
+L
+T
+Tokenizer
+error
+Parse error
+static check
+failed
+dynamic
+check failed
+Dynamic
+Checks
+List<Token>
+Parse Tree
+AST
+Validated
+AST
+Static Checks
+What about visitors in Dynamic Languages?
+Python provides an ast module which provides a NodeVisitor.
+import ast
+class MyASTVisitor(ast.NodeVisitor):
+def visit(self, node: ast.Name):
+# do stuff with a Name node
+def visit(self, node: ast.BinOp):
+# do stuff with a Binary Operation node
+Python type hints aren’t
+integrated with the
+language to allow
+overloading…
+Making Visitors Work in Python
+import ast
+class MyASTVisitor(ast.NodeVisitor):
+def visit_Name(self, node: ast.Name):
+# do stuff with a Name node
+def visit_BinOp(self, node: ast.BinOp):
+# do stuff with a Binary Operation node
+Making Visitors Work in Python
+import ast
+class MyASTVisitor(ast.NodeVisitor):
+def visit_Name(self, node: ast.Name):
+# do stuff with a Name node
+def visit_BinOp(self, node: ast.BinOp):
+# do stuff with a Binary Operation node
+visitor = MyASTVisitor()
+code = ast.parse("x + 3")
+v.visit(code)
+Recall: double-dispatch: choosing
+which method to call based on
+type of visitor AND type of node
+this will dispatch to the right visitor
+but how to dispatch to the right node?
+NodeVisitor Implementation in Python
+NodeVisitor Implementation in Python
+say node is
+Constant(value=3)
+“Constant”
+“visit_Constant”
+Gets the implementation of
+visit_Constant defined on
+self (the visitor)
+If visit_Constant not
+defined, get default visit
+function
+How is Double-Dispatch achieved here?
+Constructing this method
+name based on dynamic
+class of node
++ reflection on the
+dynamic visitor object
+What about visitors in …e.g., Haskell?
+Remember again (paraphrased) CPSC 110 lesson:
+à “The structure of the code follows the structure of the data”
+Visitors pattern is one example of this for tree-like data!
+But visitors with double-dispatch is a very Object-Oriented design pattern…
+If you are implementing in a functional language, you may find the pattern
+matching construct a more natural way to achieve modular design.
+Exit Tickets
+Q1. Consider a project design without visitors, where evaluating and static checking
+functionality is embedded as methods within each AST Node. Do the AST Node classes
+in this design respect the Single Responsibility Principle?
+Q2. Which option do we need to choose to ensure the visit method of Row/BoldRow is
+called for a row that is a Row/BoldRow? Why?
+class TinyHTMLVisitor {
+public void visit(Table tab, PrintWriter writer) {
+for (Row r : tab.getRows()) {
+visit(r, writer); // option a
+r.accept(this, writer); // option b
+}
+}
+…
+}

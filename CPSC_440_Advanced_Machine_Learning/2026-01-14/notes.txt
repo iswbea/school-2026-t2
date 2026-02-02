@@ -1,0 +1,645 @@
+Categorical distributions
+CPSC 440/550: Advanced Machine Learning
+cs.ubc.ca/~dsuth/440/25w2
+University of British Columbia, on unceded Musqueam land
+2025-26 Winter Term 2 (Jan–Apr 2026)
+1 / 28
+Admin
+If you need a form signed, post it (privately) on Piazza
+Assignment 1 due Friday 11:59pm!
+Quiz 1 happening tomorrow through Saturday; schedule a slot ASAP
+2 / 28
+Last time
+Generative classifiers: model p(x, y) and predict with e.g.
+arg maxy p(y | x) = arg maxy p(x, y)
+Multivariate models: product of Bernoullis, assumes Xj are all independent
+Na¨ıve Bayes: assume the Xj are independent given Y
+3 / 28
+“Galaxy Brain Bayes”
+Na¨ıve Bayes models p(y) as Bernoulli, p(x | y) as product of Bernoullis
+Makes a strong assumption: all the Xj are independent given Y
+What if we avoided that assumption entirely?
+Could model p(x | y) with a full categorical distribution:
+Pr(X1 = 0, X2 = 0, . . . , Xd = 0 | Y = 0) = θ00···0|0
+Pr(X1 = 0, X2 = 0, . . . , Xd = 1 | Y = 0) = θ00···1|0
+.
+.
+.
+Pr(X1 = 1, X2 = 1, . . . , Xd = 1 | Y = 0) = θ11···1|0
+. . . and the same for probabilities given Y = 1
+2
+d possible binary vectors, so need 2
+d − 1 parameters for each condition
+MLE is again counting, θx|y = nx|y/ny, as we’ll see in a moment
+Different kind of “na¨ıvety” than na¨ıve Bayes: each bit-vector is totally separate
+4 / 28
+Outline
+1 Categorical distribution
+Inference
+Learning
+5 / 28
+Motivating problem: political polling
+Want to know support for political parties among a voter group
+Helps candidates/parties target campaigning, etc
+Where I live, the last federal election results:
+55% 35% Liberal
+30% 19% Conservative
+13% 7.9% NDP
+1.4% 0.9% Green
+0.4% 0.2% PPC
+37% no vote
+We want to estimate these quantities based on a sample (a poll)
+6 / 28
+General problem: categorical density estimation
+Special case of density estimation with a categorical variable:
+Input: n iid samples of categorical values x
+(1), x(2), . . . , x(n) ∈ {1, 2, . . . , k}
+Output: a probability model for Pr(X = 1), Pr(X = 2), . . . , Pr(X = k)
+We’ll remember, but not usually write down, that 1 = Lib, 2 = Con, . . .
+As a picture: X ∈ R
+n×1
+contains our sample data
+X is a random variable over {1, 2, . . . , k} from the distribution
+X =
+
+
+
+
+
+
+1
+2
+3
+1
+3
+
+
+
+
+
+
+density estimator
+−−−−−−−−−−→
+Pr(X = 1) = 0.4
+Pr(X = 2) = 0.2
+Pr(X = 3) = 0.4
+We’ll start by revisiting previous concepts, but introduce some more
+7 / 28
+Other applications of categorical density estimation
+Some other questions we might ask:
+1 What portion of my customers use cash, credit, debit?
+2 What’s the probability a random patient will be able to receive this type of blood?
+3 How many random tweets should I expect to look at before I see this particular word?
+For categorical variables, we do not assume an ordering
+Category 4 isn’t “closer” to category 3 than it is to category 1
+8 / 28
+Ordinal variables
+Ordered categorical variables are called ordinal
+Results of rolling dice, if you’re trying to beat a specific number
+Survey results (“strongly disagree,” “disagree,” “neutral,” . . . )
+Ratings (1 star, 2 stars, . . . )
+Tumour severity (Grade I, . . . , Grade IV)
+We won’t cover these for now, but lots of methods exist
+Ordinal logistic regression: loss where 2 stars is closer to 3 stars than 4 stars
+But there might be a bigger “gap” between 2 and 3 stars than between 3 and 4
+Can use this “ordinal loss” in neural nets
+9 / 28
+Parametrizing categorical probabilities
+We typically use the categorical distribution (aka “multinoulli” (ugh))
+For k categories, have k parameters, θ1, . . . , θk ≥ 0
+Pr(X = 1 | θ1, . . . , θk) = θ1 · · · Pr(X = k | θ1, . . . , θk) = θk
+Categories are mutually exclusive: can only pick one
+Require that X
+k
+c=1
+θc = 1
+More succinctly: if X ∼ Cat(θ) with θ = (θ1, . . . , θk),
+p(x | θ) = θ
+1(x=1)
+1
+θ
+1(x=2)
+2
+· · · θ
+1(x=k)
+k
+10 / 28
+Outline
+1 Categorical distribution
+Inference
+Learning
+11 / 28
+Inference task: union
+Inference task: given θ, compute probability of unions
+For example: Pr(X = Lib ∪ X = NDP | θ)
+Can’t be both, so: Pr(X = 2 ∪ X = 4 | θ) = θ2 + θ4
+Variation: Pr(X ≤ c) for some c is θ1 + θ2 + · · · + θc
+Why do we care, since the categories are unordered?
+F(c) = Pr(X ≤ c) is the cumulative distribution function (cdf)
+Depends on (arbitrary) ordering, but very useful function as we’ll see soon!
+12 / 28
+Inference task: mode (decoding)
+Inference task: given θ, find the mode, arg maxx p(x | θ)
+“Who’s going to win the election?”
+Also very easy: arg maxc
+θc
+13 / 28
+Inference task: likelihood
+Inference task: given and data X, find p(X | θ)
+Assuming data is iid from Cat(θ),
+p(X | θ) = p(x
+(1), . . . , x(n)
+| θ) =
+Yn
+i=1
+p(x
+(i)
+| θ)
+=
+Yn
+i=1
+θ
+1(x
+(i)=1)
+1
+θ
+1(x
+(i)=2)
+2
+· · · θ
+1(x
+(i)=k)
+k
+= θ
+Pn
+i=1 1(x
+(i)=1)
+1
+θ
+Pn
+i=1 1(x
+(i)=2)
+2
+· · · θ
+Pn
+i=1 1(x
+(i)=k)
+k
+= θ
+n1
+1
+θ
+n2
+2
+· · · θ
+nk
+k
+. . . defining at the end nc as the number of cs in X, like n0 and n1 for binary data
+Like Bernoulli, the likelihood only depends on the counts
+14 / 28
+Code for categorical likelihood
+counts = np.zeros(k)
+for x in X:
+count[x] += 1
+p = 1
+for theta_c, n_c in zip(theta, counts):
+p *= theta_c ** n_c
+Better version:
+counts = np.bincount(X,
+,→ minlength=k)
+log_p = counts @ log_theta
+Computational complexity (either way) is O(n + k)
+Usual case: n ≫ k (many samples, few categories), this is just O(n)
+If k ≫ n, could also easily get O(n) by only tracking categories with nonzero counts
+15 / 28
+Inference task: sampling
+Inference task: given θ, generate samples from X ∼ Cat(θ)
+Pr(X = 1) = 0.4
+Pr(X = 2) = 0.2
+Pr(X = 3) = 0.4
+sampling
+−−−−−→ X =
+
+
+1
+3
+3
+
+
+Notice: not sampling “one value per class”; each sample is in one category
+Who will this voter (say they’ll) vote for?
+16 / 28
+Categorical sampling algorithm
+Will use a uniform sample from [0, 1] to construct a sample from Cat(θ)
+Example: sample from θ =
+
+0.4, 0.2, 0.3, 0.1
+
+based on a single u ∼ Unif([0, 1])
+Want X = 1 40% of the time: if u < 0.4, return 1
+Want X = 2 20% of the time: if 0.4 ≤ u < 0.6, return 2
+Want X = 3 30% of the time: if 0.6 ≤ u < 0.9, return 3
+Want X = 4 10% of the time: if 0.9 ≤ u, return 4
+0
+return 1
+0.4
+return 2
+0.6
+return 3
+0.9
+return 4
+1
+Use CDF, Pr(X ≤ c) = θ1 + · · · + θc:
+Generate u ∼ Unif([0, 1])
+if u ≤ Pr(X ≤ 1), return 1
+else if u ≤ Pr(X ≤ 2), return 2
+. . .
+else return k
+Computing Pr(X ≤ c) from θ costs O(k)
+Would get O(k
+2
+) total time. . . but can save it
+cdf = np.cumsum(theta)
+u = rng.random_sample(n_to_samp)
+samp = cdf.searchsorted(u, side='right')
+Takes O(k) upfront, O(log k) per sample
+17 / 28
+Faster categorical sampling algorithms
+Previous method is sometimes called “roulette wheel sampling”
+O(k) preprocessing (computing the CDF), O(log k) time per sample
+“Vose’s alias method”: O(k) preprocessing but only O(1) time per sample
+Really nice (long) article developing many variations:
+Darts, Dice, and Coins: Sampling from a Discrete Distribution by Keith Schwarz
+18 / 28
+Outline
+1 Categorical distribution
+Inference
+Learning
+19 / 28
+MLE for categorical distribution
+How do we learn a categorical model?
+X =
+
+
+
+
+
+
+
+NDP
+Lib
+Lib
+CPC
+.
+.
+.
+
+
+
+
+
+
+
+density estimator
+−−−−−−−−−−→ θ =
+
+
+
+
+
+
+Pr(X = Lib) = 0.404
+Pr(X = NDP) = 0.307
+Pr(X = CPC) = 0.216
+Pr(X = Grn) = 0.039
+Pr(X = PPC) = 0.032
+
+
+
+
+
+
+Like before, start with maximum likelihood estimation (MLE):
+θˆ ∈ arg max
+θ
+p(X | θ)
+Like before, MLE will be θc =
+nc
+n
+(the portion of cs in the data)
+Like before, derivation is more complicated than the result
+20 / 28
+Derivation of the MLE that doesn’t work
+The likelihood is
+p(X | θ) = θ
+n1
+1
+· · · θ
+nk
+k
+So, the log-likelihood is
+log p(X | θ) = n1 log θ1 + · · · + nk log θk
+Take the derivative for a particular θc:
+∂
+∂θc
+log p(X | θ) = nc
+θc
+Set the derivative to zero:
+nc
+θc
+= 0
+. . . huh?
+21 / 28
+Fixing the derivation
+Setting the derivative to zero doesn’t work
+Ignores the constraint that P
+c
+θc = 1
+Some ways to enforce constraints (see e.g. this StackExchange thread):
+Use Lagrange multipliers to find stationary point of the Lagrangian
+Define θk = 1 −
+Pk−1
+c=1 θc, replace in the objective function
+We’ll take a different way here:
+Use a different parameterization ˜θc that doesn’t have this constraint
+Compute the MLE for the ˜θc by setting derivative to zero
+Convert from the ˜θc to θc
+22 / 28
+Unnormalized parameterization
+Let’s have ˜θc be unnormalized:
+Pr(X = c |
+˜θ1, . . . ,
+˜θk) ∝ ˜θc
+Still need each ˜θc ≥ 0
+Can then find
+p(c | θ˜) =
+˜θc Pk
+i=1
+˜θc
+=
+˜θc
+Zθ˜
+The “normalizing constant” Zθ˜ makes the total probability 1
+Don’t need the explicit sum-to-1 constraint anymore
+Note: constant for different x; not constant for different θ
+To convert from unnormalized to normalized: θc = ˜θc/Zθ˜
+23 / 28
+Derivation of the MLE that does work
+The likelihood in terms of the unnormalized parameters is
+p(X | θ˜) =
+˜θ1
+Zθ˜
+!n1
+· · ·
+˜θk
+Zθ˜
+!nk
+=
+1
+Z
+n
+θ˜
+˜θ
+n1
+1
+· · · ˜θ
+nk
+k
+So, the log-likelihood is
+log p(X | θ˜) = n1 log ˜θ1 + · · · + nk log ˜θk − n log Zθ˜
+Take the derivative for a particular ˜θc:
+∂
+∂ ˜θc
+log p(X | θ˜) = nc
+˜θc
+−
+n
+Zθ˜
+∂Zθ˜
+∂θ˜
+c
+=
+nc
+˜θc
+−
+n
+Zθ˜
+since ∂
+∂ ˜θc
+
+˜θ1 + · · · + ˜θk
+
+= 1
+Set the derivative to zero:
+nc
+˜θc
+=
+n
+Zθ˜
+so
+˜θc
+Zθ˜
+=
+nc
+n
+Can check this objective is concave, so this is a max; also satisfies ˜θc ≥ 0 constraint
+Many solutions, but all the same after normalizing
+24 / 28
+MAP estimate, Dirichlet prior
+As before, might prefer MAP estimate over MLE
+Often becomes more important for large k: lots of parameters!
+Most common prior is the Dirichlet distribution:
+p(θ1, . . . , θk | α1, . . . , αk) ∝ θ
+α1−1
+1
+· · · θ
+αk−1
+k
+Generalization of the beta distribution to k classes
+Requires each αc > 0
+This is a distribution over θ
+Probability distribution over possible (categorical) probability distributions
+25 / 28
+Dirichlet distribution
+Wikipedia’s visualizations for k = 3:
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x1
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x2
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x3
+= (1.5, 1.5, 1.5)
+0.0
+0.5
+1.0
+1.5
+2.0
+2.5
+3.0
+P
+DF f(x; )
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x1
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x2
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x3
+= (5.0, 5.0, 5.0)
+0.0
+1.5
+3.0
+4.5
+6.0
+7.5
+9.0
+10.5
+P
+DF f(x; )
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x1
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x2
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x3
+= (1.0, 2.0, 2.0)
+0.0
+0.8
+1.6
+2.4
+3.2
+4.0
+4.8
+5.6
+P
+DF f(x; )
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x1
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x2
+0.0
+0.2
+0.4
+0.6
+0.8
+1.0
+x3
+= (2.0, 4.0, 8.0)
+0.0
+2.5
+5.0
+7.5
+10.0
+12.5
+15.0
+P
+DF f(x; )
+https://en.wikipedia.org/wiki/Dirichlet_distribution
+26 / 28
+MAP estimate for Dirichlet-Categorical
+Reason to use the Dirichlet: again because posterior is simple
+p(θ | X, α) ∝ p(X | θ)p(θ | α) ∝ θ
+n1
+1
+· · · θ
+nk
+k
+θ
+α1−1
+1
+· · · θ
+αk−1
+k
+= θ
+(n1+α1)−1
+1
+· · · θ
+(nk+αk)−1
+k
+i.e. it’s Dirichlet again with parameters α˜c = nc + αc
+A few more steps show MAP for a categorical with Dirichlet prior is
+ˆθc =
+nc + αc − 1
+Pk
+c
+′=1(nc
+′ + αc
+′ − 1)
+(again as long as all nc + αc > 1)
+Dirichlet has k hyper-parameters αc
+Often use αc = α for some α ∈ R: one hyperparameter
+Makes the MLE ˆθc =
+nc + α − 1
+n + k(α − 1)
+α = 2 gives Laplace smoothing (add 1 “fake” count for each class)
+27 / 28
+Conjugate priors
+This is our second example where prior and posterior have the same form
+Beta prior + Bernoulli likelihood gives a Beta posterior
+Also happens with binomial, geometric, . . . likelihoods
+Dirichlet prior + categorical likelihood gives a Dirichlet posterior
+Also happens with multinomial likelihood
+When this happens, we say prior is conjugate to the likelihood
+Prior and posterior come from the same “family” of distributions
+X ∼ L(θ) θ ∼ P(α) implies θ | X ∼ P(α
++)
+Updated parameters α
++ will depend on the data
+Many computations become easier if we have a conjugate prior
+But not all distributions have conjugate priors
+And even when one exists, might not be convenient / a good choice
+28 / 28

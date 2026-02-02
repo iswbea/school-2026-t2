@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[CONCEPT NAME] - Interactive Guide</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        /* Concept guide specific styles */
+        .concept-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .difficulty-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+
+        .beginner { background-color: #10b981; color: white; }
+        .intermediate { background-color: #f59e0b; color: white; }
+        .advanced { background-color: #ef4444; color: white; }
+
+        .learning-path {
+            display: flex;
+            justify-content: space-between;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .learning-path::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 4px;
+            background: linear-gradient(to right, #10b981, #f59e0b, #ef4444);
+            z-index: 0;
+        }
+
+        .path-stage {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .path-stage-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid;
+            margin: 0 auto 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .level-section {
+            margin: 3rem 0;
+            padding: 2rem;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+
+        .level-beginner {
+            background-color: #f0fdf4;
+            border-color: #10b981;
+        }
+
+        .level-intermediate {
+            background-color: #fffbeb;
+            border-color: #f59e0b;
+        }
+
+        .level-advanced {
+            background-color: #fef2f2;
+            border-color: #ef4444;
+        }
+
+        .interactive-demo {
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .demo-controls button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            background-color: #667eea;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .demo-controls button:hover {
+            background-color: #5568d3;
+        }
+
+        .demo-controls button:active {
+            background-color: #4451b8;
+        }
+
+        .visualization-area {
+            min-height: 300px;
+            background-color: white;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .key-insight {
+            background-color: #fef3c7;
+            border-left: 5px solid #f59e0b;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .key-insight::before {
+            content: "💡 ";
+            font-size: 1.2rem;
+        }
+
+        .prerequisite-box {
+            background-color: #e0e7ff;
+            border: 2px solid #818cf8;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .related-concepts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .related-concept-card {
+            background-color: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .related-concept-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .quiz-section {
+            background-color: #faf5ff;
+            border: 2px solid #c084fc;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .quiz-question {
+            margin: 1.5rem 0;
+        }
+
+        .quiz-options {
+            list-style: none;
+            padding: 0;
+        }
+
+        .quiz-options li {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background-color: white;
+            border: 2px solid #e9d5ff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quiz-options li:hover {
+            border-color: #c084fc;
+            background-color: #faf5ff;
+        }
+
+        .quiz-options li.correct {
+            background-color: #d1fae5;
+            border-color: #10b981;
+        }
+
+        .quiz-options li.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+
+        .common-mistake {
+            background-color: #fee2e2;
+            border-left: 5px solid #ef4444;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .common-mistake::before {
+            content: "⚠️ Common Mistake: ";
+            font-weight: bold;
+        }
+
+        canvas {
+            max-width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#[COURSE_ID]">[COURSE_NAME]</a> /
+            <span>Concepts</span> /
+            <span>[CONCEPT_NAME]</span>
+        </nav>
+
+        <div class="concept-header">
+            <h1>[CONCEPT NAME] <span class="difficulty-badge [OVERALL_DIFFICULTY]">[DIFFICULTY]</span></h1>
+            <p class="subtitle">[ONE_LINE_DESCRIPTION]</p>
+        </div>
+
+        <!-- Learning Path Progress -->
+        <div class="learning-path">
+            <div class="path-stage">
+                <div class="path-stage-icon" style="border-color: #10b981; color: #10b981;">1</div>
+                <div>Beginner</div>
+                <small>Foundation</small>
+            </div>
+            <div class="path-stage">
+                <div class="path-stage-icon" style="border-color: #f59e0b; color: #f59e0b;">2</div>
+                <div>Intermediate</div>
+                <small>Deep Dive</small>
+            </div>
+            <div class="path-stage">
+                <div class="path-stage-icon" style="border-color: #ef4444; color: #ef4444;">3</div>
+                <div>Advanced</div>
+                <small>Mastery</small>
+            </div>
+        </div>
+
+        <!-- Prerequisites -->
+        <div class="prerequisite-box">
+            <h3>📚 Prerequisites</h3>
+            <p>Before diving into this concept, you should understand:</p>
+            <ul>
+                <li>[PREREQUISITE 1]</li>
+                <li>[PREREQUISITE 2]</li>
+            </ul>
+        </div>
+
+        <!-- ==================== BEGINNER LEVEL ==================== -->
+        <div class="level-section level-beginner">
+            <h2>🌱 Beginner Level: The Basics</h2>
+
+            <h3>What is [CONCEPT]? (ELI5)</h3>
+            <p>[SIMPLE_EXPLANATION]</p>
+
+            <h4>Real-World Analogy</h4>
+            <blockquote>
+                <p>[ANALOGY_TEXT]</p>
+            </blockquote>
+
+            <div class="key-insight">
+                <strong>Key Insight:</strong> [MAIN_TAKEAWAY]
+            </div>
+
+            <h4>Simple Example</h4>
+            <pre><code class="language-[LANGUAGE]">
+[SIMPLE_CODE_EXAMPLE]
+            </code></pre>
+            <p><em>Explanation:</em> [CODE_EXPLANATION]</p>
+
+            <!-- Interactive Demo (Beginner) -->
+            <div class="interactive-demo">
+                <h4>Interactive Demo: [DEMO_TITLE]</h4>
+                <p>[DEMO_DESCRIPTION]</p>
+                <div class="demo-controls">
+                    <button onclick="[FUNCTION]()">Try It</button>
+                    <button onclick="[FUNCTION]()">Reset</button>
+                </div>
+                <div class="visualization-area" id="beginner-viz">
+                    <!-- Visualization will be rendered here -->
+                </div>
+            </div>
+
+            <div class="common-mistake">
+                [COMMON_BEGINNER_MISTAKE]
+            </div>
+        </div>
+
+        <!-- ==================== INTERMEDIATE LEVEL ==================== -->
+        <div class="level-section level-intermediate">
+            <h2>🚀 Intermediate Level: Going Deeper</h2>
+
+            <h3>How [CONCEPT] Actually Works</h3>
+            <p>[DETAILED_EXPLANATION]</p>
+
+            <h4>Mathematical Foundation</h4>
+            <p>[MATH_EXPLANATION]</p>
+            <pre><code class="language-plaintext">
+[MATHEMATICAL_NOTATION]
+            </code></pre>
+
+            <h4>Step-by-Step Breakdown</h4>
+            <ol>
+                <li><strong>Step 1:</strong> [STEP_DESCRIPTION]</li>
+                <li><strong>Step 2:</strong> [STEP_DESCRIPTION]</li>
+                <li><strong>Step 3:</strong> [STEP_DESCRIPTION]</li>
+            </ol>
+
+            <!-- Interactive Demo (Intermediate) -->
+            <div class="interactive-demo">
+                <h4>Interactive Visualization: [VIZ_TITLE]</h4>
+                <p>[VIZ_DESCRIPTION]</p>
+                <div class="demo-controls">
+                    <button onclick="[FUNCTION]()">Start</button>
+                    <button onclick="[FUNCTION]()">Step</button>
+                    <button onclick="[FUNCTION]()">Reset</button>
+                </div>
+                <div class="visualization-area">
+                    <canvas id="intermediate-canvas" width="800" height="400"></canvas>
+                </div>
+            </div>
+
+            <div class="key-insight">
+                <strong>Deeper Insight:</strong> [INTERMEDIATE_INSIGHT]
+            </div>
+
+            <h4>Practical Example</h4>
+            <pre><code class="language-[LANGUAGE]">
+[INTERMEDIATE_CODE_EXAMPLE]
+            </code></pre>
+
+            <div class="common-mistake">
+                [COMMON_INTERMEDIATE_MISTAKE]
+            </div>
+        </div>
+
+        <!-- ==================== ADVANCED LEVEL ==================== -->
+        <div class="level-section level-advanced">
+            <h2>🎓 Advanced Level: Mastery</h2>
+
+            <h3>Advanced Concepts and Edge Cases</h3>
+            <p>[ADVANCED_DISCUSSION]</p>
+
+            <h4>Theoretical Foundations</h4>
+            <p>[THEORY_EXPLANATION]</p>
+
+            <h4>Optimizations and Best Practices</h4>
+            <ul>
+                <li><strong>Optimization 1:</strong> [DESCRIPTION]</li>
+                <li><strong>Optimization 2:</strong> [DESCRIPTION]</li>
+            </ul>
+
+            <!-- Interactive Demo (Advanced) -->
+            <div class="interactive-demo">
+                <h4>Advanced Playground</h4>
+                <p>[PLAYGROUND_DESCRIPTION]</p>
+                <div class="demo-controls">
+                    <label>Parameter 1: <input type="range" id="param1" min="0" max="100" value="50" onchange="[FUNCTION](this.value)"></label>
+                    <label>Parameter 2: <input type="range" id="param2" min="0" max="100" value="50" onchange="[FUNCTION](this.value)"></label>
+                </div>
+                <div class="visualization-area">
+                    <canvas id="advanced-canvas" width="800" height="400"></canvas>
+                </div>
+            </div>
+
+            <h4>Real-World Applications</h4>
+            <ul>
+                <li><strong>Use Case 1:</strong> [DESCRIPTION]</li>
+                <li><strong>Use Case 2:</strong> [DESCRIPTION]</li>
+            </ul>
+
+            <h4>Complete Implementation</h4>
+            <pre><code class="language-[LANGUAGE]">
+[COMPLETE_CODE_EXAMPLE]
+            </code></pre>
+        </div>
+
+        <!-- ==================== QUIZ SECTION ==================== -->
+        <div class="quiz-section">
+            <h3>🧠 Test Your Understanding</h3>
+
+            <div class="quiz-question">
+                <p><strong>Question 1:</strong> [QUESTION_TEXT]</p>
+                <ul class="quiz-options">
+                    <li onclick="checkAnswer(this, false)">[OPTION_A]</li>
+                    <li onclick="checkAnswer(this, true)">[OPTION_B - CORRECT]</li>
+                    <li onclick="checkAnswer(this, false)">[OPTION_C]</li>
+                    <li onclick="checkAnswer(this, false)">[OPTION_D]</li>
+                </ul>
+                <div class="explanation" style="display: none; margin-top: 1rem; padding: 1rem; background-color: white; border-radius: 4px;">
+                    <strong>Explanation:</strong> [ANSWER_EXPLANATION]
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== RELATED CONCEPTS ==================== -->
+        <div style="margin-top: 3rem;">
+            <h3>Related Concepts</h3>
+            <div class="related-concepts">
+                <a href="[LINK]" class="related-concept-card">
+                    <h4>[CONCEPT_NAME]</h4>
+                    <p>[BRIEF_DESCRIPTION]</p>
+                </a>
+                <a href="[LINK]" class="related-concept-card">
+                    <h4>[CONCEPT_NAME]</h4>
+                    <p>[BRIEF_DESCRIPTION]</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- ==================== FURTHER READING ==================== -->
+        <div style="margin-top: 3rem; padding: 2rem; background-color: #f8fafc; border-radius: 8px;">
+            <h3>📖 Further Reading</h3>
+            <ul>
+                <li><a href="[LINK]">[RESOURCE_TITLE]</a> - [DESCRIPTION]</li>
+                <li><a href="[LINK]">[RESOURCE_TITLE]</a> - [DESCRIPTION]</li>
+            </ul>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#[COURSE_ID]" class="back-link">← Back to [COURSE_NAME]</a>
+        </footer>
+    </div>
+
+    <script>
+        // Quiz functionality
+        function checkAnswer(element, isCorrect) {
+            const options = element.parentElement.children;
+            const explanation = element.parentElement.nextElementSibling;
+
+            // Remove previous states
+            for (let option of options) {
+                option.classList.remove('correct', 'incorrect');
+            }
+
+            // Mark the selected answer
+            if (isCorrect) {
+                element.classList.add('correct');
+            } else {
+                element.classList.add('incorrect');
+            }
+
+            // Show explanation
+            explanation.style.display = 'block';
+        }
+
+        // Interactive demo functions (customize these!)
+        function beginnerDemo() {
+            const viz = document.getElementById('beginner-viz');
+            // Add your visualization logic here
+            viz.innerHTML = '<p>Demo visualization goes here!</p>';
+        }
+
+        function intermediateDemo() {
+            const canvas = document.getElementById('intermediate-canvas');
+            const ctx = canvas.getContext('2d');
+            // Add your canvas drawing logic here
+        }
+
+        function advancedDemo(param) {
+            const canvas = document.getElementById('advanced-canvas');
+            const ctx = canvas.getContext('2d');
+            // Add your advanced visualization logic here
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            // Run any initialization code here
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

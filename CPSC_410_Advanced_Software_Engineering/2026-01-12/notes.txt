@@ -1,0 +1,667 @@
+4. Modular Design,
+Development, and Testing
+What? Why? How?
+CPSC 410 Advanced Software Engineering - Winter Term 2 2025
+Instructor: Caroline Lemieux
+clemieux@cs.ubc.ca
+Code for today: https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests
+(for setup: we used Java SDK 21+ and JUnit 5+)
+This Slide Deck Relates To:
+By the end of this (half of the) course, you will be able to...
+I. identify distinct modules in a software system / its design
+II. reason about how modular design decisions affect the complexity of
+developing and maintaining a software system
+III. decompose the task of implementing a Domain-Specific Language (DSL) into
+distinct modules, explaining the typical stages common to DSLs in general
+IV. evaluate motivations and designs for DSLs vs. alternative approaches
+(e.g. general-purpose programming languages)
+V. design and implement DSLs tailored to assist a target kind of user with a
+specific task, including clear and suitably-robust error-handling.
+VI. evaluate a language design’s effectiveness via user-studies, and incorporate
+user feedback by proposing revisions to a language design
+Collaboratively engineering large(r) scale software projects
+(projects that require modular design, development, and testing)
++ evaluating the projects with empirical studies of programmers
+with applications to software engineering tooling
+● Project 1: design and implement a Domain Specific Language (DSL) and its
+evaluator (a.k.a., a mini compiler/interpreter)
+● Project 2: design and implement a Program Analysis technique
+(a.k.a., more advanced tooling to help developers understand their code)
+Both projects are designed to be too large for one person to do!
+How can you be an effective (member of a) team working together on these?
+Recall: What is CPSC 410 about?
+● A module is a subset of a software system that has a specific purpose,
+(relatively) independent of the other modules in the system
+○ A Java class is a natural abstraction for a module; but not all Java
+classes maybe good modules
+○ “Specific purpose” ~ Single Responsibility Principle
+● A module encompasses an interface and an implementation
+○ Interface: describes what functionality the module provides
+○ Implementation: the actual code implementing the functionality
+What is a Module?
+*Inspired by Chapter 4 in John Ousterhout’s book “A Philosophy of Software Design”
+● Ideally, the interface of a module hides unnecessary complexity in the
+implementation from the user of the module
+● Ousterhout* contrasts deep vs. shallow modules:
+Deep vs. Shallow Modules
+*Inspired by Fig 4.1 in John Ousterhout’s book “A Philosophy of Software Design”
+● We should strive to design deep modules, where the interface hides complexity
+○ Not at the expense of single responsibility principle
+à E.g. a Java data class with only getters/setters may necessarily be “shallow”
+à But may still be able to hide some internal design decisions (e.g., List or ArrayList?)
+Deep
+Shallow
+interface (cost: less is better)
+functionality (benefit:
+more is better)
+● What makes an interface complex?
+● E.g., BufferedReader in Java:
+● 1 min: think to yourself,
+● 2 mins: share with partner(s)
+Interface Complexity
+● What makes an interface complex?
+● Some ideas:
+○ Size (larger ~ more complex… but sometimes larger is necessary)
+○ Exposes internal design decisions
+○ Exposes too many options (default case hard to do)
+○ Undocumented or complex dependencies between interface elements
+○ Too many ways to do the same thing
+Interface Complexity
+*Inspired by Chapter 4 in John Ousterhout’s book “A Philosophy of Software Design”
+● A modular software design tries, as much as possible, to split the
+functionality of the software system into modules
+● Good modular design:
+○ Reduces the interaction points between modules
+■ impossible to fully get rid of interactions/dependencies between
+modules! But they should be clearly defined.
+■ Abstract away internal design decisions as much as possible
+○ Favours deep modules
+○ Reduces complexity so developers can work on one module without
+understanding how all the other modules are implemented
+● Will not get “perfect” modular design on the first go
+○ That’s ok! Modularize components where complexity naturally arises
+Modular Design
+*Inspired by Chapter 4 in John Ousterhout’s book “A Philosophy of Software Design”
+● Practice designing, developing, and testing software in a modular way
+○ Experiential learning, i.e., not something you can learn solely through
+reading and watching lectures
+○ Project 1 and Project 2 of this class will give you practice!
+● This lecture illustrates the high-level principles
+○ Some similarities to how you might proceed for Project 1
+● In upcoming lectures, we will provide a detailed design roadmap for Project 1
+○ Developing and testing will be individual to each team
+● Will touch on these topics throughout the course
+How to learn Modular Design?
+How Do We Get to This Design?
+Tokenization
+Parsing
+Evaluate
+AST Conversion
+(input)
+String
+R
+E
+S
+U
+L
+T
+Tokenizer
+error
+Parse error
+static check
+failed
+dynamic
+check failed
+Dynamic
+Checks
+Static Checks
+List<Token>
+Parse Tree
+AST
+Validated
+AST
+1. What exactly do they want the interpreter to do?
+2. How will they split up work on the interpreter?
+3. How can they design the code base so they can work in parallel?
+4. How can they minimize the impact of their changes on each other’s tasks?
+Alex and Caroline are Implementing a Tiny Interpreter
+A
+C
+1. What exactly do they want the interpreter to do?
+2. How will they split up work on the interpreter?
+3. How can they design the code base so they can work in parallel?
+4. How can they minimize the impact of their changes on each other’s tasks?
+Alex and Caroline are Implementing a Tiny Interpreter
+A
+C
+● We are writing an interpreter for the TinyVars language
+○ You will see more of this language in lectures later
+● To start, the language has 3 kinds of statements
+1. What does this interpreter do?
+new x;
+set x, 3;
+printing print x;
+declaration
+assignment
+● And what should happen when we interpret these statements?
+● Let’s build end-to-end examples of the form:
+input interpret result
+● Let’s build end-to-end examples of the form:
+○ “End-to-end tests”, “user stories”...
+1. What does this interpreter do?
+new x;
+set x, 3;
+print x;
+interpret 3 is
+printed
+set x, 3;
+print x; interpret
+ERROR:
+cannot set
+undefined
+variable
+new x;
+print x; interpret
+ERROR:
+cannot read
+uninitialized
+variable
+new x;
+set x,3;
+print x ;
+interpret 3 is
+printed
+input interpret result
+1. What exactly do they want the interpreter to do?
+2. How will they split up work on the interpreter?
+3. How can they design the code base so they can work in parallel?
+4. How can they minimize the impact of their changes on each other’s tasks?
+Alex and Caroline are Implementing a Tiny Interpreter
+A
+C
+● These examples suggest a natural splitting point
+2. How will we split up work?
+new x;
+set x, 3;
+print x;
+interpret 3 is
+printed
+new x;
+set x,3;
+print x ;
+interpret 3 is
+printed
+● The programs are “the same” except for whitespace
+● Seems like some of the work of interpreting can be reused
+● Original design:
+2. How will we split up work? (Modular Design v1)
+input interpret result
+input parse evaluate result standard
+representation
+● V1 design: split the interpreter into two phases:
+○ The parser, which turns a textual program into a standard representation
+○ The evaluator, which takes a standard representation and computes the
+result of running that program
+● Each “phase” is really a module:
+2. How will we split up work? (Modular Design v1)
+input parse evaluate result standard
+representation
+ProgramRep parse(String input){
+// lots of complicated code
+}
+provides
+interface
+Result evaluate(ProgramRep input){
+// lots of complicated code
+}
+provides
+interface
+● Each “phase” is really a module:
+● One option to split work: one person per module (not the only option!)
+2. How will we split up work? (Modular Design v1)
+input parse evaluate result standard
+representation
+A C Alex’s job Caroline’s job
+1. What exactly do they want the interpreter to do?
+2. How will they split up work on the interpreter?
+3. How can they design the code base so they can work in parallel?
+4. How can they minimize the impact of their changes on each other’s tasks?
+Alex and Caroline are Implementing a Tiny Interpreter
+A
+C
+● Each “phase” is really a module:
+● One option to split work: one person per module (not the only option!)
+3. How can we work in parallel?
+input parse evaluate result standard
+representation
+A C Alex’s job Caroline’s job
+● Does Caroline need to wait for Alex to be done before starting work? :(
+● A module is a subset of a software system that has a specific purpose,
+(relatively) independent of the other modules in the system
+Recall: What is a Module?
+*Inspired by Chapter 4 in John Ousterhout’s book “A Philosophy of Software Design”
+● A module is a subset of a software system that has a specific purpose,
+(relatively) independent of the other modules in the system
+Recall: What is a Module?
+*Inspired by Chapter 4 in John Ousterhout’s book “A Philosophy of Software Design”
+ProgramRep parse(String input){
+// lots of complicated code
+}
+Result evaluate(ProgramRep input){
+// lots of complicated code
+}
+● In this case, our modules are dependent on this standard intermediate
+program representation
+○ ProgramRep is a kind of data interchange format for our interpreter
+● Agree on data interchange format → can start implementation at multiple stages
+3. Can we work in parallel? (Modular Development v1)
+input parse evaluate result standard
+representation
+A C Alex’s job Caroline’s job
+First job
+(At least, some version of this…)
+(Again: hard to get perfect on first go!)
+● The data interchange format we will decide on here is close to an Abstract
+Syntax Tree (AST)
+○ We will discuss ASTs extensively in the next lecture
+● Recall this example:
+TinyVars Example: Data Interchange Format
+new x;
+set x, 3;
+print x;
+interpret 3 is
+printed
+input parse evaluate result standard
+representation
+● Recall this example:
+● Breaking it down:
+TinyVars Example: Data Interchange Format
+new x;
+set x, 3;
+print x;
+interpret 3 is
+printed
+parse evaluate
+standard
+representation
+new x;
+set x, 3;
+print x;
+3 is
+printed
+● Recall this example:
+● Breaking it down:
+TinyVars Example: Data Interchange Format
+new x;
+set x, 3;
+print x;
+interpret 3 is
+printed
+parse evaluate
+new x;
+set x, 3;
+print x;
+3 is
+printed
+Program
+Decl Set Print
+Name Name
+Name Number
+x
+x
+x
+3
+● Recall this example:
+● Breaking it down:
+TinyVars Example: Data Interchange Format
+new x;
+set x, 3;
+print x;
+interpret 3 is
+printed
+parse evaluate
+new x;
+set x, 3;
+print x;
+3 is
+printed
+Program
+Decl Set Print
+Name Name
+Name Number
+x
+x
+x
+3
+● Recall this example:
+● Breaking it down:
+TinyVars Example: Data Interchange Format
+new x;
+set x, 3;
+print x;
+interpret 3 is
+printed
+parse evaluate
+new x;
+set x, 3;
+print x;
+3 is
+printed
+Program
+Decl Set Print
+Name Name
+Name Number
+x
+x
+x
+3
+● Recall this example:
+● Breaking it down:
+TinyVars Example: Data Interchange Format
+new x;
+set x, 3;
+print x;
+interpret 3 is
+printed
+parse evaluate
+new x;
+set x, 3;
+print x;
+3 is
+printed
+Program
+Decl Set Print
+Name Name
+Name Number
+x
+x
+x
+3
+● Having created our first data interchange format, we can actually implement a
+version of our whole interpreter!
+Data Interchange Format: What Now?
+input parse evaluate result standard
+representation
+First job
+● Having created our first data interchange format, we can actually implement a
+version of our whole interpreter!
+● Code: https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests
+à I will be coding on pre-exercise-1; you will start Exercise 1 from main
+Data Interchange Format: What Now? Implement!
+input parse evaluate result standard
+representation
+First job
+● Having created our first data interchange format, we can actually implement a
+version of our whole interpreter!
+● Code: https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests
+● “Implemented” the interpreter… but Caroline’s job still dependent on Alex’s :(
+Bonus: critique the design of the EvaluateResult interface.
+Data Interchange Format: What Now? Implement!
+input parse evaluate result standard
+representation
+First job
+Node n = parser.parse(args[0]);
+EvaluateResult result = evaluator.evaluate(n);
+● Agree on data interchange format → can start implementation at multiple stages
+Data Interchange Format: What Now? Test!
+input parse evaluate result standard
+representation
+First job
+● How?
+○ Modular testing that captures the responsibilities of each module
+○ Can write these tests before (during, and after) writing the code
+● How can we derive tests that allow the parser and the evaluator to be
+developed separately?
+TinyVars Example: Deriving Tests
+parse evaluate
+new x;
+set x, 3;
+print x;
+3 is
+printed
+Program
+Decl Set Print
+Name Name
+Name Number
+x
+x
+x
+3
+● Given the example:
+● Given the example:
+TinyVars Example: Parser Tests
+parse evaluate
+new x;
+set x, 3;
+print x;
+3 is
+printed
+Program
+Decl Set Print
+Name Name
+Name Number
+x
+x
+x input 3
+expected_tree
+● Parser tests conceptually simple:
+○ assertEquals(parse(input), expected_tree)
+● Quiz: What is required to make sure this assert behaves as intended in Java?
+○ Answer: correct implementation of equals()
+● Given the example:
+TinyVars Example: Parser Tests
+parse evaluate
+new x;
+set x, 3;
+print x;
+3 is
+printed
+Program
+Decl Set Print
+Name Name
+Name Number
+x
+x
+x input 3
+expected_tree
+● Parser tests conceptually simple:
+○ assertEquals(parse(input), expected_tree)
+● Quiz: What is required to make sure this assert behaves as intended in Java?
+○ Answer: correct implementation of equals()
+Let’s code this…
+https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests
+● We wrote a parse test for the example
+● For you: write tests for the parser on two other examples (~10 mins)
+○ What should the parser return for these examples? Write tests to check.
+Exercise 1. Additional Parse Tests
+new x;
+set x, 3;
+print x;
+interpret 3 is
+printed
+new x;
+set x,3;
+print x ;
+interpret 3 is
+printed
+set x, 3;
+print x; interpret
+ERROR:
+cannot set
+undefined
+variable
+main branch at https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests;
+Junit 5; SDK 21+
+● Given the example:
+TinyVars Example: Evaluator Tests
+parse evaluate
+new x;
+set x, 3;
+print x;
+3 is
+printed
+Program
+Decl Set Print
+Name Name
+Name Number
+x
+x
+x
+3
+input_tree
+expected_res
+● What we want to test has similar structure:
+○ assertEquals(evaluate(input_tree), expected_res)
+● What is the type of expected_res?
+○ Recall: there can be errors in evaluating
+● Given the example:
+parse evaluate
+new x;
+set x, 3;
+print x;
+3 is
+printed
+Program
+Decl Set Print
+Name Name
+Name Number
+x
+x
+x
+3
+input_tree
+expected_res
+● What we want to test has similar structure:
+○ assertEquals(evaluate(input_tree), expected_res)
+● What is the type of expected_res?
+○ Recall: there can be errors in evaluating
+TinyVars Example: Evaluator Tests
+Let’s code this…
+https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests/
+● We wrote an evaluator test for the example
+● For you: write tests for these other two examples (~10 minutes)
+https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests/
+Exercise 2. Additional Evaluator Tests
+new x;
+set x, 3;
+print x;
+interpret 3 is
+printed
+set x, 3;
+print x; interpret
+ERROR:
+cannot set
+undefined
+variable
+new x;
+print x; interpret
+ERROR:
+cannot read
+uninitialized
+variable
+● Example evaluator test
+How does this style of tests allow parallel work?
+@Test
+void basicPrintTest(){
+// Create the input data
+Decl new_stmt = new Decl(new Name("x"));
+Set set_stmt = new Set(new Name("x"), new Number(3));
+Print print_stmt = new Print(new Name("x"));
+List<Statement> statements = Arrays.asList(new_stmt,set_stmt,print_stmt);
+Program prog = new Program(statements);
+// Create the expected result
+String res = "3\n";
+EvaluateResult expected_result = new EvaluateResult(res);
+// Create the evaluator
+Evaluator evaluator = new Evaluator();
+EvaluateResult result = evaluator.evaluate(prog);
+assertEquals(expected_result, result);
+}
+● How does this test rely on parse? Does it rely on the implementation? Concept?
+○ Test does not call parse → can get this test passing before parse is done
+○ Test is only relevant if parse produces AST
+1. What exactly do they want the interpreter to do?
+2. How will they split up work on the interpreter?
+3. How can they design the code base so they can work in parallel?
+4. How can they minimize the impact of their changes on each other’s tasks?
+Alex and Caroline are Implementing a Tiny Interpreter
+A
+C
+● Alex and Caroline have agreed on this high-level design:
+Exercise 3. How to Minimize Impact of Changes?
+input parse AST evaluate result
+How does Caroline need to change her evaluate() work if:
+1. Alex decides to make parse() return a json representation of the code?
+2. Alex decides that parse() needs to be able to return errors?
+3. Alex and Caroline decide to add if statements to their language?
+Take 2 mins to discuss with those next to you.
+4. How to Minimize Impact of Changes?
+How does Caroline need to change her evaluate() work if:
+1. Alex decides to make parse() return a json representation of the code?
+a. Substantial changes: implementation on AST can’t plug in anymore… Or,
+convert the json into an AST representation??
+2. Alex decides that parse() needs to be able to return errors?
+a. It depends! If error should interrupt the problem before interpret is called,
+no changes may be required. If evaluate() needs to check for the
+presence of errors before continuing, may need interface-level changes?
+3. Alex and Caroline decide to add if statements to their language?
+a. Inevitably need to add functionality, but should not break all existing
+tests/implementation. (visitor pattern helpful here: we’ll discuss in future
+lectures)
+4. How to Minimize Impact of Changes?
+How does Caroline need to change her evaluate() work if:
+1. Alex decides to make parse() return a json representation of the code?
+a. Substantial changes: implementation on AST can’t plug in anymore…
+Or, have a new module convert the json into an AST representation??
+2. Alex decides that parse() needs to be able to return errors?
+a. It depends! If error should interrupt the problem before interpret is called,
+no changes may be required. If evaluate() needs to check for the
+presence of errors before continuing, may need interface-level changes?
+3. Alex and Caroline decide to add if statements to their language?
+a. Inevitably need to add functionality, but should not break all existing
+tests/implementation. (visitor pattern helpful here: we’ll discuss in future
+lectures)
+4. How to Minimize Impact of Changes?
+How does Caroline need to change her evaluate() work if:
+1. Alex decides to make parse() return a json representation of the code?
+a. Substantial changes: implementation on AST can’t plug in anymore…
+Or, have a new module convert the json into an AST representation??
+2. Alex decides that parse() needs to be able to return errors?
+a. It depends! If error should interrupt the program before evaluate is called,
+no changes may be required. If evaluate() needs to check for the
+presence of errors before continuing, may need interface-level changes?
+3. Alex and Caroline decide to add if statements to their language?
+a. Inevitably need to add functionality, but should not break all existing
+tests/implementation. (visitor pattern helpful here: we’ll discuss in future
+lectures)
+4. How to Minimize Impact of Changes?
+How does Caroline need to change her evaluate() work if:
+1. Alex decides to make parse() return a json representation of the code?
+a. Substantial changes: implementation on AST can’t plug in anymore…
+Or, have a new module convert the json into an AST representation??
+2. Alex decides that parse() needs to be able to return errors?
+a. It depends! If error should interrupt the program before evaluate is called,
+no changes may be required. If evaluate() needs to check for the
+presence of errors before continuing, may need interface-level changes?
+3. Alex and Caroline decide to add if statements to their language?
+a. Inevitably need to add functionality, but should not break all existing
+tests/implementation. (visitor pattern helpful here: we’ll discuss in future
+lectures)
+● Code modules consist of an interface (externally visible) and implementation
+○ Deep modules help reduce implementation complexity: not everyone
+needs to understand the implementation of everything, as long as the
+interfaces are clear and respected
+● Modular design provides natural splitting points for work with others
+● Agreeing on the structure of data exchanged by modules can enable modular
+development, testing in parallel
+● Modular design may reduce the impact of some code changes
+○ For some changes, impact is inevitable. E.g., change in interfaces,
+addition of new functionality
+○ Communication remains important!
+Modular Design Takeaways
+Exit Tickets
+Q1. What does the depth of a module refer to?
+Q2. Why does Ousterhout favour deep modules in “good” software design?
+Q3. We saw that in the interpreter Caroline and Alex are building, the evaluator works on
+the result of the parser. What task(s) can they do to develop the evaluator even without
+the parser being fully implemented?

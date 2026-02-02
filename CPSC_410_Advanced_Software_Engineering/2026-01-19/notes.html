@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_410 - Lecture 2026-01-19</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc410">CPSC_410</a> /
+            <span>2026-01-19</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Software Engineering</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-19</span>
+                <span class="instructor">👤 Caroline Lemieux</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <p><strong>Topic:</strong> Evaluation & The Visitor Pattern</p>
+
+                    <p><strong>Course Learning Objectives Recap:</strong></p>
+                    <ul>
+                        <li>Identify modules in software systems</li>
+                        <li>Reason about modular design complexity</li>
+                        <li>Decompose DSL implementation into stages</li>
+                        <li>Evaluate DSL vs general-purpose languages</li>
+                        <li>Design DSLs with error handling</li>
+                        <li>Evaluate language design via user studies</li>
+                    </ul>
+
+                    <p><strong>DSL Pipeline Review:</strong></p>
+                    <ul>
+                        <li>Tokenization → List&lt;Token&gt;</li>
+                        <li>Parsing → Parse Tree → AST</li>
+                        <li>Static Checks → Validated AST</li>
+                        <li>Dynamic Checks</li>
+                        <li>Evaluation → Result</li>
+                    </ul>
+
+                    <p><strong>Evaluation Approaches:</strong></p>
+                    <ul>
+                        <li><strong>Approach 1:</strong> Recursive evaluation with evaluate() methods in each AST node</li>
+                        <li><strong>Problem:</strong> Violates Single Responsibility Principle, hard to add new operations</li>
+                        <li><strong>Approach 2:</strong> Visitor Pattern - separates operations from AST structure</li>
+                    </ul>
+
+                    <p><strong>Visitor Pattern Key Concepts:</strong></p>
+                    <ul>
+                        <li>Double dispatch: method selection based on both visitor type AND node type</li>
+                        <li>accept() methods in AST nodes forward to visitor</li>
+                        <li>visit() methods in visitor handle each node type</li>
+                        <li>Allows multiple operations without modifying AST</li>
+                    </ul>
+
+                    <p><strong>In-Class Activity:</strong></p>
+                    <ul>
+                        <li>Added color support to tinyHTML DSL</li>
+                        <li>Implemented Colour AST node evaluation</li>
+                        <li>Updated Title and Table to use colors</li>
+                    </ul>
+
+                    <p><strong>Visitor in Other Languages:</strong></p>
+                    <ul>
+                        <li><strong>Python:</strong> Uses reflection and naming conventions (visit_NodeName)</li>
+                        <li><strong>Haskell:</strong> Pattern matching more natural than visitor pattern</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+
+                    <!-- ===== COURSE CONTEXT ===== -->
+                    <article>
+                        <h3>Course Overview: What We're Learning</h3>
+
+                        <p>Today's lecture continues our exploration of Domain-Specific Languages (DSLs). Before diving into the technical content, let's recall the big picture goals for this half of the course:</p>
+
+                        <blockquote>
+                            <p><strong>By the end of this course, you will be able to...</strong></p>
+                            <ol>
+                                <li><strong>Identify distinct modules</strong> in a software system and its design</li>
+                                <li><strong>Reason about modular design</strong> and how design decisions affect complexity</li>
+                                <li><strong>Decompose DSL implementation</strong> into distinct modules and stages</li>
+                                <li><strong>Evaluate DSLs vs alternatives</strong> (general-purpose programming languages)</li>
+                                <li><strong>Design and implement DSLs</strong> with clear error-handling for target users</li>
+                                <li><strong>Evaluate language design effectiveness</strong> via user studies and incorporate feedback</li>
+                            </ol>
+                        </blockquote>
+
+                        <p><strong>Why does this matter?</strong> Modern software engineering increasingly involves creating specialized tools and languages for specific tasks. Understanding how to design modular, maintainable language implementations is a crucial skill—whether you're building a configuration language, a query system, or a custom scripting interface.</p>
+
+                        <p>Today's focus: <mark>How do we structure the <em>evaluation</em> stage of a DSL in a way that's maintainable and extensible?</mark></p>
+                    </article>
+
+                    <!-- ===== DSL PIPELINE REVIEW ===== -->
+                    <article>
+                        <h3>Review: The DSL Implementation Pipeline</h3>
+
+                        <p>Let's quickly recap the typical stages in implementing a DSL. We've been building our understanding through the <strong>tinyHTML</strong> example:</p>
+
+                        <pre><code class="language-plaintext">Title: My Day
+Table:
+  [Date | Time | Activity]
+  [Sept 1 | 9am | running]
+  [Sept 1 | 11am | eating]</code></pre>
+
+                        <h4>The Five Stages</h4>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Stage</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Input</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Output</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Possible Error</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>1. Tokenization</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">String</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">List&lt;Token&gt;</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Tokenizer error</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>2. Parsing</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">List&lt;Token&gt;</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Parse Tree</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Parse error</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>3. AST Conversion</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Parse Tree</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">AST</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">—</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>4. Static Checks</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">AST</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Validated AST</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Static check failed</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>5. Evaluation</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Validated AST</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Result</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Dynamic check failed</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>Today's focus: Stage 5 — Evaluation</strong></p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🎯 Syntax vs. Semantics</h5>
+                            <p><strong>Syntax:</strong> "What is written" (Stages 1-3)</p>
+                            <p><strong>Semantics:</strong> "What it means / What it does" (Stages 4-5)</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== EVALUATION STAGE ===== -->
+                    <article>
+                        <h3>The Evaluation Stage: What Does It Mean?</h3>
+
+                        <p>Evaluation is the final stage where we actually <em>do something</em> with the validated AST. Depending on your DSL's purpose, evaluation might mean different things:</p>
+
+                        <h4>Three Common Evaluation Strategies</h4>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Strategy</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">What it does</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Example</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Execute on-the-fly</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Run the program immediately (interpreter)</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Python, JavaScript</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Generate code</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Produce code in another language (compiler)</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">TypeScript → JavaScript, Sass → CSS</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Generate artifacts</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Create visualizations, webpages, configs, etc.</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">tinyHTML → HTML, Markdown → HTML</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><strong>For tinyHTML:</strong> We're in the third category—we generate HTML pages from our DSL input.</p>
+
+                        <blockquote>
+                            <p><strong>Key Question:</strong> How should we organize the code that performs evaluation?</p>
+                        </blockquote>
+                    </article>
+
+                    <!-- ===== APPROACH 1: RECURSIVE EVALUATION ===== -->
+                    <article>
+                        <h3>Approach 1: Recursive Evaluation in AST Nodes</h3>
+
+                        <h4>The Basic Idea</h4>
+
+                        <p>The most straightforward approach: <strong>Each AST node knows how to evaluate itself.</strong></p>
+
+                        <p><strong>Algorithm:</strong></p>
+                        <ol>
+                            <li>Start at the root of the AST</li>
+                            <li>For the current node:
+                                <ul>
+                                    <li>Carry out the work needed by this node</li>
+                                    <li>Recursively call <code>evaluate()</code> on all child nodes</li>
+                                </ul>
+                            </li>
+                            <li>Produce output by returning a value, modifying an object, printing, etc.</li>
+                        </ol>
+
+                        <h4>Concrete Example: Simple Arithmetic</h4>
+
+                        <p>Consider evaluating <code>1 + 1</code>:</p>
+
+                        <pre><code class="language-java">// AST structure:
+//       Plus
+//      /    \
+//    Num    Num
+//     1      1
+
+class Plus extends ASTNode {
+    ASTNode left, right;
+
+    int evaluate() {
+        return left.evaluate() + right.evaluate();
+    }
+}
+
+class Num extends ASTNode {
+    int value;
+
+    int evaluate() {
+        return value;
+    }
+}</code></pre>
+
+                        <p><strong>Execution trace:</strong></p>
+                        <pre><code class="language-plaintext">Plus.evaluate() is called
+  → calls left.evaluate()  // Num(1)
+    → returns 1
+  → calls right.evaluate() // Num(1)
+    → returns 1
+  → returns 1 + 1 = 2</code></pre>
+
+                        <p><strong>The Plus node asks:</strong> "What is the sum of my two subfields?"</p>
+
+                        <h4>Example: TinyHTML with Recursive Evaluation</h4>
+
+                        <pre><code class="language-java">class Title extends ASTNode {
+    String text;
+
+    String evaluate() {
+        return "<h1>" + text + "</h1>\n";
+    }
+}
+
+class Table extends ASTNode {
+    List<Row> rows;
+
+    String evaluate() {
+        StringBuilder html = new StringBuilder("<table>\n");
+        for (Row row : rows) {
+            html.append(row.evaluate()); // Recursive call
+        }
+        html.append("</table>\n");
+        return html.toString();
+    }
+}
+
+class Row extends ASTNode {
+    List<String> cells;
+
+    String evaluate() {
+        StringBuilder html = new StringBuilder("  <tr>");
+        for (String cell : cells) {
+            html.append("<td>").append(cell).append("</td>");
+        }
+        html.append("</tr>\n");
+        return html.toString();
+    }
+}</code></pre>
+
+                        <h4>In-Class Activity: Adding Colors to TinyHTML</h4>
+
+                        <p><strong>Goal:</strong> Support syntax like:</p>
+                        <pre><code class="language-plaintext">Title(red): My Day
+Table(green):
+  [Date | Time | Activity]
+  [Sept 1 | 9am | Get to school]</code></pre>
+
+                        <p><strong>Which should generate:</strong></p>
+                        <pre><code class="language-html">&lt;h1 style="color: red;"&gt;My Day&lt;/h1&gt;
+&lt;table style="color: green;" bgcolor=black&gt;
+  ...
+&lt;/table&gt;</code></pre>
+
+                        <p><strong>Implementation steps:</strong></p>
+                        <ol>
+                            <li><strong>Add a Colour AST node</strong> with an <code>evaluate()</code> method:
+                                <pre><code class="language-java">class Colour extends ASTNode {
+    String colorName;
+
+    String evaluate() {
+        return "color: " + colorName + ";";
+    }
+}</code></pre>
+                            </li>
+                            <li><strong>Update Title and Table</strong> to use Colour:
+                                <pre><code class="language-java">class Title extends ASTNode {
+    String text;
+    Colour colour; // New field
+
+    String evaluate() {
+        String style = "";
+        if (colour != null) {
+            style = " style=\"" + colour.evaluate() + "\"";
+        }
+        return "<h1" + style + ">" + text + "</h1>\n";
+    }
+}</code></pre>
+                            </li>
+                        </ol>
+
+                        <p><strong>Key principle:</strong> Call the <code>evaluate()</code> method of child nodes to avoid code duplication!</p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">💡 Why This Works</h5>
+                            <p>This approach follows the <strong>"Structure of code follows structure of data"</strong> principle from CPSC 110. The recursive evaluation naturally mirrors the tree structure of the AST.</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== PROBLEMS WITH APPROACH 1 ===== -->
+                    <article>
+                        <h3>Problems with Recursive Evaluation in Nodes</h3>
+
+                        <p>At first glance, putting <code>evaluate()</code> methods directly in AST nodes seems clean and simple. But this design has serious limitations as your DSL grows.</p>
+
+                        <h4>Problem 1: Violates Single Responsibility Principle</h4>
+
+                        <blockquote>
+                            <p><strong>Single Responsibility Principle:</strong> A class should have only one reason to change.</p>
+                        </blockquote>
+
+                        <p>Currently, our AST nodes have <em>multiple</em> responsibilities:</p>
+                        <ul>
+                            <li><strong>Representing structure:</strong> Hold the data for this part of the AST</li>
+                            <li><strong>Evaluating:</strong> Convert to HTML</li>
+                            <li><strong>Future concerns:</strong> Validation? Optimization? Alternative output formats?</li>
+                        </ul>
+
+                        <p><strong>Consequence:</strong> Every time we want to add a new operation on the AST, we have to modify every AST node class. This leads to <em>bloated classes</em> with mixed concerns.</p>
+
+                        <h4>Problem 2: Hard to Add New Operations</h4>
+
+                        <p><strong>Scenario 1:</strong> Suppose we want to add a checker that verifies all rows in a table have the same number of cells.</p>
+
+                        <p><strong>Current approach requires:</strong></p>
+                        <pre><code class="language-java">class Table extends ASTNode {
+    List<Row> rows;
+
+    String evaluate() { ... }  // Already exists
+
+    // Now we need to add:
+    boolean checkRowConsistency() {
+        if (rows.isEmpty()) return true;
+        int expectedCells = rows.get(0).cells.size();
+        for (Row row : rows) {
+            if (row.cells.size() != expectedCells) {
+                return false;
+            }
+        }
+        return true;
+    }
+}</code></pre>
+
+                        <p><strong>Scenario 2:</strong> We want to generate LaTeX or Markdown instead of HTML.</p>
+
+                        <pre><code class="language-java">class Title extends ASTNode {
+    String text;
+
+    String evaluateToHTML() { ... }
+    String evaluateToLatex() { return "\\title{" + text + "}"; }
+    String evaluateToMarkdown() { return "# " + text; }
+}</code></pre>
+
+                        <p><mark>Every new operation means editing <em>every AST class</em>!</mark></p>
+
+                        <h4>Problem 3: Can't Modify External ASTs</h4>
+
+                        <p>Real-world scenario: You want to operate on Java's own AST (from the <code>javax.lang.model</code> package) or another library's AST.</p>
+
+                        <ul>
+                            <li>You <strong>can't modify</strong> the classes—they're in a shipped library</li>
+                            <li>You <strong>can't add</strong> your custom <code>evaluate()</code> methods</li>
+                            <li>You're stuck!</li>
+                        </ul>
+
+                        <h4>Problem 4: Real Languages Have Dozens of Operations</h4>
+
+                        <p>Consider a real compiler for languages like Java, Rust, or C++. They need to traverse the AST for:</p>
+                        <ul>
+                            <li>Type checking</li>
+                            <li>Constant folding</li>
+                            <li>Dead code elimination</li>
+                            <li>Register allocation</li>
+                            <li>Code generation</li>
+                            <li>Optimization passes (inlining, loop unrolling, etc.)</li>
+                            <li>Error reporting</li>
+                            <li>... dozens more</li>
+                        </ul>
+
+                        <p><strong>Putting all these operations in AST node classes would be a nightmare!</strong></p>
+
+                        <aside style="background: #ff6b6b; color: white; padding: 1.5rem; border-radius: 8px; margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">⚠️ The Core Problem</h5>
+                            <p><strong>We've coupled the AST structure with AST operations.</strong></p>
+                            <p>We need a way to <em>separate</em> these concerns so we can:</p>
+                            <ul>
+                                <li>Add new operations without modifying AST classes</li>
+                                <li>Keep all code for one operation in one place</li>
+                                <li>Work with ASTs we don't own</li>
+                            </ul>
+                        </aside>
+                    </article>
+
+                    <!-- ===== THE VISITOR PATTERN ===== -->
+                    <article>
+                        <h3>Approach 2: The Visitor Pattern</h3>
+
+                        <p>The Visitor Pattern is a classic design pattern that solves exactly this problem: <strong>How do we add new operations to a class hierarchy without modifying the classes?</strong></p>
+
+                        <h4>The Naive Attempt: Extract to Separate Class</h4>
+
+                        <p>Let's start with the obvious idea: move all <code>evaluate()</code> methods out of AST nodes and into a separate <code>Evaluator</code> class:</p>
+
+                        <pre><code class="language-java">class Evaluator {
+    String evaluate(Title title) {
+        return "<h1>" + title.text + "</h1>\n";
+    }
+
+    String evaluate(Table table) {
+        StringBuilder html = new StringBuilder("<table>\n");
+        for (Row row : table.rows) {
+            html.append(evaluate(row)); // Recursive call
+        }
+        html.append("</table>\n");
+        return html.toString();
+    }
+
+    String evaluate(Row row) {
+        StringBuilder html = new StringBuilder("  <tr>");
+        for (String cell : row.cells) {
+            html.append("<td>").append(cell).append("</td>");
+        }
+        html.append("</tr>\n");
+        return html.toString();
+    }
+}</code></pre>
+
+                        <p>This looks good! We've separated concerns. But there's a critical problem...</p>
+
+                        <h4>The Problem: Java's Method Overloading Resolution</h4>
+
+                        <p>Suppose we add a <code>BoldRow</code> subclass:</p>
+
+                        <pre><code class="language-java">class BoldRow extends Row {
+    // Rows that should be bold
+}
+
+class Evaluator {
+    String evaluate(Row row) {
+        return "  <tr><td>" + ... + "</td></tr>\n";
+    }
+
+    String evaluate(BoldRow row) {
+        return "  <tr><td><b>" + ... + "</b></td></tr>\n";
+    }
+}</code></pre>
+
+                        <p><strong>Now consider this code:</strong></p>
+
+                        <pre><code class="language-java">class Table {
+    List<Row> rows; // Row is the static type
+
+    String evaluate() {
+        for (Row r : rows) {  // r has static type Row
+            html.append(evaluate(r)); // Which method is called?
+        }
+    }
+}</code></pre>
+
+                        <p><mark>Java <strong>always</strong> calls <code>evaluate(Row)</code>, even if <code>r</code> is actually a <code>BoldRow</code> at runtime!</mark></p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🔍 Why This Happens</h5>
+                            <p><strong>Method overloading</strong> in Java is resolved at <strong>compile time</strong> based on the <strong>static types</strong> of arguments.</p>
+                            <ul>
+                                <li><code>rows</code> is declared as <code>List&lt;Row&gt;</code></li>
+                                <li>So <code>r</code> has static type <code>Row</code></li>
+                                <li>The compiler selects <code>evaluate(Row)</code></li>
+                                <li>The dynamic type (<code>BoldRow</code>) is ignored!</li>
+                            </ul>
+                            <p><strong>This is different from method overriding,</strong> where Java uses the dynamic type of the <em>receiver</em> (<code>this</code>).</p>
+                        </aside>
+
+                        <h4>What We Actually Need: Double Dispatch</h4>
+
+                        <p>We want method selection based on <strong>two</strong> runtime types:</p>
+                        <ol>
+                            <li>The type of the <strong>visitor</strong> (e.g., <code>HTMLEvaluator</code> vs <code>LatexEvaluator</code>)</li>
+                            <li>The type of the <strong>AST node</strong> (e.g., <code>Row</code> vs <code>BoldRow</code>)</li>
+                        </ol>
+
+                        <p>Java's built-in single dispatch only gives us #1. We need to add #2 manually.</p>
+
+                        <h4>The Visitor Pattern Solution</h4>
+
+                        <p><strong>Key insight:</strong> To get dynamic dispatch on the node type, make the <em>node</em> the receiver of the method call!</p>
+
+                        <p><strong>The trick: Add an extra level of indirection</strong></p>
+
+                        <ol>
+                            <li><strong>Add an <code>accept</code> method to each AST node:</strong>
+                                <pre><code class="language-java">class Row {
+    void accept(Visitor v, PrintWriter writer) {
+        v.visit(this, writer); // 'this' has dynamic type Row
+    }
+}
+
+class BoldRow extends Row {
+    @Override
+    void accept(Visitor v, PrintWriter writer) {
+        v.visit(this, writer); // 'this' has dynamic type BoldRow
+    }
+}</code></pre>
+                            </li>
+                            <li><strong>The visitor calls <code>accept</code> on children:</strong>
+                                <pre><code class="language-java">class Evaluator implements Visitor {
+    void visit(Table table, PrintWriter writer) {
+        writer.println("<table>");
+        for (Row r : table.rows) {
+            r.accept(this, writer); // Dispatch based on dynamic type of r!
+        }
+        writer.println("</table>");
+    }
+
+    void visit(Row row, PrintWriter writer) {
+        writer.print("  <tr>");
+        for (String cell : row.cells) {
+            writer.print("<td>" + cell + "</td>");
+        }
+        writer.println("</tr>");
+    }
+
+    void visit(BoldRow row, PrintWriter writer) {
+        writer.print("  <tr>");
+        for (String cell : row.cells) {
+            writer.print("<td><b>" + cell + "</b></td>");
+        }
+        writer.println("</tr>");
+    }
+}</code></pre>
+                            </li>
+                        </ol>
+
+                        <h4>How Double Dispatch Works</h4>
+
+                        <p><strong>Call sequence when evaluating a <code>BoldRow</code>:</strong></p>
+
+                        <pre><code class="language-plaintext">1. Evaluator.visit(Table) is called
+2.   For each row r in table.rows:
+3.     r.accept(this, writer)       // First dispatch: on r's dynamic type
+4.       → BoldRow.accept() is called (dynamic dispatch on r)
+5.       → calls v.visit(this, writer) where 'this' is BoldRow
+6.       → Evaluator.visit(BoldRow) is called (overload resolution)
+7.         → writes <tr><td><b>...</b></td></tr></code></pre>
+
+                        <p><strong>Two dispatches:</strong></p>
+                        <ol>
+                            <li><strong>First dispatch (line 4):</strong> Call to <code>r.accept()</code> is dispatched based on <code>r</code>'s dynamic type → selects <code>BoldRow.accept()</code></li>
+                            <li><strong>Second dispatch (line 6):</strong> Inside <code>BoldRow.accept()</code>, <code>this</code> has static type <code>BoldRow</code>, so overloading selects <code>visit(BoldRow)</code></li>
+                        </ol>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">💡 The Accept Trick</h5>
+                            <p>The <code>accept</code> method looks trivial—it just calls <code>v.visit(this)</code>. But it's crucial!</p>
+                            <p>It converts the node from a <strong>method argument</strong> (static dispatch) to a <strong>method receiver</strong> (dynamic dispatch).</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== VISITOR INTERFACE ===== -->
+                    <article>
+                        <h3>Generalizing: The Visitor Interface</h3>
+
+                        <p>So far we've created one visitor (<code>Evaluator</code>). But the power of the pattern is supporting <em>multiple</em> operations without modifying the AST!</p>
+
+                        <h4>Define a Generic Visitor Interface</h4>
+
+                        <pre><code class="language-java">interface Visitor<T, U> {
+    T visit(Title title, U arg);
+    T visit(Table table, U arg);
+    T visit(Row row, U arg);
+    T visit(BoldRow row, U arg);
+    T visit(Colour colour, U arg);
+    // ... one method for each AST node type
+}</code></pre>
+
+                        <p><strong>Generic parameters:</strong></p>
+                        <ul>
+                            <li><code>T</code> — Return type (flexible per visitor)</li>
+                            <li><code>U</code> — Argument type (flexible per visitor)</li>
+                        </ul>
+
+                        <h4>Example Visitors</h4>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Visitor</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">T (Return)</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">U (Argument)</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>HTMLEvaluator</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>void</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>PrintWriter</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Generate HTML output</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>LatexEvaluator</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>void</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>PrintWriter</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Generate LaTeX output</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>RowConsistencyChecker</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>boolean</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>Integer</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Check all rows have same # of cells</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>PrettyPrinter</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>String</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><code>int</code></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Format AST nicely (indent = arg)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Benefits of the Visitor Pattern</h4>
+
+                        <blockquote>
+                            <p><strong>The Visitor pattern provides:</strong></p>
+                            <ol>
+                                <li><strong>Easy support for multiple operations:</strong> Add new visitors without editing AST nodes</li>
+                                <li><strong>Code organization:</strong> All code for one operation is in one file</li>
+                                <li><strong>Works with external ASTs:</strong> As long as AST has <code>accept</code>, we can visit it</li>
+                                <li><strong>Double dispatch:</strong> Method selection based on both visitor type and node type</li>
+                            </ol>
+                        </blockquote>
+
+                        <h4>What About Adding New AST Nodes?</h4>
+
+                        <p>The visitor pattern makes adding <em>operations</em> easy but adding <em>new node types</em> harder:</p>
+
+                        <ul>
+                            <li><strong>Adding new operation:</strong> Create one new visitor class ✅</li>
+                            <li><strong>Adding new node type:</strong> Must add <code>visit</code> method to <em>every existing visitor</em> ⚠️</li>
+                        </ul>
+
+                        <p><strong>Trade-off:</strong> Use visitors when you expect to add operations more often than node types.</p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🎯 Design Principle: Open/Closed Principle</h5>
+                            <p><strong>"Software entities should be open for extension, but closed for modification."</strong></p>
+                            <p>The Visitor pattern makes the AST hierarchy <em>closed</em> to new operations (no modification needed) but <em>open</em> to extension (add new visitors).</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== VISITORS IN OTHER LANGUAGES ===== -->
+                    <article>
+                        <h3>The Visitor Pattern in Other Languages</h3>
+
+                        <p>The Visitor pattern emerged from object-oriented languages like Java and C++. But the <em>concept</em>—separating operations from data structures—appears in different forms across languages.</p>
+
+                        <h4>Visitors in Python</h4>
+
+                        <p>Python's dynamic typing means we can't use method overloading. Instead, Python's <code>ast</code> module uses <strong>reflection and naming conventions</strong>:</p>
+
+                        <pre><code class="language-python">import ast
+
+class MyASTVisitor(ast.NodeVisitor):
+    def visit_Name(self, node: ast.Name):
+        # Handle Name nodes
+        print(f"Variable: {node.id}")
+
+    def visit_BinOp(self, node: ast.BinOp):
+        # Handle Binary Operation nodes
+        print("Binary operation")
+        self.visit(node.left)
+        self.visit(node.right)
+
+# Usage:
+visitor = MyASTVisitor()
+code = ast.parse("x + 3")
+visitor.visit(code)</code></pre>
+
+                        <p><strong>How does Python achieve double dispatch?</strong></p>
+
+                        <ol>
+                            <li><strong>First dispatch:</strong> When you call <code>visitor.visit(node)</code>, Python uses the <em>dynamic type</em> of <code>node</code></li>
+                            <li><strong>Reflection:</strong> Inside <code>NodeVisitor.visit()</code>:
+                                <pre><code class="language-python">def visit(self, node):
+    # Get the class name of node
+    method_name = 'visit_' + node.__class__.__name__  # e.g., "visit_BinOp"
+
+    # Look up the method on self (the visitor)
+    visitor_method = getattr(self, method_name, self.generic_visit)
+
+    # Call the method
+    return visitor_method(node)</code></pre>
+                            </li>
+                        </ol>
+
+                        <p><strong>Key differences from Java:</strong></p>
+                        <ul>
+                            <li>No explicit <code>accept</code> methods needed in AST nodes</li>
+                            <li>Uses naming convention (<code>visit_NodeType</code>) instead of overloading</li>
+                            <li>Relies on runtime reflection (slower but more flexible)</li>
+                        </ul>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🐍 Python's Advantage</h5>
+                            <p>Because Python uses reflection, you can visit AST nodes <em>without modifying them at all</em>. In Java, you need to add <code>accept</code> methods to every node.</p>
+                            <p><strong>Trade-off:</strong> Python's approach is more flexible but slower and less type-safe.</p>
+                        </aside>
+
+                        <h4>Visitors in Functional Languages (Haskell)</h4>
+
+                        <p>Functional languages like Haskell don't use the object-oriented visitor pattern. Instead, they use <strong>pattern matching</strong>, which is often more natural:</p>
+
+                        <pre><code class="language-haskell">data Expr =
+    Num Int
+  | Plus Expr Expr
+  | Minus Expr Expr
+
+-- Evaluation operation
+eval :: Expr -> Int
+eval (Num n) = n
+eval (Plus e1 e2) = eval e1 + eval e2
+eval (Minus e1 e2) = eval e1 - eval e2
+
+-- Pretty-printing operation
+prettyPrint :: Expr -> String
+prettyPrint (Num n) = show n
+prettyPrint (Plus e1 e2) = "(" ++ prettyPrint e1 ++ " + " ++ prettyPrint e2 ++ ")"
+prettyPrint (Minus e1 e2) = "(" ++ prettyPrint e1 ++ " - " ++ prettyPrint e2 ++ ")"</code></pre>
+
+                        <p><strong>Key differences:</strong></p>
+                        <ul>
+                            <li>No classes or objects—just data types and functions</li>
+                            <li>Pattern matching provides the "dispatch" mechanism</li>
+                            <li>Adding new operations is easy (define new function)</li>
+                            <li>Adding new data constructors requires updating all pattern matches</li>
+                        </ul>
+
+                        <p><strong>Trade-off:</strong> Same as visitor pattern—easy to add operations, harder to add new node types.</p>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">📚 CPSC 110 Callback</h5>
+                            <p><strong>"The structure of the code follows the structure of the data"</strong></p>
+                            <p>Both the visitor pattern and functional pattern matching embody this principle—they're just different implementations suited to different language paradigms.</p>
+                        </aside>
+                    </article>
+
+                    <!-- ===== MODULARITY DISCUSSION ===== -->
+                    <article>
+                        <h3>Impact on Modularity and Interface Complexity</h3>
+
+                        <h4>What is Modularity?</h4>
+
+                        <blockquote>
+                            <p><strong>Modularity:</strong> The degree to which a system's components can be separated, modified, and recombined independently.</p>
+                        </blockquote>
+
+                        <p><strong>Good modularity means:</strong></p>
+                        <ul>
+                            <li>Changes are localized (don't ripple through the system)</li>
+                            <li>Modules can be understood in isolation</li>
+                            <li>Easy to add new features without breaking existing code</li>
+                        </ul>
+
+                        <h4>How Does the Visitor Pattern Affect Modularity?</h4>
+
+                        <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0;">
+                            <thead>
+                                <tr style="background: var(--secondary-bg);">
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Aspect</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">Without Visitor</th>
+                                    <th style="padding: 0.75rem; border: 1px solid var(--border-color);">With Visitor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Adding operation</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Modify every AST node ❌</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Add one visitor class ✅</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Adding node type</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Add one class ✅</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Update every visitor ⚠️</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Code organization</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Each node has many methods ❌</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Each visitor is self-contained ✅</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);"><strong>Works with external ASTs?</strong></td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">No ❌</td>
+                                    <td style="padding: 0.75rem; border: 1px solid var(--border-color);">Yes (if they have accept) ✅</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <h4>Interface Complexity</h4>
+
+                        <p><strong>Interface of AST module (what other modules see):</strong></p>
+
+                        <p><strong>Without Visitor:</strong></p>
+                        <pre><code class="language-java">// Large interface - many methods per node
+class Row {
+    public String evaluateToHTML();
+    public String evaluateToLatex();
+    public boolean checkConsistency();
+    public String prettyPrint(int indent);
+    // ... many more methods as features are added
+}</code></pre>
+
+                        <p><strong>With Visitor:</strong></p>
+                        <pre><code class="language-java">// Minimal interface - just accept
+class Row {
+    public <T, U> T accept(Visitor<T, U> visitor, U arg);
+}</code></pre>
+
+                        <p><strong>Key insight:</strong> The visitor pattern <em>minimizes the interface</em> between the AST module and operation modules.</p>
+
+                        <p><strong>Benefits:</strong></p>
+                        <ul>
+                            <li>AST nodes have simple, stable interfaces</li>
+                            <li>Each operation is encapsulated in its own module</li>
+                            <li>Easier to understand and maintain</li>
+                        </ul>
+                    </article>
+
+                    <!-- ===== SUMMARY ===== -->
+                    <article>
+                        <h3>Summary: When to Use the Visitor Pattern</h3>
+
+                        <h4>Use Visitors When:</h4>
+                        <ul>
+                            <li>✅ You have a stable set of data types (AST nodes)</li>
+                            <li>✅ You need to add many operations on those types</li>
+                            <li>✅ Operations should be separate from the data structure</li>
+                            <li>✅ You want each operation's code in one place</li>
+                            <li>✅ You're working with an AST you can't modify</li>
+                        </ul>
+
+                        <h4>Consider Alternatives When:</h4>
+                        <ul>
+                            <li>❌ You frequently add new data types (nodes)</li>
+                            <li>❌ Operations are simple and unlikely to change</li>
+                            <li>❌ You're in a functional language (use pattern matching instead)</li>
+                        </ul>
+
+                        <h4>Key Takeaways</h4>
+
+                        <blockquote>
+                            <ol>
+                                <li><strong>Separation of concerns:</strong> Keep operations separate from data structures</li>
+                                <li><strong>Double dispatch:</strong> Select methods based on both visitor and node type</li>
+                                <li><strong>Extensibility:</strong> Easy to add new operations without modifying existing code</li>
+                                <li><strong>Modularity:</strong> Each operation is self-contained and easy to understand</li>
+                                <li><strong>Language-specific:</strong> Implementation varies (Java accepts, Python reflection, Haskell pattern matching)</li>
+                            </ol>
+                        </blockquote>
+
+                        <aside style="background: var(--secondary-bg); padding: 1.5rem; border-left: 4px solid var(--accent-color); margin: 2rem 0;">
+                            <h5 style="margin-top: 0;">🎯 Real-World Impact</h5>
+                            <p>Visitors are everywhere in compiler design! The Java compiler, GCC, LLVM, and Rust's compiler all use visitor-like patterns extensively.</p>
+                            <p>Understanding visitors is essential for working on any system that manipulates tree-structured data.</p>
+                        </aside>
+                    </article>
+
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Review of DSL implementation pipeline: tokenization, parsing, AST conversion, static checks, evaluation</li>
+                    <li>Understanding the evaluation stage: interpreters, compilers, and artifact generation</li>
+                    <li>Approach 1: Recursive evaluation with methods in AST nodes</li>
+                    <li>Problems with embedding operations in nodes: violates Single Responsibility Principle, hard to extend</li>
+                    <li>The Visitor Pattern: separating operations from data structures</li>
+                    <li>Understanding double dispatch: method selection based on visitor type AND node type</li>
+                    <li>Implementing visitors in Java: accept methods in nodes, visit methods in visitors</li>
+                    <li>Benefits of the visitor pattern: easy operation addition, code organization, works with external ASTs</li>
+                    <li>Trade-offs: easy to add operations, harder to add new node types</li>
+                    <li>Visitor pattern in Python: reflection and naming conventions (visit_NodeName)</li>
+                    <li>Pattern matching in functional languages (Haskell) as an alternative to visitors</li>
+                    <li>Impact on modularity: minimal interfaces, localized changes, better separation of concerns</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li><strong>Review the tinyHTML codebase</strong> with color support: <a href="https://github.students.cs.ubc.ca/CPSC410-2025W-T2/tinyHTMLColoured" target="_blank">GitHub Repo</a></li>
+                    <li><strong>Exit Ticket Q1:</strong> Consider a design without visitors (operations embedded in AST nodes). Do the AST Node classes respect the Single Responsibility Principle? Why or why not?</li>
+                    <li><strong>Exit Ticket Q2:</strong> In the code snippet:
+                        <pre style="background: #1a1a2e; padding: 1rem; border-radius: 4px; margin: 0.5rem 0;"><code>class TinyHTMLVisitor {
+  public void visit(Table tab, PrintWriter writer) {
+    for (Row r : tab.getRows()) {
+      visit(r, writer);         // option a
+      r.accept(this, writer);   // option b
+    }
+  }
+}</code></pre>
+                        Which option (a or b) correctly ensures the visit method of Row/BoldRow is called for a row that is a Row/BoldRow? Explain why.
+                    </li>
+                    <li><strong>Conceptual practice:</strong> Think about adding a new operation (e.g., generating Markdown) - what would you need to change with visitors vs without?</li>
+                    <li><strong>Design thinking:</strong> Consider when the visitor pattern is appropriate vs when alternatives (pattern matching, simple methods) might be better</li>
+                    <li><strong>Compare implementations:</strong> Look at how Python's ast.NodeVisitor achieves double dispatch differently from Java</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc410" class="back-link">← Back to CPSC_410</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

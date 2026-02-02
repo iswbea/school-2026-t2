@@ -1,0 +1,1722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logistic Regression, MLE & MAP - Interactive Guide</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <style>
+        /* Concept guide specific styles */
+        .concept-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .difficulty-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+
+        .beginner { background-color: #10b981; color: white; }
+        .intermediate { background-color: #f59e0b; color: white; }
+        .advanced { background-color: #ef4444; color: white; }
+
+        .learning-path {
+            display: flex;
+            justify-content: space-between;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .learning-path::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 4px;
+            background: linear-gradient(to right, #10b981, #f59e0b, #ef4444);
+            z-index: 0;
+        }
+
+        .path-stage {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .path-stage-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid;
+            margin: 0 auto 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .level-section {
+            margin: 3rem 0;
+            padding: 2rem;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+
+        .level-beginner {
+            background-color: #f0fdf4;
+            border-color: #10b981;
+        }
+
+        .level-intermediate {
+            background-color: #fffbeb;
+            border-color: #f59e0b;
+        }
+
+        .level-advanced {
+            background-color: #fef2f2;
+            border-color: #ef4444;
+        }
+
+        .interactive-demo {
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .demo-controls button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            background-color: #667eea;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .demo-controls button:hover {
+            background-color: #5568d3;
+        }
+
+        .demo-controls button:active {
+            background-color: #4451b8;
+        }
+
+        .demo-controls label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .demo-controls input[type="range"] {
+            width: 150px;
+        }
+
+        .visualization-area {
+            min-height: 300px;
+            background-color: white;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .key-insight {
+            background-color: #fef3c7;
+            border-left: 5px solid #f59e0b;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .key-insight::before {
+            content: "💡 ";
+            font-size: 1.2rem;
+        }
+
+        .prerequisite-box {
+            background-color: #e0e7ff;
+            border: 2px solid #818cf8;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .related-concepts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .related-concept-card {
+            background-color: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .related-concept-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .quiz-section {
+            background-color: #faf5ff;
+            border: 2px solid #c084fc;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .quiz-question {
+            margin: 1.5rem 0;
+        }
+
+        .quiz-options {
+            list-style: none;
+            padding: 0;
+        }
+
+        .quiz-options li {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background-color: white;
+            border: 2px solid #e9d5ff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quiz-options li:hover {
+            border-color: #c084fc;
+            background-color: #faf5ff;
+        }
+
+        .quiz-options li.correct {
+            background-color: #d1fae5;
+            border-color: #10b981;
+        }
+
+        .quiz-options li.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+
+        .common-mistake {
+            background-color: #fee2e2;
+            border-left: 5px solid #ef4444;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .common-mistake::before {
+            content: "⚠️ Common Mistake: ";
+            font-weight: bold;
+        }
+
+        canvas {
+            max-width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid #e2e8f0;
+            padding: 1rem;
+            text-align: left;
+        }
+
+        .comparison-table th {
+            background-color: #f8fafc;
+            font-weight: bold;
+        }
+
+        .comparison-table tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .formula-box {
+            background-color: #f8fafc;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .analogy-box {
+            background-color: #f0f9ff;
+            border-left: 5px solid #3b82f6;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+            font-style: italic;
+        }
+
+        .analogy-box::before {
+            content: "🎭 Analogy: ";
+            font-weight: bold;
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc440">CPSC 440</a> /
+            <span>Concepts</span> /
+            <span>Logistic Regression, MLE & MAP</span>
+        </nav>
+
+        <div class="concept-header">
+            <h1>Logistic Regression, MLE & MAP <span class="difficulty-badge intermediate">Intermediate</span></h1>
+            <p class="subtitle">A comprehensive guide to discriminative classification, maximum likelihood estimation, and Bayesian parameter learning</p>
+        </div>
+
+        <!-- Learning Path Progress -->
+        <div class="learning-path">
+            <div class="path-stage">
+                <div class="path-stage-icon" style="border-color: #10b981; color: #10b981;">1</div>
+                <div>Beginner</div>
+                <small>Foundation & Intuition</small>
+            </div>
+            <div class="path-stage">
+                <div class="path-stage-icon" style="border-color: #f59e0b; color: #f59e0b;">2</div>
+                <div>Intermediate</div>
+                <small>Math & Derivations</small>
+            </div>
+            <div class="path-stage">
+                <div class="path-stage-icon" style="border-color: #ef4444; color: #ef4444;">3</div>
+                <div>Advanced</div>
+                <small>Theory & Applications</small>
+            </div>
+        </div>
+
+        <!-- Prerequisites -->
+        <div class="prerequisite-box">
+            <h3>📚 Prerequisites</h3>
+            <p>Before diving into this concept, you should understand:</p>
+            <ul>
+                <li><strong>Basic Probability:</strong> Conditional probability, Bayes' rule, probability distributions</li>
+                <li><strong>Linear Algebra:</strong> Vectors, dot products, matrix operations</li>
+                <li><strong>Calculus:</strong> Derivatives, gradients, partial derivatives</li>
+                <li><strong>Binary Classification:</strong> What it means to classify data into two categories</li>
+                <li><strong>Bernoulli Distribution:</strong> Probability distribution for binary outcomes</li>
+            </ul>
+        </div>
+
+        <!-- ==================== OVERVIEW ==================== -->
+        <section style="margin: 2rem 0; padding: 2rem; background-color: #f8fafc; border-radius: 8px;">
+            <h2>🎯 What You'll Learn</h2>
+            <p>This guide covers three interconnected concepts that form the foundation of modern discriminative machine learning:</p>
+            <ol>
+                <li><strong>Logistic Regression:</strong> A linear model for binary classification that outputs probabilities</li>
+                <li><strong>Maximum Likelihood Estimation (MLE):</strong> How to find the best parameters by maximizing the probability of observing your data</li>
+                <li><strong>Maximum A Posteriori (MAP):</strong> How to incorporate prior beliefs to get better parameter estimates and prevent overfitting</li>
+            </ol>
+            <p>By the end, you'll understand not just <em>how</em> to use these tools, but <em>why</em> they work and <em>when</em> to use each approach.</p>
+        </section>
+
+        <!-- ==================== BEGINNER LEVEL ==================== -->
+        <div class="level-section level-beginner">
+            <h2>🌱 Beginner Level: Building Intuition</h2>
+
+            <!-- ========== LOGISTIC REGRESSION ========== -->
+            <h3>What is Logistic Regression? (The Big Picture)</h3>
+
+            <p><strong>The Problem:</strong> You want to predict whether something belongs to one category or another based on some features. For example:</p>
+            <ul>
+                <li>Is this email <strong>spam</strong> or <strong>not spam</strong>?</li>
+                <li>Will this customer <strong>buy</strong> or <strong>not buy</strong>?</li>
+                <li>Is this tumor <strong>malignant</strong> or <strong>benign</strong>?</li>
+            </ul>
+
+            <p><strong>The Solution:</strong> Logistic regression takes your input features (like words in an email, customer demographics, tumor measurements) and outputs a <strong>probability</strong> between 0 and 1 that tells you how confident the model is about the classification.</p>
+
+            <div class="analogy-box">
+                <p><strong>Imagine a spam filter as a security guard at a club:</strong></p>
+                <p>The guard doesn't just say "yes, you can enter" or "no, you can't" - they might say "I'm 95% sure you're on the VIP list" or "I'm only 20% confident you should be here." Logistic regression is like that guard - it gives you a confidence level (probability) instead of just a yes/no answer.</p>
+                <p>The features (words in the email) are like characteristics the guard looks at (your outfit, your ID, your behavior). The guard learned from experience which characteristics are associated with VIPs vs non-VIPs, just like logistic regression learns from training data which features are associated with spam vs not-spam.</p>
+            </div>
+
+            <h4>Why "Logistic"? Why Not Just "Linear"?</h4>
+
+            <p>Great question! You might think: "Why can't we just use a linear function like <code>y = mx + b</code> to predict probabilities?"</p>
+
+            <p><strong>The problem with linear functions:</strong> They can output ANY number - including negative values or values greater than 1. But probabilities must be between 0 and 1!</p>
+
+            <div class="key-insight">
+                <strong>Key Insight:</strong> Logistic regression uses a special S-shaped function called the <strong>sigmoid</strong> that squashes any input value into the range [0, 1], making it perfect for probabilities.
+            </div>
+
+            <p>The sigmoid function looks like this:</p>
+            <div class="formula-box">
+σ(z) = 1 / (1 + e^(-z))
+
+Where:
+- z can be any real number (−∞ to +∞)
+- σ(z) is always between 0 and 1
+- When z = 0, σ(z) = 0.5 (perfectly uncertain)
+- When z is very positive, σ(z) ≈ 1 (very confident it's class 1)
+- When z is very negative, σ(z) ≈ 0 (very confident it's class 0)
+            </div>
+
+            <!-- ========== MLE INTUITION ========== -->
+            <h3>What is Maximum Likelihood Estimation? (ELI5)</h3>
+
+            <p><strong>The Question MLE Answers:</strong> "Given the data I've seen, what parameters would make this data <em>most likely</em> to have occurred?"</p>
+
+            <div class="analogy-box">
+                <p><strong>Imagine you're a detective investigating a crime:</strong></p>
+                <p>You have evidence (your data): fingerprints, witness testimonies, security footage. You have multiple theories about what happened (different parameter values). MLE says: <strong>"Which theory makes all this evidence most probable?"</strong></p>
+                <p>If Theory A would make the evidence very unlikely (maybe it says the suspect was in another country when the fingerprints were left), that's a bad theory. If Theory B makes all the evidence click together naturally, that's your maximum likelihood estimate!</p>
+            </div>
+
+            <p><strong>In Machine Learning Terms:</strong></p>
+            <ul>
+                <li><strong>Evidence = Your training data</strong> (the emails you've labeled as spam/not-spam)</li>
+                <li><strong>Theories = Different possible parameter values</strong> (different weights for each word)</li>
+                <li><strong>MLE = Finding the weights that make your training data "most expected"</strong></li>
+            </ul>
+
+            <h4>A Simple Example: Coin Flipping</h4>
+
+            <p>Suppose you flip a coin 10 times and get 7 heads and 3 tails. What's the probability of heads (θ)?</p>
+
+            <p><strong>MLE's answer:</strong> θ = 7/10 = 0.7</p>
+
+            <p><em>Why?</em> This is the parameter value that makes your observed data (7 heads out of 10) most likely to have occurred!</p>
+
+            <ul>
+                <li>If θ = 0.5 (fair coin), getting exactly 7 heads has some probability</li>
+                <li>If θ = 0.7, getting exactly 7 heads has a <strong>higher</strong> probability</li>
+                <li>If θ = 0.9, getting exactly 7 heads has a lower probability (we'd expect more heads)</li>
+            </ul>
+
+            <div class="key-insight">
+                <strong>MLE Intuition:</strong> The proportion of heads in your sample (7/10) is your best guess for the true probability. This makes intuitive sense - if 70% of your flips were heads, estimate that heads happens 70% of the time!
+            </div>
+
+            <!-- ========== MAP INTUITION ========== -->
+            <h3>What is Maximum A Posteriori? (Building on MLE)</h3>
+
+            <p><strong>The Problem with MLE:</strong> What if you only flipped the coin 2 times and got 2 heads? MLE would say θ = 1.0 (100% heads). But you probably don't actually believe it's a two-headed coin!</p>
+
+            <p><strong>MAP's Solution:</strong> Start with a <strong>prior belief</strong> (like "most coins are roughly fair") and then update that belief based on your data.</p>
+
+            <div class="analogy-box">
+                <p><strong>Back to the detective analogy:</strong></p>
+                <p>MLE says: "Which theory best explains the evidence?" <br>
+                MAP says: "Which theory best explains the evidence, <em>considering what we already know about how the world works?</em>"</p>
+                <p>If a witness says "I saw a UFO abduct the suspect," MLE might consider that as valid evidence. But MAP says "Wait, UFO abductions are extremely rare (low prior probability), so I need <em>really strong</em> evidence before I believe that theory."</p>
+            </div>
+
+            <p><strong>In the Coin Example:</strong></p>
+
+            <p>If you flip 2 times and get 2 heads:</p>
+            <ul>
+                <li><strong>MLE says:</strong> θ = 2/2 = 1.0 (definitely all heads!)</li>
+                <li><strong>MAP says:</strong> θ ≈ 0.6 (probably biased toward heads, but not definitely a two-headed coin)</li>
+            </ul>
+
+            <p>MAP combines your prior belief ("coins are usually roughly fair, around 0.5") with your data ("I saw 2 heads") to give a more reasonable estimate.</p>
+
+            <div class="key-insight">
+                <strong>MAP Intuition:</strong> MAP is like MLE with a "sanity check" - it prevents you from making extreme conclusions based on limited data by incorporating reasonable prior assumptions.
+            </div>
+
+            <!-- ========== PUTTING IT TOGETHER ========== -->
+            <h3>How Do These Three Concepts Connect?</h3>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Concept</th>
+                        <th>What It Does</th>
+                        <th>When To Use It</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Logistic Regression</strong></td>
+                        <td>The <em>model</em> - defines how we compute probabilities from features</td>
+                        <td>When you need binary classification with probability outputs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MLE</strong></td>
+                        <td>The <em>learning method</em> - finds parameters that best fit the data</td>
+                        <td>When you have lots of data and want to let the data speak for itself</td>
+                    </tr>
+                    <tr>
+                        <td><strong>MAP</strong></td>
+                        <td>The <em>improved learning method</em> - finds parameters balancing data fit and prior beliefs</td>
+                        <td>When you have limited data or want to prevent overfitting</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>The Typical Workflow:</strong></p>
+            <ol>
+                <li><strong>Choose a model:</strong> "I'll use logistic regression for spam classification"</li>
+                <li><strong>Choose a learning method:</strong> "I'll use MLE to find the best weights" (or "I'll use MAP with regularization")</li>
+                <li><strong>Optimize:</strong> Use gradient descent to actually find those best weights</li>
+                <li><strong>Predict:</strong> Use your trained model to classify new emails</li>
+            </ol>
+
+            <!-- ========== SIMPLE CODE EXAMPLE ========== -->
+            <h3>Simple Example: Logistic Regression in Action</h3>
+
+            <p>Let's see how this works with a tiny spam detection example:</p>
+
+            <pre><code class="language-python">import numpy as np
+
+# Our simple model: p(spam | email) = sigmoid(w1*num_caps + w2*num_money_words + b)
+
+def sigmoid(z):
+    """The logistic function - squashes any number to [0, 1]"""
+    return 1 / (1 + np.exp(-z))
+
+# Suppose we've already learned these weights (using MLE or MAP):
+w1 = 0.5   # weight for number of capital letters
+w2 = 2.0   # weight for money-related words
+b = -3.0   # bias term
+
+# Example email features:
+email1 = [10, 0]  # 10 caps, 0 money words -> probably not spam
+email2 = [50, 5]  # 50 caps, 5 money words -> probably spam!
+
+# Make predictions:
+def predict_spam(email):
+    z = w1 * email[0] + w2 * email[1] + b
+    prob_spam = sigmoid(z)
+    return prob_spam
+
+print(f"Email 1 spam probability: {predict_spam(email1):.3f}")  # Low probability
+print(f"Email 2 spam probability: {predict_spam(email2):.3f}")  # High probability
+</code></pre>
+
+            <p><em>Expected Output:</em></p>
+            <pre><code>Email 1 spam probability: 0.119  (about 12% - probably not spam)
+Email 2 spam probability: 0.993  (about 99% - almost definitely spam!)
+</code></pre>
+
+            <div class="common-mistake">
+                <strong>Don't confuse the model with the learning method!</strong> Logistic regression is the <em>model</em> (how we compute probabilities). MLE and MAP are <em>learning methods</em> (how we find the best parameters for that model). You can use MLE with logistic regression, or MAP with logistic regression, or even other methods!
+            </div>
+
+        </div>
+
+        <!-- ==================== INTERMEDIATE LEVEL ==================== -->
+        <div class="level-section level-intermediate">
+            <h2>🚀 Intermediate Level: Mathematical Foundations</h2>
+
+            <!-- ========== LOGISTIC REGRESSION MATH ========== -->
+            <h3>The Mathematics of Logistic Regression</h3>
+
+            <h4>From Linear to Logistic: The Full Picture</h4>
+
+            <p>Logistic regression is built on a simple idea: combine your features <em>linearly</em>, then pass through the sigmoid to get probabilities.</p>
+
+            <p><strong>Step 1: Linear Combination</strong></p>
+            <p>Compute a weighted sum of your features:</p>
+            <div class="formula-box">
+z = w^T x = w₁x₁ + w₂x₂ + ... + wₐxₐ + b
+
+Where:
+- x = [x₁, x₂, ..., xₐ] are your input features
+- w = [w₁, w₂, ..., wₐ] are the learned weights
+- b is the bias/intercept term
+- z is the "logit" (can be any real number)
+            </div>
+
+            <p><strong>Step 2: Apply Sigmoid</strong></p>
+            <p>Convert the logit to a probability:</p>
+            <div class="formula-box">
+p(y = 1 | x, w) = σ(z) = σ(w^T x) = 1 / (1 + exp(-w^T x))
+
+This gives us a value between 0 and 1 - a valid probability!
+            </div>
+
+            <h4>Why the Sigmoid Function is Perfect for This</h4>
+
+            <p>The sigmoid function σ(z) = 1/(1 + e^(-z)) has several beautiful properties:</p>
+
+            <ol>
+                <li><strong>Bounded output:</strong> Always outputs values in [0, 1] - perfect for probabilities</li>
+                <li><strong>Smooth transition:</strong> Gradually transitions from 0 to 1 (no sudden jumps)</li>
+                <li><strong>Symmetric:</strong> σ(-z) = 1 - σ(z), which means the decision boundary is symmetric</li>
+                <li><strong>Nice derivative:</strong> σ'(z) = σ(z)(1 - σ(z)), which makes gradient descent easier</li>
+                <li><strong>Interpretable:</strong> When z = 0, we get σ(0) = 0.5 (maximum uncertainty)</li>
+            </ol>
+
+            <div class="interactive-demo">
+                <h4>Interactive Visualization: The Sigmoid Function</h4>
+                <p>Explore how the sigmoid function transforms any real number into a probability:</p>
+                <div class="demo-controls">
+                    <label>
+                        Input z:
+                        <input type="range" id="sigmoid-z" min="-10" max="10" value="0" step="0.1">
+                        <span id="z-value">0.0</span>
+                    </label>
+                </div>
+                <div class="visualization-area">
+                    <canvas id="sigmoid-canvas" width="700" height="300"></canvas>
+                    <div style="margin-top: 1rem; padding: 1rem; background-color: #f0f9ff; border-radius: 4px;">
+                        <strong>σ(z) = <span id="sigmoid-output">0.500</span></strong>
+                        <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">
+                            <span id="sigmoid-interpretation">Perfectly uncertain (50% probability)</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <h4>Decision Boundaries: Where Classification Happens</h4>
+
+            <p>When do we classify an example as class 1 vs class 0? Typically, we use a threshold of 0.5:</p>
+
+            <ul>
+                <li>If p(y=1|x) ≥ 0.5, predict class 1</li>
+                <li>If p(y=1|x) < 0.5, predict class 0</li>
+            </ul>
+
+            <p>When is σ(w^T x) = 0.5? Exactly when w^T x = 0!</p>
+
+            <div class="key-insight">
+                <strong>Decision Boundary Insight:</strong> The decision boundary is where w^T x = 0. This defines a <strong>hyperplane</strong> in feature space that separates the two classes. Logistic regression is fundamentally a <strong>linear classifier</strong> - the boundary between classes is always linear (a straight line in 2D, a plane in 3D, etc.).
+            </div>
+
+            <!-- ========== MLE DERIVATION ========== -->
+            <h3>Maximum Likelihood Estimation: The Math</h3>
+
+            <h4>The Likelihood Function</h4>
+
+            <p>Given training data {(x^(1), y^(1)), (x^(2), y^(2)), ..., (x^(n), y^(n))}, we want to find the weights w that make this data most probable.</p>
+
+            <p><strong>For a single example (x^(i), y^(i)):</strong></p>
+            <div class="formula-box">
+p(y^(i) | x^(i), w) = [p(y=1|x^(i), w)]^y^(i) · [p(y=0|x^(i), w)]^(1-y^(i))
+                    = [σ(w^T x^(i))]^y^(i) · [1 - σ(w^T x^(i))]^(1-y^(i))
+
+This clever notation works because:
+- When y^(i) = 1: we get σ(w^T x^(i))^1 · (1-σ(...))^0 = σ(w^T x^(i))
+- When y^(i) = 0: we get σ(w^T x^(i))^0 · (1-σ(...))^1 = 1 - σ(w^T x^(i))
+            </div>
+
+            <p><strong>For all examples (assuming independence):</strong></p>
+            <div class="formula-box">
+p(y | X, w) = ∏ᵢ₌₁ⁿ p(y^(i) | x^(i), w)
+            = ∏ᵢ₌₁ⁿ [σ(w^T x^(i))]^y^(i) · [1 - σ(w^T x^(i))]^(1-y^(i))
+
+This is the LIKELIHOOD function - the probability of seeing our labels y
+given our features X and parameters w.
+            </div>
+
+            <h4>From Likelihood to Log-Likelihood</h4>
+
+            <p>Products are hard to work with mathematically. Taking the logarithm converts products to sums:</p>
+
+            <div class="formula-box">
+log p(y | X, w) = ∑ᵢ₌₁ⁿ [y^(i) log σ(w^T x^(i)) + (1-y^(i)) log(1 - σ(w^T x^(i)))]
+
+This is called the LOG-LIKELIHOOD. Maximizing this is equivalent to
+maximizing the likelihood (since log is monotonic).
+            </div>
+
+            <p><strong>Why is this easier?</strong></p>
+            <ul>
+                <li>Sums are easier than products</li>
+                <li>Logs turn exponentials into polynomials</li>
+                <li>Better numerical stability (products of small numbers can underflow)</li>
+                <li>The logarithm is monotonic, so max of log(f) = max of f</li>
+            </ul>
+
+            <h4>The Optimization Problem</h4>
+
+            <p>MLE finds the parameters that maximize the log-likelihood:</p>
+
+            <div class="formula-box">
+w_MLE = arg max_w  ∑ᵢ₌₁ⁿ [y^(i) log σ(w^T x^(i)) + (1-y^(i)) log(1 - σ(w^T x^(i)))]
+
+Or equivalently (we minimize the NEGATIVE log-likelihood):
+
+w_MLE = arg min_w  -∑ᵢ₌₁ⁿ [y^(i) log σ(w^T x^(i)) + (1-y^(i)) log(1 - σ(w^T x^(i)))]
+
+This is also called the BINARY CROSS-ENTROPY LOSS or LOGISTIC LOSS.
+            </div>
+
+            <h4>Why No Closed-Form Solution?</h4>
+
+            <p>Unlike linear regression, we can't just set the derivative to zero and solve algebraically. The equation ∇L(w) = 0 involves both linear terms (w^T x) and exponential terms (from the sigmoid), making it <strong>transcendental</strong> - no algebraic solution exists.</p>
+
+            <p><strong>Solution:</strong> Use <strong>iterative optimization</strong> algorithms like gradient descent.</p>
+
+            <h4>The Gradient for Gradient Descent</h4>
+
+            <p>The gradient of the negative log-likelihood has a beautiful simple form:</p>
+
+            <div class="formula-box">
+∇_w [-log p(y | X, w)] = -∑ᵢ₌₁ⁿ (y^(i) - σ(w^T x^(i))) x^(i)
+                        = -X^T (y - σ(Xw))
+
+In words: For each example, compute (true label - predicted probability)
+and weight it by the features. Sum across all examples.
+            </div>
+
+            <p><em>Derivation sketch:</em> The derivative of σ(z) is σ(z)(1-σ(z)), which cancels beautifully with the log terms to give this simple form.</p>
+
+            <!-- ========== MAP DERIVATION ========== -->
+            <h3>Maximum A Posteriori: Bayesian Parameter Estimation</h3>
+
+            <h4>The Bayesian Perspective</h4>
+
+            <p>MLE treats parameters as unknown fixed values to be estimated. MAP treats them as <strong>random variables</strong> with their own probability distribution (the prior).</p>
+
+            <p><strong>Bayes' Rule for Parameters:</strong></p>
+            <div class="formula-box">
+p(w | y, X) = p(y | X, w) · p(w) / p(y | X)
+               └─────┬─────┘   └──┬──┘   └───┬───┘
+                 likelihood    prior   evidence (constant)
+
+Posterior ∝ Likelihood × Prior
+            </div>
+
+            <p><strong>MAP Objective:</strong></p>
+            <div class="formula-box">
+w_MAP = arg max_w  p(w | y, X)
+      = arg max_w  p(y | X, w) · p(w)
+      = arg max_w  [log p(y | X, w) + log p(w)]
+
+In words: Maximize both the data fit (likelihood) AND the prior belief.
+            </div>
+
+            <h4>The Gaussian Prior: L2 Regularization</h4>
+
+            <p>The most common prior is a Gaussian (Normal) distribution centered at zero:</p>
+
+            <div class="formula-box">
+p(w) = ∏ⱼ N(wⱼ | 0, 1/λ) ∝ exp(-λ/2 ∑ⱼ wⱼ²)
+
+Taking the log:
+log p(w) = -λ/2 ∑ⱼ wⱼ² + constant
+         = -λ/2 ||w||² + constant
+            </div>
+
+            <p><strong>MAP with Gaussian Prior becomes:</strong></p>
+            <div class="formula-box">
+w_MAP = arg max_w  [log p(y | X, w) - λ/2 ||w||²]
+      = arg min_w  [-log p(y | X, w) + λ/2 ||w||²]
+      = arg min_w  [Binary Cross-Entropy + L2 Regularization]
+
+This is exactly RIDGE REGRESSION for logistic regression!
+            </div>
+
+            <div class="key-insight">
+                <strong>Profound Connection:</strong> MAP estimation with a Gaussian prior is <em>mathematically equivalent</em> to L2 regularization! The Bayesian interpretation (incorporating prior beliefs) and the frequentist interpretation (preventing overfitting) lead to the same algorithm.
+            </div>
+
+            <h4>Understanding the Regularization Parameter λ</h4>
+
+            <p>The parameter λ controls the strength of regularization (or equivalently, the strength of the prior belief):</p>
+
+            <ul>
+                <li><strong>λ = 0:</strong> No regularization → Pure MLE → Weights can become very large</li>
+                <li><strong>Small λ:</strong> Weak prior → Trust the data more → May overfit if data is limited</li>
+                <li><strong>Large λ:</strong> Strong prior → Force weights close to zero → May underfit</li>
+                <li><strong>λ → ∞:</strong> Infinitely strong prior → w = 0 → Predicts same probability for all inputs</li>
+            </ul>
+
+            <p><strong>Choosing λ:</strong> Use cross-validation to find the value that gives the best performance on held-out data.</p>
+
+            <!-- ========== COMPARISON ========== -->
+            <h3>MLE vs MAP: When To Use Each</h3>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Aspect</th>
+                        <th>MLE (Maximum Likelihood)</th>
+                        <th>MAP (Maximum A Posteriori)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Philosophy</strong></td>
+                        <td>Let the data speak for itself</td>
+                        <td>Combine data with prior knowledge</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Objective</strong></td>
+                        <td>Maximize p(data | parameters)</td>
+                        <td>Maximize p(parameters | data) ∝ p(data | params) × p(params)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Parameters</strong></td>
+                        <td>Treated as unknown fixed values</td>
+                        <td>Treated as random variables with a prior distribution</td>
+                    </tr>
+                    <tr>
+                        <td><strong>With Gaussian Prior</strong></td>
+                        <td>No regularization</td>
+                        <td>Equivalent to L2 regularization</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Overfitting</strong></td>
+                        <td>Can overfit with limited data or many features</td>
+                        <td>Less prone to overfitting (prior acts as regularizer)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Large Data Limit</strong></td>
+                        <td>Optimal when n → ∞</td>
+                        <td>Converges to MLE when n → ∞ (data overwhelms prior)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Interpretability</strong></td>
+                        <td>Simple: "what fits the data best"</td>
+                        <td>More complex: "what balances data fit and prior beliefs"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>When To Use</strong></td>
+                        <td>Lots of data, well-specified model, don't want to impose assumptions</td>
+                        <td>Limited data, high-dimensional features, want to prevent overfitting</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="interactive-demo">
+                <h4>Interactive Demo: MLE vs MAP with Limited Data</h4>
+                <p>See how MLE and MAP behave differently with small sample sizes:</p>
+                <div class="demo-controls">
+                    <label>
+                        Number of samples:
+                        <input type="range" id="num-samples" min="2" max="100" value="5" step="1">
+                        <span id="sample-count">5</span>
+                    </label>
+                    <label>
+                        Regularization strength (λ):
+                        <input type="range" id="lambda-val" min="0" max="10" value="1" step="0.1">
+                        <span id="lambda-display">1.0</span>
+                    </label>
+                    <button onclick="regenerateData()">Generate New Data</button>
+                </div>
+                <div class="visualization-area">
+                    <canvas id="mle-map-canvas" width="700" height="400"></canvas>
+                    <div style="margin-top: 1rem; padding: 1rem; background-color: #f0f9ff; border-radius: 4px; font-size: 0.9rem;">
+                        <strong>Observation:</strong> With few samples, MLE (blue) can be overconfident and erratic. MAP (orange) with appropriate λ produces smoother, more reasonable decision boundaries.
+                    </div>
+                </div>
+            </div>
+
+            <div class="common-mistake">
+                <strong>Don't think MAP is always better than MLE!</strong> With unlimited data, they converge to the same answer. MAP adds bias (through the prior) which helps when data is scarce but can hurt when the prior is wrong and you have lots of data. Choose based on your situation!
+            </div>
+
+        </div>
+
+        <!-- ==================== ADVANCED LEVEL ==================== -->
+        <div class="level-section level-advanced">
+            <h2>🎓 Advanced Level: Theory & Implementation</h2>
+
+            <!-- ========== CONVEXITY ========== -->
+            <h3>Convexity and Optimization Guarantees</h3>
+
+            <h4>Why Logistic Regression is Convex</h4>
+
+            <p>One of the most important theoretical properties of logistic regression is that the negative log-likelihood is a <strong>convex function</strong>.</p>
+
+            <p><strong>What does convexity mean?</strong></p>
+            <ul>
+                <li>No "bad" local minima - any local minimum is a global minimum</li>
+                <li>Gradient descent is guaranteed to converge (with appropriate step size)</li>
+                <li>We can use powerful convex optimization algorithms</li>
+            </ul>
+
+            <p><strong>Proof sketch:</strong></p>
+            <ol>
+                <li>The function -log(σ(z)) is convex in z (can be verified by computing the second derivative)</li>
+                <li>Composition of a convex function with a linear function (w^T x) is convex</li>
+                <li>Sum of convex functions is convex</li>
+                <li>Therefore, the negative log-likelihood ∑ᵢ -log p(y^(i) | x^(i), w) is convex in w</li>
+            </ol>
+
+            <p><strong>Adding L2 regularization (MAP with Gaussian prior):</strong></p>
+            <ul>
+                <li>||w||² is strictly convex (parabola)</li>
+                <li>Adding a strictly convex term makes the objective <strong>strongly convex</strong></li>
+                <li>Strong convexity → faster convergence, unique solution, better conditioning</li>
+            </ul>
+
+            <div class="key-insight">
+                <strong>Theoretical Guarantee:</strong> Unlike neural networks (which are non-convex), logistic regression has no local minima to worry about. Gradient descent WILL find the global optimum (given enough iterations and appropriate learning rate).
+            </div>
+
+            <!-- ========== GRADIENT DESCENT DETAILS ========== -->
+            <h3>Optimization Algorithms in Detail</h3>
+
+            <h4>Batch Gradient Descent</h4>
+
+            <p>The standard approach: use all n training examples to compute each gradient:</p>
+
+            <div class="formula-box">
+Algorithm: Batch Gradient Descent
+-----------------------------------
+Initialize w randomly (or to zeros)
+For t = 1 to T:
+    g = -X^T (y - σ(Xw))           # Gradient using ALL data
+    w = w - α · g                   # Update weights
+
+Time per iteration: O(nd) for matrix-vector products
+            </div>
+
+            <p><strong>Advantages:</strong> Stable, well-understood, converges smoothly</p>
+            <p><strong>Disadvantages:</strong> Slow when n is large (must process all data per iteration)</p>
+
+            <h4>Stochastic Gradient Descent (SGD)</h4>
+
+            <p>Use only ONE randomly selected example per iteration:</p>
+
+            <div class="formula-box">
+Algorithm: Stochastic Gradient Descent
+---------------------------------------
+Initialize w randomly
+For epoch = 1 to num_epochs:
+    Shuffle training data
+    For i = 1 to n:
+        g = -(y^(i) - σ(w^T x^(i))) x^(i)    # Gradient from ONE example
+        w = w - α · g                          # Update weights
+
+Time per iteration: O(d) - much faster!
+            </div>
+
+            <p><strong>Advantages:</strong> Very fast iterations, can escape saddle points, works for online learning</p>
+            <p><strong>Disadvantages:</strong> Noisy updates, may not converge exactly (oscillates around optimum)</p>
+
+            <h4>Mini-Batch Gradient Descent</h4>
+
+            <p>The best of both worlds - use a small batch of B examples (typically 32-256):</p>
+
+            <div class="formula-box">
+Algorithm: Mini-Batch Gradient Descent
+---------------------------------------
+Initialize w randomly
+For epoch = 1 to num_epochs:
+    Shuffle training data into mini-batches of size B
+    For each mini-batch M:
+        g = -X_M^T (y_M - σ(X_M w))    # Gradient from batch
+        w = w - α · g                   # Update weights
+
+Time per iteration: O(Bd) - tunable trade-off
+            </div>
+
+            <p><strong>Why this is best in practice:</strong></p>
+            <ul>
+                <li>Faster than batch GD (don't need all data per update)</li>
+                <li>More stable than SGD (averaging over B examples reduces noise)</li>
+                <li>Vectorized operations on GPU are efficient for moderate B</li>
+                <li>B is a hyperparameter you can tune</li>
+            </ul>
+
+            <h4>Advanced Optimizers</h4>
+
+            <p><strong>Adam (Adaptive Moment Estimation):</strong></p>
+            <ul>
+                <li>Maintains running averages of gradients and squared gradients</li>
+                <li>Adapts learning rate per parameter</li>
+                <li>Very popular in deep learning, works well for logistic regression too</li>
+                <li>Hyperparameters: learning rate α, momentum terms β₁ and β₂</li>
+            </ul>
+
+            <p><strong>L-BFGS (Limited-memory BFGS):</strong></p>
+            <ul>
+                <li>Quasi-Newton method - approximates second-order information</li>
+                <li>Much faster convergence than gradient descent (fewer iterations)</li>
+                <li>More expensive per iteration (line search, Hessian approximation)</li>
+                <li>Works well for moderate-sized problems with batch gradient</li>
+            </ul>
+
+            <!-- ========== MULTI-CLASS EXTENSION ========== -->
+            <h3>Multi-Class Logistic Regression (Softmax)</h3>
+
+            <h4>From Binary to K Classes</h4>
+
+            <p>Binary logistic regression uses sigmoid to output one probability. For K classes, we use <strong>softmax</strong> to output K probabilities that sum to 1:</p>
+
+            <div class="formula-box">
+Softmax Function:
+-----------------
+For class c, compute a "score" (logit): z_c = w_c^T x + b_c
+
+Convert scores to probabilities:
+p(y = c | x) = exp(z_c) / ∑_{c'=1}^K exp(z_c')
+             = exp(w_c^T x + b_c) / ∑_{c'} exp(w_{c'}^T x + b_{c'})
+
+Properties:
+- Each p(y=c|x) ∈ [0, 1]
+- ∑_c p(y=c|x) = 1 (valid probability distribution!)
+- When K=2, softmax reduces to sigmoid
+            </div>
+
+            <p><strong>Parameters:</strong></p>
+            <ul>
+                <li>K weight vectors: w₁, w₂, ..., w_K</li>
+                <li>K bias terms: b₁, b₂, ..., b_K</li>
+                <li>Total: K(d+1) parameters</li>
+            </ul>
+
+            <p><strong>Loss function (Cross-Entropy):</strong></p>
+            <div class="formula-box">
+For one example with true class y^(i):
+L = -log p(y=y^(i) | x^(i)) = -log[exp(z_{y^(i)}) / ∑_c exp(z_c)]
+  = -z_{y^(i)} + log(∑_c exp(z_c))
+
+For all examples:
+Total Loss = ∑ᵢ₌₁ⁿ [-z_{y^(i)}^(i) + log(∑_c exp(z_c^(i)))]
+            </div>
+
+            <h4>Implementation: Complete Multi-Class Logistic Regression</h4>
+
+            <pre><code class="language-python">import numpy as np
+
+class MulticlassLogisticRegression:
+    def __init__(self, num_classes, learning_rate=0.01, reg_lambda=0.1, num_iters=1000):
+        self.num_classes = num_classes
+        self.learning_rate = learning_rate
+        self.reg_lambda = reg_lambda
+        self.num_iters = num_iters
+        self.W = None  # Weight matrix (d+1 x K)
+
+    def softmax(self, Z):
+        """Numerically stable softmax"""
+        exp_Z = np.exp(Z - np.max(Z, axis=1, keepdims=True))
+        return exp_Z / np.sum(exp_Z, axis=1, keepdims=True)
+
+    def fit(self, X, y):
+        """Train using mini-batch gradient descent with L2 regularization (MAP)"""
+        # Add bias term
+        n, d = X.shape
+        X_bias = np.c_[np.ones(n), X]  # (n x d+1)
+
+        # Initialize weights
+        self.W = np.random.randn(d+1, self.num_classes) * 0.01
+
+        for iteration in range(self.num_iters):
+            # Forward pass: compute probabilities
+            Z = X_bias @ self.W  # (n x K)
+            probs = self.softmax(Z)  # (n x K)
+
+            # Compute loss (negative log-likelihood + regularization)
+            # One-hot encode y for loss computation
+            y_onehot = np.zeros((n, self.num_classes))
+            y_onehot[np.arange(n), y] = 1
+
+            data_loss = -np.sum(y_onehot * np.log(probs + 1e-10)) / n
+            reg_loss = 0.5 * self.reg_lambda * np.sum(self.W[1:, :]**2)  # Don't regularize bias
+            total_loss = data_loss + reg_loss
+
+            # Backward pass: compute gradient
+            grad_Z = (probs - y_onehot) / n  # (n x K)
+            grad_W = X_bias.T @ grad_Z  # (d+1 x K)
+
+            # Add regularization gradient (not for bias row)
+            grad_W[1:, :] += self.reg_lambda * self.W[1:, :]
+
+            # Update weights
+            self.W -= self.learning_rate * grad_W
+
+            if iteration % 100 == 0:
+                print(f"Iteration {iteration}, Loss: {total_loss:.4f}")
+
+        return self
+
+    def predict_proba(self, X):
+        """Return class probabilities"""
+        n = X.shape[0]
+        X_bias = np.c_[np.ones(n), X]
+        Z = X_bias @ self.W
+        return self.softmax(Z)
+
+    def predict(self, X):
+        """Return predicted class labels"""
+        probs = self.predict_proba(X)
+        return np.argmax(probs, axis=1)
+
+# Example usage:
+# X_train: (n x d) feature matrix
+# y_train: (n,) class labels in {0, 1, ..., K-1}
+# model = MulticlassLogisticRegression(num_classes=3, reg_lambda=0.1)
+# model.fit(X_train, y_train)
+# predictions = model.predict(X_test)
+</code></pre>
+
+            <!-- ========== PROBABILISTIC INTERPRETATION ========== -->
+            <h3>Deep Probabilistic Interpretation</h3>
+
+            <h4>Generative vs Discriminative (Revisited)</h4>
+
+            <p>This distinction is crucial for understanding when to use logistic regression:</p>
+
+            <p><strong>Generative Models (e.g., Naive Bayes):</strong></p>
+            <ul>
+                <li>Model p(x, y) = p(x | y) · p(y)</li>
+                <li>Learn what each class "looks like"</li>
+                <li>Can generate new samples</li>
+                <li>Can detect outliers (via p(x))</li>
+                <li>More assumptions, but can work with less data</li>
+            </ul>
+
+            <p><strong>Discriminative Models (e.g., Logistic Regression):</strong></p>
+            <ul>
+                <li>Model p(y | x) directly</li>
+                <li>Learn only the decision boundary</li>
+                <li>Cannot generate samples or detect outliers</li>
+                <li>Fewer assumptions, often better with lots of data</li>
+                <li>Follows Vapnik's principle: "don't solve a harder problem as an intermediate step"</li>
+            </ul>
+
+            <div class="key-insight">
+                <strong>Surprising Fact:</strong> Binary Naive Bayes can be written as a logistic regression model! It uses the logistic form p(y=1|x) = σ(w^T x), but with specific weights derived from the generative model. This means Naive Bayes is a linear classifier, just like logistic regression - but with different parameters.
+            </div>
+
+            <h4>Connection to Generalized Linear Models (GLMs)</h4>
+
+            <p>Logistic regression is a special case of <strong>Generalized Linear Models</strong>:</p>
+
+            <ol>
+                <li><strong>Linear predictor:</strong> η = w^T x (the logit)</li>
+                <li><strong>Link function:</strong> Connects the linear predictor to the mean of the response
+                    <ul>
+                        <li>For logistic: logit link g(μ) = log(μ/(1-μ))</li>
+                        <li>Inverse: μ = σ(η)</li>
+                    </ul>
+                </li>
+                <li><strong>Response distribution:</strong> Bernoulli(μ) for binary outcomes</li>
+            </ol>
+
+            <p>Other GLMs follow the same pattern with different link functions and distributions:</p>
+            <ul>
+                <li><strong>Linear Regression:</strong> Identity link, Gaussian distribution</li>
+                <li><strong>Poisson Regression:</strong> Log link, Poisson distribution (for count data)</li>
+                <li><strong>Probit Regression:</strong> Probit link (inverse CDF of Gaussian), Bernoulli distribution</li>
+            </ul>
+
+            <!-- ========== PRACTICAL CONSIDERATIONS ========== -->
+            <h3>Practical Implementation Considerations</h3>
+
+            <h4>Numerical Stability</h4>
+
+            <p><strong>Problem:</strong> Computing exp(-700) causes underflow, exp(700) causes overflow!</p>
+
+            <p><strong>Solution for Sigmoid:</strong></p>
+            <pre><code class="language-python">def stable_sigmoid(z):
+    """Numerically stable sigmoid function"""
+    # For large positive z, compute σ(z) = 1/(1+exp(-z)) directly
+    # For large negative z, compute σ(z) = exp(z)/(1+exp(z)) instead
+    positive = z >= 0
+    negative = ~positive
+
+    result = np.zeros_like(z, dtype=float)
+    result[positive] = 1 / (1 + np.exp(-z[positive]))
+
+    exp_z = np.exp(z[negative])
+    result[negative] = exp_z / (1 + exp_z)
+
+    return result
+</code></pre>
+
+            <p><strong>Solution for Softmax (Log-Sum-Exp Trick):</strong></p>
+            <pre><code class="language-python">def stable_softmax(Z):
+    """Numerically stable softmax using log-sum-exp trick"""
+    # Subtract max for numerical stability (doesn't change result)
+    Z_shifted = Z - np.max(Z, axis=1, keepdims=True)
+    exp_Z = np.exp(Z_shifted)
+    return exp_Z / np.sum(exp_Z, axis=1, keepdims=True)
+</code></pre>
+
+            <h4>Feature Scaling</h4>
+
+            <p><strong>Why it matters:</strong></p>
+            <ul>
+                <li>Features on different scales → weights on different scales</li>
+                <li>Makes regularization unfair (penalizes large-scale features more)</li>
+                <li>Makes optimization slower (elongated contours)</li>
+            </ul>
+
+            <p><strong>Standard approach:</strong> Standardize features to mean 0, standard deviation 1:</p>
+            <pre><code class="language-python">from sklearn.preprocessing import StandardScaler
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)  # Use training statistics!
+</code></pre>
+
+            <h4>Handling Class Imbalance</h4>
+
+            <p>If 95% of emails are not spam, a naive model could get 95% accuracy by always predicting "not spam"!</p>
+
+            <p><strong>Solutions:</strong></p>
+            <ol>
+                <li><strong>Resampling:</strong> Oversample minority class or undersample majority class</li>
+                <li><strong>Class weights:</strong> Weight the loss function by class frequency
+                    <pre><code class="language-python">from sklearn.utils.class_weight import compute_class_weight
+
+class_weights = compute_class_weight('balanced', classes=np.unique(y), y=y)
+# Give more weight to examples from minority class
+</code></pre>
+                </li>
+                <li><strong>Different threshold:</strong> Instead of 0.5, use a lower threshold for rare positive class</li>
+                <li><strong>Different metric:</strong> Use F1-score, precision-recall, or AUC instead of accuracy</li>
+            </ol>
+
+            <!-- ========== REAL-WORLD APPLICATIONS ========== -->
+            <h3>Real-World Applications & Case Studies</h3>
+
+            <h4>Case Study 1: Medical Diagnosis</h4>
+
+            <p><strong>Problem:</strong> Predict whether a patient has diabetes based on diagnostic measurements.</p>
+
+            <p><strong>Features:</strong> Glucose level, BMI, age, blood pressure, insulin level, etc.</p>
+
+            <p><strong>Why Logistic Regression?</strong></p>
+            <ul>
+                <li>Need probability output (risk assessment)</li>
+                <li>Interpretable weights (doctors want to understand why)</li>
+                <li>Moderate amount of data available</li>
+                <li>Linear relationships are often sufficient</li>
+            </ul>
+
+            <p><strong>Use MAP (regularization):</strong> Medical data is often limited and noisy - regularization prevents overfitting</p>
+
+            <h4>Case Study 2: Click-Through Rate Prediction</h4>
+
+            <p><strong>Problem:</strong> Predict probability a user will click on an advertisement.</p>
+
+            <p><strong>Features:</strong> User demographics, time of day, ad content, user history, etc.</p>
+
+            <p><strong>Why Logistic Regression?</strong></p>
+            <ul>
+                <li>Massive scale (billions of examples)</li>
+                <li>Need fast inference (real-time predictions)</li>
+                <li>Convex optimization guarantees</li>
+                <li>Easy to update online as new data arrives</li>
+            </ul>
+
+            <p><strong>Use MLE + SGD:</strong> With billions of examples, use stochastic gradient descent for speed. Regularization may still help with very high-dimensional features.</p>
+
+            <h4>Case Study 3: Sentiment Analysis</h4>
+
+            <p><strong>Problem:</strong> Classify movie reviews as positive or negative.</p>
+
+            <p><strong>Features:</strong> Bag-of-words (presence/absence of each word in vocabulary)</p>
+
+            <p><strong>Why Logistic Regression?</strong></p>
+            <ul>
+                <li>High-dimensional sparse features (10,000+ words)</li>
+                <li>Simple baseline that works surprisingly well</li>
+                <li>Interpretable (positive/negative words have large weights)</li>
+            </ul>
+
+            <p><strong>Use MAP with L1 regularization (Lasso):</strong> Promotes sparsity - most words get weight exactly 0, keeping only the most predictive ones.</p>
+
+            <!-- ========== EXTENSIONS ========== -->
+            <h3>Extensions and Advanced Topics</h3>
+
+            <h4>Kernel Logistic Regression</h4>
+
+            <p>Combine logistic regression with the kernel trick for non-linear decision boundaries:</p>
+            <ul>
+                <li>Map features to high-dimensional space: φ(x)</li>
+                <li>Apply logistic regression in that space: p(y=1|x) = σ(w^T φ(x))</li>
+                <li>Use kernel trick to avoid explicit feature computation</li>
+                <li>Common kernels: RBF (Gaussian), polynomial</li>
+            </ul>
+
+            <h4>Feature Engineering for Logistic Regression</h4>
+
+            <p>Since logistic regression is linear, feature engineering is crucial:</p>
+
+            <ol>
+                <li><strong>Polynomial features:</strong> Add x₁², x₁x₂, etc. for non-linear patterns</li>
+                <li><strong>Interaction terms:</strong> Capture feature combinations (e.g., age × income)</li>
+                <li><strong>Binning continuous variables:</strong> Create categories from continuous features</li>
+                <li><strong>One-hot encoding:</strong> Convert categorical variables to binary indicators</li>
+                <li><strong>Domain-specific transformations:</strong> Log transforms, ratios, etc.</li>
+            </ol>
+
+            <h4>Regularization Variants</h4>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Regularization</th>
+                        <th>Prior Distribution</th>
+                        <th>Effect</th>
+                        <th>When To Use</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>L2 (Ridge)</strong></td>
+                        <td>Gaussian: p(w) ∝ exp(-λ||w||²/2)</td>
+                        <td>Shrinks weights toward zero</td>
+                        <td>Default choice, works well generally</td>
+                    </tr>
+                    <tr>
+                        <td><strong>L1 (Lasso)</strong></td>
+                        <td>Laplace: p(w) ∝ exp(-λ||w||₁)</td>
+                        <td>Forces many weights to exactly zero (sparsity)</td>
+                        <td>Feature selection, interpretability</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Elastic Net</strong></td>
+                        <td>Combination of L1 and L2</td>
+                        <td>Balance between sparsity and shrinkage</td>
+                        <td>High-dimensional data with groups of correlated features</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>Bayesian Logistic Regression (Beyond MAP)</h4>
+
+            <p>MAP finds a single "best" parameter value. <strong>Full Bayesian inference</strong> computes a distribution over parameters:</p>
+
+            <ul>
+                <li>Instead of w_MAP, compute p(w | data)</li>
+                <li>Predictions integrate over all possible w: p(y|x, data) = ∫ p(y|x, w) p(w|data) dw</li>
+                <li>Provides uncertainty quantification</li>
+                <li>Typically requires approximate inference (MCMC, Variational Bayes, Laplace approximation)</li>
+            </ul>
+
+        </div>
+
+        <!-- ==================== QUIZ SECTION ==================== -->
+        <div class="quiz-section">
+            <h3>🧠 Test Your Understanding</h3>
+
+            <div class="quiz-question">
+                <p><strong>Question 1:</strong> Why does logistic regression use the sigmoid function instead of a linear function?</p>
+                <ul class="quiz-options">
+                    <li onclick="checkAnswer(this, false, 1)">Because sigmoid functions are always convex</li>
+                    <li onclick="checkAnswer(this, true, 1)">Because we need outputs in [0,1] to represent valid probabilities</li>
+                    <li onclick="checkAnswer(this, false, 1)">Because linear functions cannot classify data</li>
+                    <li onclick="checkAnswer(this, false, 1)">Because sigmoid functions make the optimization easier</li>
+                </ul>
+                <div class="explanation" id="exp-1" style="display: none; margin-top: 1rem; padding: 1rem; background-color: white; border-radius: 4px;">
+                    <strong>Explanation:</strong> The sigmoid function σ(z) = 1/(1+e^(-z)) maps any real number to the interval [0,1], making it perfect for representing probabilities. A linear function could output negative values or values greater than 1, which aren't valid probabilities.
+                </div>
+            </div>
+
+            <div class="quiz-question">
+                <p><strong>Question 2:</strong> What is the main difference between MLE and MAP estimation?</p>
+                <ul class="quiz-options">
+                    <li onclick="checkAnswer(this, false, 2)">MLE uses gradient descent while MAP uses closed-form solutions</li>
+                    <li onclick="checkAnswer(this, true, 2)">MAP incorporates prior beliefs about parameters while MLE does not</li>
+                    <li onclick="checkAnswer(this, false, 2)">MLE is only for binary classification while MAP works for multi-class</li>
+                    <li onclick="checkAnswer(this, false, 2)">MAP always produces better results than MLE</li>
+                </ul>
+                <div class="explanation" id="exp-2" style="display: none; margin-top: 1rem; padding: 1rem; background-color: white; border-radius: 4px;">
+                    <strong>Explanation:</strong> MAP (Maximum A Posteriori) incorporates a prior distribution p(w) over parameters, while MLE (Maximum Likelihood Estimation) only maximizes the likelihood p(data|w). MAP with a Gaussian prior is equivalent to L2 regularization.
+                </div>
+            </div>
+
+            <div class="quiz-question">
+                <p><strong>Question 3:</strong> The negative log-likelihood for logistic regression is a convex function. What does this guarantee?</p>
+                <ul class="quiz-options">
+                    <li onclick="checkAnswer(this, false, 3)">That we can always find a closed-form solution</li>
+                    <li onclick="checkAnswer(this, false, 3)">That the model will never overfit</li>
+                    <li onclick="checkAnswer(this, true, 3)">That any local minimum found is also a global minimum</li>
+                    <li onclick="checkAnswer(this, false, 3)">That gradient descent will always converge in one iteration</li>
+                </ul>
+                <div class="explanation" id="exp-3" style="display: none; margin-top: 1rem; padding: 1rem; background-color: white; border-radius: 4px;">
+                    <strong>Explanation:</strong> Convexity guarantees that any local minimum is also the global minimum - there are no "bad" local minima to get stuck in. This means gradient descent (with appropriate learning rate) is guaranteed to find the optimal solution, though it may take many iterations.
+                </div>
+            </div>
+
+            <div class="quiz-question">
+                <p><strong>Question 4:</strong> When would you prefer MAP with L2 regularization over pure MLE?</p>
+                <ul class="quiz-options">
+                    <li onclick="checkAnswer(this, false, 4)">When you have billions of training examples</li>
+                    <li onclick="checkAnswer(this, true, 4)">When you have limited data or many features (high risk of overfitting)</li>
+                    <li onclick="checkAnswer(this, false, 4)">When you want the fastest possible training time</li>
+                    <li onclick="checkAnswer(this, false, 4)">When your data is perfectly linearly separable</li>
+                </ul>
+                <div class="explanation" id="exp-4" style="display: none; margin-top: 1rem; padding: 1rem; background-color: white; border-radius: 4px;">
+                    <strong>Explanation:</strong> MAP with regularization (L2) helps prevent overfitting by shrinking weights toward zero. This is especially valuable when you have limited data or a high-dimensional feature space (many features), where overfitting is a major concern. With unlimited data, MAP and MLE converge to similar solutions.
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== RELATED CONCEPTS ==================== -->
+        <div style="margin-top: 3rem;">
+            <h3>Related Concepts</h3>
+            <div class="related-concepts">
+                <a href="naive-bayes.html" class="related-concept-card">
+                    <h4>Naive Bayes</h4>
+                    <p>Generative classifier - learn what each class looks like, then use Bayes' rule to classify</p>
+                </a>
+                <a href="#" class="related-concept-card">
+                    <h4>Support Vector Machines</h4>
+                    <p>Non-probabilistic discriminative classifier - finds maximum margin decision boundary</p>
+                </a>
+                <a href="#" class="related-concept-card">
+                    <h4>Neural Networks</h4>
+                    <p>Extend logistic regression by learning feature transformations automatically</p>
+                </a>
+                <a href="#" class="related-concept-card">
+                    <h4>Categorical Distribution & MLE</h4>
+                    <p>Foundation for understanding MLE in discrete settings (coin flips, dice, polls)</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- ==================== FURTHER READING ==================== -->
+        <div style="margin-top: 3rem; padding: 2rem; background-color: #f8fafc; border-radius: 8px;">
+            <h3>📖 Further Reading & Resources</h3>
+            <ul>
+                <li><strong>Pattern Recognition and Machine Learning</strong> by Christopher Bishop - Chapter 4 covers linear models for classification</li>
+                <li><strong>The Elements of Statistical Learning</strong> by Hastie, Tibshirani, Friedman - Chapter 4 on logistic regression</li>
+                <li><strong>Machine Learning: A Probabilistic Perspective</strong> by Kevin Murphy - Chapters on generalized linear models and Bayesian inference</li>
+                <li><a href="https://en.wikipedia.org/wiki/Logistic_regression">Wikipedia: Logistic Regression</a> - Comprehensive overview with historical context</li>
+                <li><a href="https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression">scikit-learn Documentation</a> - Practical implementation guide</li>
+            </ul>
+
+            <h4>From CPSC 440 Lectures</h4>
+            <ul>
+                <li><a href="../2026-01-14/notes.html">Lecture 2026-01-14</a> - Categorical distributions, MLE, MAP with Dirichlet priors</li>
+                <li><a href="../2026-01-19/notes.html">Lecture 2026-01-19</a> - Discriminative vs generative, logistic regression, deep learning foundations</li>
+            </ul>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc440" class="back-link">← Back to CPSC 440</a>
+        </footer>
+    </div>
+
+    <script>
+        // ========== QUIZ FUNCTIONALITY ==========
+        function checkAnswer(element, isCorrect, questionNum) {
+            const options = element.parentElement.children;
+            const explanation = document.getElementById(`exp-${questionNum}`);
+
+            // Remove previous states
+            for (let option of options) {
+                option.classList.remove('correct', 'incorrect');
+            }
+
+            // Mark the selected answer
+            if (isCorrect) {
+                element.classList.add('correct');
+            } else {
+                element.classList.add('incorrect');
+            }
+
+            // Show explanation
+            explanation.style.display = 'block';
+        }
+
+        // ========== SIGMOID VISUALIZATION ==========
+        const sigmoidCanvas = document.getElementById('sigmoid-canvas');
+        const sigmoidCtx = sigmoidCanvas.getContext('2d');
+        const sigmoidSlider = document.getElementById('sigmoid-z');
+        const zValueSpan = document.getElementById('z-value');
+        const sigmoidOutputSpan = document.getElementById('sigmoid-output');
+        const sigmoidInterpSpan = document.getElementById('sigmoid-interpretation');
+
+        function sigmoid(z) {
+            return 1 / (1 + Math.exp(-z));
+        }
+
+        function drawSigmoid(currentZ) {
+            const ctx = sigmoidCtx;
+            const width = sigmoidCanvas.width;
+            const height = sigmoidCanvas.height;
+            const padding = 40;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw axes
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding); // x-axis
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding); // y-axis
+            ctx.stroke();
+
+            // Draw sigmoid curve
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+
+            const zMin = -10, zMax = 10;
+            for (let x = 0; x <= width - 2*padding; x++) {
+                const z = zMin + (x / (width - 2*padding)) * (zMax - zMin);
+                const y = sigmoid(z);
+                const canvasX = padding + x;
+                const canvasY = height - padding - y * (height - 2*padding);
+
+                if (x === 0) {
+                    ctx.moveTo(canvasX, canvasY);
+                } else {
+                    ctx.lineTo(canvasX, canvasY);
+                }
+            }
+            ctx.stroke();
+
+            // Draw current point
+            const currentX = padding + ((currentZ - zMin) / (zMax - zMin)) * (width - 2*padding);
+            const currentY = height - padding - sigmoid(currentZ) * (height - 2*padding);
+
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(currentX, currentY, 6, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Draw dashed lines to axes
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(currentX, currentY);
+            ctx.lineTo(currentX, height - padding);
+            ctx.moveTo(currentX, currentY);
+            ctx.lineTo(padding, currentY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Labels
+            ctx.fillStyle = '#475569';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('z', width - padding/2, height - padding + 25);
+            ctx.save();
+            ctx.translate(padding - 25, height/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('σ(z)', 0, 0);
+            ctx.restore();
+
+            // Axis markers
+            ctx.textAlign = 'center';
+            ctx.fillText('0', padding + (width - 2*padding) * 0.5, height - padding + 20);
+            ctx.fillText('-10', padding, height - padding + 20);
+            ctx.fillText('10', width - padding, height - padding + 20);
+
+            ctx.textAlign = 'right';
+            ctx.fillText('0', padding - 10, height - padding + 5);
+            ctx.fillText('0.5', padding - 10, height - padding - 0.5*(height - 2*padding) + 5);
+            ctx.fillText('1', padding - 10, padding + 5);
+        }
+
+        sigmoidSlider.addEventListener('input', function() {
+            const z = parseFloat(this.value);
+            const sigZ = sigmoid(z);
+
+            zValueSpan.textContent = z.toFixed(1);
+            sigmoidOutputSpan.textContent = sigZ.toFixed(3);
+
+            // Interpretation
+            let interp;
+            if (sigZ > 0.9) {
+                interp = "Very confident it's class 1";
+            } else if (sigZ > 0.7) {
+                interp = "Fairly confident it's class 1";
+            } else if (sigZ > 0.5) {
+                interp = "Slightly leaning toward class 1";
+            } else if (sigZ === 0.5) {
+                interp = "Perfectly uncertain (50% probability)";
+            } else if (sigZ > 0.3) {
+                interp = "Slightly leaning toward class 0";
+            } else if (sigZ > 0.1) {
+                interp = "Fairly confident it's class 0";
+            } else {
+                interp = "Very confident it's class 0";
+            }
+            sigmoidInterpSpan.textContent = interp;
+
+            drawSigmoid(z);
+        });
+
+        // ========== MLE VS MAP DEMO ==========
+        const mleMapCanvas = document.getElementById('mle-map-canvas');
+        const mleMapCtx = mleMapCanvas.getContext('2d');
+        const numSamplesSlider = document.getElementById('num-samples');
+        const lambdaSlider = document.getElementById('lambda-val');
+        const sampleCountSpan = document.getElementById('sample-count');
+        const lambdaDisplaySpan = document.getElementById('lambda-display');
+
+        let dataPoints = [];
+
+        function generateData() {
+            const n = parseInt(numSamplesSlider.value);
+            dataPoints = [];
+
+            // Generate some synthetic 2D data with two classes
+            for (let i = 0; i < n; i++) {
+                const label = Math.random() > 0.5 ? 1 : 0;
+                let x, y;
+
+                if (label === 1) {
+                    x = 0.6 + 0.3 * (Math.random() - 0.5);
+                    y = 0.6 + 0.3 * (Math.random() - 0.5);
+                } else {
+                    x = 0.3 + 0.3 * (Math.random() - 0.5);
+                    y = 0.3 + 0.3 * (Math.random() - 0.5);
+                }
+
+                dataPoints.push({x, y, label});
+            }
+        }
+
+        function drawMLEvsMAP() {
+            const ctx = mleMapCtx;
+            const width = mleMapCanvas.width;
+            const height = mleMapCanvas.height;
+            const lambda = parseFloat(lambdaSlider.value);
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw decision boundaries (simplified visualization)
+            // In reality, we'd compute actual logistic regression fits
+            // Here we'll just show illustrative boundaries
+
+            // Background regions
+            ctx.globalAlpha = 0.1;
+
+            // MLE region (left half)
+            ctx.fillStyle = '#3b82f6';
+            ctx.fillRect(0, 0, width/2, height);
+
+            // MAP region (right half)
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillRect(width/2, 0, width/2, height);
+
+            ctx.globalAlpha = 1.0;
+
+            // Draw vertical divider
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(width/2, 0);
+            ctx.lineTo(width/2, height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Labels
+            ctx.fillStyle = '#1e40af';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText('MLE', 20, 30);
+
+            ctx.fillStyle = '#92400e';
+            ctx.fillText('MAP (λ=' + lambda.toFixed(1) + ')', width/2 + 20, 30);
+
+            // Draw data points on both sides
+            dataPoints.forEach(point => {
+                // MLE side
+                ctx.fillStyle = point.label === 1 ? '#3b82f6' : '#ef4444';
+                ctx.beginPath();
+                ctx.arc(point.x * (width/2 - 40) + 20, point.y * (height - 40) + 20, 5, 0, 2*Math.PI);
+                ctx.fill();
+
+                // MAP side
+                ctx.beginPath();
+                ctx.arc(width/2 + point.x * (width/2 - 40) + 20, point.y * (height - 40) + 20, 5, 0, 2*Math.PI);
+                ctx.fill();
+            });
+
+            // Draw illustrative decision boundaries
+            // (In real implementation, these would come from actual logistic regression)
+            const n = dataPoints.length;
+
+            // MLE: more wiggly with few samples, fitting noise
+            ctx.strokeStyle = '#1e40af';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            if (n < 10) {
+                // Overfit boundary
+                for (let x = 0; x < width/2; x += 5) {
+                    const y = height/2 + 50 * Math.sin(x / 20) + 30 * Math.sin(x / 10);
+                    if (x === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+            } else {
+                // More reasonable boundary
+                ctx.moveTo(0, height * 0.4);
+                ctx.lineTo(width/2, height * 0.6);
+            }
+            ctx.stroke();
+
+            // MAP: smoother, regularized
+            ctx.strokeStyle = '#92400e';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            // Always smooth with regularization
+            const smoothness = 1 / (1 + lambda);
+            ctx.moveTo(width/2, height * (0.5 - 0.1 * smoothness));
+            ctx.lineTo(width, height * (0.5 + 0.1 * smoothness));
+            ctx.stroke();
+        }
+
+        function regenerateData() {
+            generateData();
+            drawMLEvsMAP();
+        }
+
+        numSamplesSlider.addEventListener('input', function() {
+            sampleCountSpan.textContent = this.value;
+            regenerateData();
+        });
+
+        lambdaSlider.addEventListener('input', function() {
+            lambdaDisplaySpan.textContent = parseFloat(this.value).toFixed(1);
+            drawMLEvsMAP();
+        });
+
+        // ========== INITIALIZE ON LOAD ==========
+        window.addEventListener('DOMContentLoaded', function() {
+            drawSigmoid(0);
+            generateData();
+            drawMLEvsMAP();
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

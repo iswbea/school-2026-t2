@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_440 - Lecture 2026-01-14</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc440">CPSC_440</a> /
+            <span>2026-01-14</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Machine Learning</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-14</span>
+                <span class="instructor">👤 Danica Sutherland</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <h3>Administrative</h3>
+                    <ul>
+                        <li>Assignment 1 due Friday 11:59pm</li>
+                        <li>Quiz 1 happening tomorrow through Saturday - schedule ASAP</li>
+                        <li>Forms: post privately on Piazza</li>
+                    </ul>
+
+                    <h3>Last Time Recap</h3>
+                    <ul>
+                        <li>Generative classifiers: model p(x, y) and predict with arg max<sub>y</sub> p(y | x)</li>
+                        <li>Product of Bernoullis: assumes X<sub>j</sub> are all independent</li>
+                        <li>Naïve Bayes: assumes X<sub>j</sub> are independent given Y</li>
+                    </ul>
+
+                    <h3>Today's Topics</h3>
+                    <ul>
+                        <li>Categorical distribution basics</li>
+                        <li>Inference tasks: union, mode, likelihood, sampling</li>
+                        <li>MLE derivation with constraints</li>
+                        <li>MAP estimation with Dirichlet prior</li>
+                        <li>Conjugate priors</li>
+                    </ul>
+
+                    <h3>Key Formulas</h3>
+                    <ul>
+                        <li>Categorical: p(x | θ) = θ₁<sup>1(x=1)</sup> θ₂<sup>1(x=2)</sup> ⋯ θₖ<sup>1(x=k)</sup></li>
+                        <li>Likelihood: p(X | θ) = θ₁<sup>n₁</sup> θ₂<sup>n₂</sup> ⋯ θₖ<sup>nₖ</sup></li>
+                        <li>MLE: θ̂<sub>c</sub> = n<sub>c</sub>/n</li>
+                        <li>MAP with Dirichlet: θ̂<sub>c</sub> = (n<sub>c</sub> + α<sub>c</sub> - 1) / Σ(n<sub>c'</sub> + α<sub>c'</sub> - 1)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+
+                    <!-- ========== INTRODUCTION ========== -->
+                    <h3>Introduction: Beyond Naïve Bayes</h3>
+
+                    <p>In the previous lecture, we explored <strong>Naïve Bayes classifiers</strong>, which make the strong independence assumption that all features X<sub>j</sub> are conditionally independent given the class label Y. This lecture explores what happens when we take a different approach to modeling categorical data.</p>
+
+                    <h4>"Galaxy Brain Bayes" - The Full Categorical Distribution</h4>
+
+                    <p>The lecture begins with an interesting thought experiment: <em>What if we avoided the independence assumption entirely?</em> Instead of modeling p(x | y) as a product of Bernoullis, we could use a <strong>full categorical distribution</strong> that assigns a separate probability to every possible combination of feature values.</p>
+
+                    <p>For binary features, this means we'd have parameters like:</p>
+                    <ul>
+                        <li>Pr(X₁ = 0, X₂ = 0, ..., X<sub>d</sub> = 0 | Y = 0) = θ<sub>00...0|0</sub></li>
+                        <li>Pr(X₁ = 0, X₂ = 0, ..., X<sub>d</sub> = 1 | Y = 0) = θ<sub>00...1|0</sub></li>
+                        <li>... and so on for all 2<sup>d</sup> possible bit-vectors</li>
+                    </ul>
+
+                    <p><mark>This requires 2<sup>d</sup> - 1 parameters for each class</mark> (the -1 comes from the constraint that probabilities must sum to 1). The MLE is still just counting: θ<sub>x|y</sub> = n<sub>x|y</sub>/n<sub>y</sub>.</p>
+
+                    <p><strong>The trade-off:</strong> This approach exhibits a different kind of "naïvety" - it treats each bit-vector as completely separate, with no relationship between similar patterns. While Naïve Bayes assumes too much independence, this full model assumes no relationship at all between different feature combinations!</p>
+
+                    <p>This motivates today's deeper exploration of the <strong>categorical distribution</strong>, which forms the foundation for understanding both extremes.</p>
+
+                    <!-- ========== CATEGORICAL DISTRIBUTION BASICS ========== -->
+                    <h3>The Categorical Distribution</h3>
+
+                    <h4>Motivating Example: Political Polling</h4>
+
+                    <p>To understand categorical distributions, consider a concrete problem: <strong>estimating political party support</strong> among voters. In Professor Sutherland's district during the last federal election:</p>
+
+                    <ul>
+                        <li>35% voted Liberal</li>
+                        <li>19% voted Conservative</li>
+                        <li>7.9% voted NDP</li>
+                        <li>0.9% voted Green</li>
+                        <li>0.2% voted PPC</li>
+                        <li>37% did not vote</li>
+                    </ul>
+
+                    <p>The goal of polling is to <em>estimate these quantities based on a sample</em>. This is a classic example of <strong>categorical density estimation</strong>.</p>
+
+                    <h4>Problem Formulation</h4>
+
+                    <p><strong>Categorical density estimation</strong> is a special case of density estimation where the variable can take on one of k distinct, unordered categories:</p>
+
+                    <ul>
+                        <li><strong>Input:</strong> n iid samples x<sup>(1)</sup>, x<sup>(2)</sup>, ..., x<sup>(n)</sup> ∈ {1, 2, ..., k}</li>
+                        <li><strong>Output:</strong> A probability model for Pr(X = 1), Pr(X = 2), ..., Pr(X = k)</li>
+                    </ul>
+
+                    <p><em>Important:</em> The numbers 1, 2, ..., k are just labels. We might remember that 1 = Liberal, 2 = Conservative, etc., but the model doesn't care about the ordering. Category 4 isn't "closer" to category 3 than it is to category 1.</p>
+
+                    <h4>Other Applications</h4>
+
+                    <p>Categorical density estimation appears everywhere in data science:</p>
+
+                    <ol>
+                        <li><strong>Payment methods:</strong> What portion of customers use cash, credit, or debit?</li>
+                        <li><strong>Medical compatibility:</strong> What's the probability a random patient can receive a particular blood type?</li>
+                        <li><strong>Text analysis:</strong> How many random tweets should I expect to examine before seeing a particular word?</li>
+                    </ol>
+
+                    <h4>Ordinal Variables (Aside)</h4>
+
+                    <p>When categorical variables have a meaningful ordering, they're called <strong>ordinal variables</strong>:</p>
+
+                    <ul>
+                        <li>Survey results: "strongly disagree," "disagree," "neutral," "agree," "strongly agree"</li>
+                        <li>Star ratings: 1 star, 2 stars, 3 stars, 4 stars, 5 stars</li>
+                        <li>Medical grades: Tumor Grade I, II, III, IV</li>
+                        <li>Dice rolls: when trying to beat a specific number</li>
+                    </ul>
+
+                    <p>While we won't cover ordinal variables in depth, specialized methods exist for them. For example, <strong>ordinal logistic regression</strong> uses a loss function where 2 stars is penalized less when predicted as 3 stars than when predicted as 5 stars. The key insight is that there can be different "gaps" between categories (the gap between 2 and 3 stars might be larger than between 3 and 4 stars).</p>
+
+                    <h4>Parametrizing Categorical Probabilities</h4>
+
+                    <p>We typically model categorical variables using the <strong>categorical distribution</strong> (also called "multinoulli," though this term is less common).</p>
+
+                    <p>For k categories, we have k parameters θ₁, ..., θₖ where each θ<sub>c</sub> ≥ 0, and:</p>
+
+                    <ul>
+                        <li>Pr(X = 1 | θ₁, ..., θₖ) = θ₁</li>
+                        <li>Pr(X = 2 | θ₁, ..., θₖ) = θ₂</li>
+                        <li>...</li>
+                        <li>Pr(X = k | θ₁, ..., θₖ) = θₖ</li>
+                    </ul>
+
+                    <p><mark>Critical constraint: Because categories are mutually exclusive (can only pick one), we require Σθ<sub>c</sub> = 1.</mark></p>
+
+                    <p><strong>Compact notation:</strong> If X ~ Cat(θ) with θ = (θ₁, ..., θₖ), we can write:</p>
+
+                    <pre><code class="language-python">p(x | θ) = θ₁^(1(x=1)) · θ₂^(1(x=2)) · ... · θₖ^(1(x=k))</code></pre>
+
+                    <p>The indicator function 1(x=c) equals 1 when x=c and 0 otherwise, so exactly one θ<sub>c</sub> has a non-zero exponent.</p>
+
+                    <!-- ========== INFERENCE TASKS ========== -->
+                    <h3>Inference with Categorical Distributions</h3>
+
+                    <p>Once we have a categorical model (i.e., we know θ), we can perform several types of inference. Let's explore each one.</p>
+
+                    <h4>Inference Task 1: Computing Unions</h4>
+
+                    <p><strong>Problem:</strong> Given θ, compute the probability of unions of categories.</p>
+
+                    <p><strong>Example:</strong> What's the probability a voter supports either Liberal or NDP?</p>
+
+                    <p>Pr(X = Liberal ∪ X = NDP | θ) = ?</p>
+
+                    <p><strong>Solution:</strong> Since a voter can't be in both categories simultaneously (mutually exclusive), we simply add:</p>
+
+                    <p>Pr(X = 2 ∪ X = 4 | θ) = θ₂ + θ₄</p>
+
+                    <p><strong>Special case - The Cumulative Distribution Function (CDF):</strong></p>
+
+                    <p>A particularly important union is Pr(X ≤ c) for some c, which equals θ₁ + θ₂ + ... + θ<sub>c</sub>.</p>
+
+                    <p><em>Why do we care about this when categories are unordered?</em> The function F(c) = Pr(X ≤ c) is called the <strong>cumulative distribution function</strong>. While it depends on an arbitrary ordering of categories, it's an extremely useful function for sampling (as we'll see shortly) and for various other computational purposes.</p>
+
+                    <h4>Inference Task 2: Finding the Mode (Decoding)</h4>
+
+                    <p><strong>Problem:</strong> Given θ, find the most likely category: arg max<sub>x</sub> p(x | θ)</p>
+
+                    <p><strong>Example:</strong> "Who's going to win the election?"</p>
+
+                    <p><strong>Solution:</strong> This is straightforward - just find arg max<sub>c</sub> θ<sub>c</sub>. Pick the category with the highest probability!</p>
+
+                    <h4>Inference Task 3: Computing Likelihood</h4>
+
+                    <p><strong>Problem:</strong> Given θ and observed data X, compute p(X | θ)</p>
+
+                    <p>Assuming data is iid from Cat(θ), we can use the independence to write:</p>
+
+                    <pre><code class="language-python">p(X | θ) = p(x⁽¹⁾, ..., x⁽ⁿ⁾ | θ)
+         = ∏ᵢ₌₁ⁿ p(x⁽ⁱ⁾ | θ)
+         = ∏ᵢ₌₁ⁿ [θ₁^(1(x⁽ⁱ⁾=1)) · θ₂^(1(x⁽ⁱ⁾=2)) · ... · θₖ^(1(x⁽ⁱ⁾=k))]</code></pre>
+
+                    <p>Now here's the key insight: we can collect all the indicators together:</p>
+
+                    <pre><code class="language-python">= θ₁^(Σᵢ 1(x⁽ⁱ⁾=1)) · θ₂^(Σᵢ 1(x⁽ⁱ⁾=2)) · ... · θₖ^(Σᵢ 1(x⁽ⁱ⁾=k))</code></pre>
+
+                    <p>Let's define n<sub>c</sub> as the number of times category c appears in the data (analogous to n₀ and n₁ for binary data). Then:</p>
+
+                    <p><mark>p(X | θ) = θ₁^(n₁) · θ₂^(n₂) · ... · θₖ^(nₖ)</mark></p>
+
+                    <p><strong>Key takeaway:</strong> Just like with the Bernoulli distribution, <em>the likelihood only depends on the counts</em>! We don't need to remember the order of the data, just how many times each category appeared.</p>
+
+                    <h4>Implementation: Computing Categorical Likelihood</h4>
+
+                    <p>Here's a basic implementation:</p>
+
+                    <pre><code class="language-python">counts = np.zeros(k)
+for x in X:
+    counts[x] += 1
+
+p = 1
+for theta_c, n_c in zip(theta, counts):
+    p *= theta_c ** n_c</code></pre>
+
+                    <p>And here's a better, more efficient version using numpy:</p>
+
+                    <pre><code class="language-python">counts = np.bincount(X, minlength=k)
+log_p = counts @ log_theta  # dot product in log space</code></pre>
+
+                    <p><strong>Why is the second version better?</strong></p>
+                    <ul>
+                        <li>Uses vectorized operations (faster)</li>
+                        <li>Works in log space, avoiding numerical underflow (probabilities can get very small)</li>
+                        <li>The @ operator is a dot product: equivalent to sum(counts * log_theta)</li>
+                    </ul>
+
+                    <p><strong>Computational complexity:</strong> Both versions are O(n + k). In the usual case where n ≫ k (many samples, few categories), this is effectively O(n). If k ≫ n, we could optimize further by only tracking categories with nonzero counts.</p>
+
+                    <h4>Inference Task 4: Sampling</h4>
+
+                    <p><strong>Problem:</strong> Given θ, generate samples from X ~ Cat(θ)</p>
+
+                    <p><strong>Example:</strong> Given Pr(X=1)=0.4, Pr(X=2)=0.2, Pr(X=3)=0.4, generate samples that follow this distribution.</p>
+
+                    <p><em>Important clarification:</em> We're not sampling "one value per class." Each sample is <strong>one category</strong>. Think of it as simulating: "Which party will this voter support?"</p>
+
+                    <h5>Sampling Algorithm: Roulette Wheel Sampling</h5>
+
+                    <p>The clever idea is to use a uniform sample from [0, 1] to construct a categorical sample. Let's work through an example with θ = (0.4, 0.2, 0.3, 0.1).</p>
+
+                    <p>We want:</p>
+                    <ul>
+                        <li>X = 1 40% of the time</li>
+                        <li>X = 2 20% of the time</li>
+                        <li>X = 3 30% of the time</li>
+                        <li>X = 4 10% of the time</li>
+                    </ul>
+
+                    <p>The algorithm divides the interval [0, 1] proportionally:</p>
+
+                    <pre><code>Generate u ~ Unif([0, 1])
+
+[0.0 -------- 0.4] -------- 0.6] -------- 0.9] ---- 1.0]
+   return 1       return 2       return 3      return 4
+
+if u < 0.4:           return 1
+elif u < 0.6:         return 2
+elif u < 0.9:         return 3
+else:                 return 4</code></pre>
+
+                    <p><strong>Connection to the CDF:</strong> Notice that these thresholds are exactly Pr(X ≤ c)! This is why the CDF is so useful.</p>
+
+                    <p>The general algorithm is:</p>
+
+                    <pre><code class="language-python">Generate u ~ Unif([0, 1])
+if u ≤ Pr(X ≤ 1):      return 1
+elif u ≤ Pr(X ≤ 2):    return 2
+...
+else:                   return k</code></pre>
+
+                    <h5>Efficient Implementation</h5>
+
+                    <p>A naive implementation would recompute Pr(X ≤ c) = θ₁ + θ₂ + ... + θ<sub>c</sub> for each threshold, giving O(k²) total time. But we can precompute the CDF!</p>
+
+                    <pre><code class="language-python">cdf = np.cumsum(theta)           # O(k) preprocessing
+u = rng.random_sample(n_to_samp) # Generate n uniform samples
+samp = cdf.searchsorted(u, side='right')  # O(log k) per sample</code></pre>
+
+                    <p><code>searchsorted</code> performs binary search to find where each u would fit in the sorted CDF array, giving us O(log k) time per sample.</p>
+
+                    <h5>Even Faster: Vose's Alias Method</h5>
+
+                    <p>The roulette wheel method requires O(k) preprocessing and O(log k) per sample. There's an even better algorithm called <strong>Vose's alias method</strong> that achieves O(k) preprocessing but only <strong>O(1) time per sample</strong>!</p>
+
+                    <p>For those interested in the details, there's an excellent in-depth article: <em>"Darts, Dice, and Coins: Sampling from a Discrete Distribution"</em> by Keith Schwarz, which develops many variations of categorical sampling algorithms.</p>
+
+                    <!-- ========== LEARNING ========== -->
+                    <h3>Learning Categorical Models</h3>
+
+                    <h4>The Learning Problem</h4>
+
+                    <p>Now we flip the script: instead of having θ and performing inference, we have data and want to learn θ.</p>
+
+                    <p><strong>Input:</strong> Sample data X = (NDP, Lib, Lib, CPC, ...)</p>
+                    <p><strong>Output:</strong> Estimated probabilities θ = (Pr(Lib) = 0.404, Pr(NDP) = 0.307, ...)</p>
+
+                    <p>As before, we'll start with <strong>Maximum Likelihood Estimation (MLE)</strong>:</p>
+
+                    <p>θ̂ ∈ arg max<sub>θ</sub> p(X | θ)</p>
+
+                    <p><mark>Spoiler: The MLE will be θ<sub>c</sub> = n<sub>c</sub>/n (the proportion of cs in the data)</mark></p>
+
+                    <p>This makes intuitive sense! If 40% of polled voters said "Liberal," our best estimate is that 40% of the population supports Liberal. But the derivation is more complicated than the result...</p>
+
+                    <h4>Derivation Attempt #1: Why Setting the Derivative to Zero Doesn't Work</h4>
+
+                    <p>Let's try the standard calculus approach. The likelihood is:</p>
+
+                    <pre><code>p(X | θ) = θ₁^(n₁) · θ₂^(n₂) · ... · θₖ^(nₖ)</code></pre>
+
+                    <p>Taking the log-likelihood (easier to work with):</p>
+
+                    <pre><code>log p(X | θ) = n₁ log θ₁ + n₂ log θ₂ + ... + nₖ log θₖ</code></pre>
+
+                    <p>Take the derivative with respect to θ<sub>c</sub>:</p>
+
+                    <pre><code>∂/∂θ_c log p(X | θ) = n_c / θ_c</code></pre>
+
+                    <p>Set it to zero:</p>
+
+                    <pre><code>n_c / θ_c = 0</code></pre>
+
+                    <p><strong>Problem:</strong> This gives us n<sub>c</sub> = 0, which makes no sense! What went wrong?</p>
+
+                    <p><em>Answer:</em> We completely ignored the constraint that Σθ<sub>c</sub> = 1. Without this constraint, there's no maximum - we could make the likelihood arbitrarily large by increasing all θ<sub>c</sub> values!</p>
+
+                    <h4>Fixing the Derivation: Handling Constraints</h4>
+
+                    <p>There are several standard ways to handle constraints in optimization:</p>
+
+                    <ol>
+                        <li><strong>Lagrange multipliers:</strong> Find stationary points of the Lagrangian (common in optimization courses)</li>
+                        <li><strong>Substitution:</strong> Define θₖ = 1 - Σ<sub>c=1</sub><sup>k-1</sup> θ<sub>c</sub> and substitute into the objective</li>
+                        <li><strong>Reparametrization:</strong> Use a different set of parameters without the constraint (we'll use this!)</li>
+                    </ol>
+
+                    <h4>The Unnormalized Parameterization Trick</h4>
+
+                    <p>The key insight: Let's use <strong>unnormalized parameters</strong> θ̃<sub>c</sub> that don't need to sum to 1:</p>
+
+                    <pre><code>Pr(X = c | θ̃₁, ..., θ̃ₖ) ∝ θ̃_c</code></pre>
+
+                    <p>We still require each θ̃<sub>c</sub> ≥ 0, but now we normalize explicitly:</p>
+
+                    <pre><code>p(c | θ̃) = θ̃_c / Σᵢ θ̃ᵢ = θ̃_c / Z_θ̃</code></pre>
+
+                    <p>Here, <strong>Z<sub>θ̃</sub></strong> is called the <strong>normalizing constant</strong> - it makes the total probability sum to 1.</p>
+
+                    <p><em>Important distinction:</em> Z<sub>θ̃</sub> is constant for different values of x (same normalizer for all categories), but it's <strong>not</strong> constant for different values of θ (it changes as our parameters change).</p>
+
+                    <p>To convert back: θ<sub>c</sub> = θ̃<sub>c</sub> / Z<sub>θ̃</sub></p>
+
+                    <h4>Derivation Attempt #2: With Unnormalized Parameters (This Works!)</h4>
+
+                    <p>The likelihood in terms of unnormalized parameters:</p>
+
+                    <pre><code>p(X | θ̃) = (θ̃₁/Z_θ̃)^(n₁) · ... · (θ̃ₖ/Z_θ̃)^(nₖ)
+         = (1/Z_θ̃^n) · θ̃₁^(n₁) · ... · θ̃ₖ^(nₖ)</code></pre>
+
+                    <p>The log-likelihood:</p>
+
+                    <pre><code>log p(X | θ̃) = n₁ log θ̃₁ + ... + nₖ log θ̃ₖ - n log Z_θ̃</code></pre>
+
+                    <p>Now take the derivative with respect to θ̃<sub>c</sub>:</p>
+
+                    <pre><code>∂/∂θ̃_c log p(X | θ̃) = n_c/θ̃_c - n/Z_θ̃ · ∂Z_θ̃/∂θ̃_c</code></pre>
+
+                    <p>Since Z<sub>θ̃</sub> = θ̃₁ + θ̃₂ + ... + θ̃ₖ, we have ∂Z<sub>θ̃</sub>/∂θ̃<sub>c</sub> = 1:</p>
+
+                    <pre><code>∂/∂θ̃_c log p(X | θ̃) = n_c/θ̃_c - n/Z_θ̃</code></pre>
+
+                    <p>Set this to zero:</p>
+
+                    <pre><code>n_c/θ̃_c = n/Z_θ̃
+
+Therefore: θ̃_c/Z_θ̃ = n_c/n</code></pre>
+
+                    <p><strong>Success!</strong> Notice that θ̃<sub>c</sub>/Z<sub>θ̃</sub> = θ<sub>c</sub> (the normalized parameter), so:</p>
+
+                    <p><mark>θ̂<sub>c</sub> = n<sub>c</sub>/n</mark></p>
+
+                    <p>We can verify this is a maximum (the objective is concave) and it satisfies the θ̃<sub>c</sub> ≥ 0 constraint. There are many solutions for the unnormalized parameters θ̃, but they all give the same normalized parameters θ after dividing by Z.</p>
+
+                    <h4>Intuition Behind the MLE</h4>
+
+                    <p>The MLE is beautifully simple: <em>the proportion of each category in your sample is your best estimate for the proportion in the population.</em></p>
+
+                    <p>If you poll 1000 voters and 350 say "Liberal," your maximum likelihood estimate is that 35% of the population supports Liberal.</p>
+
+                    <!-- ========== MAP ESTIMATION ========== -->
+                    <h3>MAP Estimation with the Dirichlet Prior</h3>
+
+                    <h4>Why Consider MAP Instead of MLE?</h4>
+
+                    <p>As before, we might prefer a <strong>Maximum A Posteriori (MAP)</strong> estimate over MLE. This becomes especially important for large k - when we have many categories, we have many parameters to estimate, and regularization (via priors) can help prevent overfitting.</p>
+
+                    <p>Consider: what if we poll 100 people and <em>nobody</em> says "Green Party"? The MLE would give Pr(Green) = 0, which seems too extreme. We might want to say "probably very small, but not exactly zero."</p>
+
+                    <h4>The Dirichlet Distribution</h4>
+
+                    <p>The most common prior for categorical distributions is the <strong>Dirichlet distribution</strong>:</p>
+
+                    <pre><code>p(θ₁, ..., θₖ | α₁, ..., αₖ) ∝ θ₁^(α₁-1) · θ₂^(α₂-1) · ... · θₖ^(αₖ-1)</code></pre>
+
+                    <p>This is a <strong>generalization of the Beta distribution to k classes</strong>. Recall that the Beta distribution was our prior for Bernoulli probabilities; the Dirichlet extends this to multiple categories.</p>
+
+                    <p>Requirements: Each α<sub>c</sub> > 0</p>
+
+                    <p><strong>Key insight:</strong> This is a <em>distribution over θ</em>, which itself represents a probability distribution. In other words, it's a <strong>probability distribution over probability distributions</strong>! It captures our uncertainty about what the true categorical probabilities are.</p>
+
+                    <h4>Visualizing the Dirichlet Distribution</h4>
+
+                    <p>For k=3 categories (which can be visualized in a 2D simplex), different values of α produce very different distributions:</p>
+
+                    <ul>
+                        <li><strong>α = (1.5, 1.5, 1.5):</strong> Slight preference for balanced probabilities</li>
+                        <li><strong>α = (5.0, 5.0, 5.0):</strong> Strong preference for balanced probabilities - concentrated near θ₁=θ₂=θ₃=1/3</li>
+                        <li><strong>α = (1.0, 2.0, 2.0):</strong> Asymmetric - thinks category 1 is less likely than categories 2 and 3</li>
+                        <li><strong>α = (2.0, 4.0, 8.0):</strong> Strong asymmetric belief favoring category 3</li>
+                    </ul>
+
+                    <p>Check out the <a href="https://en.wikipedia.org/wiki/Dirichlet_distribution">Wikipedia page for Dirichlet distribution</a> for beautiful visualizations of these cases.</p>
+
+                    <h4>Computing the MAP Estimate</h4>
+
+                    <p>The reason to use the Dirichlet prior is that it's <strong>conjugate</strong> to the categorical likelihood, meaning the posterior has a simple form:</p>
+
+                    <pre><code>p(θ | X, α) ∝ p(X | θ) · p(θ | α)
+            ∝ [θ₁^(n₁) · ... · θₖ^(nₖ)] · [θ₁^(α₁-1) · ... · θₖ^(αₖ-1)]
+            = θ₁^((n₁+α₁)-1) · ... · θₖ^((nₖ+αₖ)-1)</code></pre>
+
+                    <p><mark>This is another Dirichlet distribution with updated parameters α̃<sub>c</sub> = n<sub>c</sub> + α<sub>c</sub>!</mark></p>
+
+                    <p>With a few more steps (following the same approach as the MLE derivation), we get the MAP estimate:</p>
+
+                    <pre><code>θ̂_c = (n_c + α_c - 1) / Σ_c'(n_c' + α_c' - 1)</code></pre>
+
+                    <p>(This holds as long as all n<sub>c</sub> + α<sub>c</sub> > 1)</p>
+
+                    <h4>Special Case: Symmetric Dirichlet</h4>
+
+                    <p>Often we use α<sub>c</sub> = α for some α ∈ ℝ (same value for all categories). This gives:</p>
+
+                    <pre><code>θ̂_c = (n_c + α - 1) / (n + k(α - 1))</code></pre>
+
+                    <p><strong>Important special case - Laplace Smoothing (α = 2):</strong></p>
+
+                    <pre><code>θ̂_c = (n_c + 1) / (n + k)</code></pre>
+
+                    <p>This is equivalent to adding one "fake" count for each class. If a category never appears in your data (n<sub>c</sub> = 0), you still give it a small non-zero probability of 1/(n+k) instead of 0.</p>
+
+                    <p><em>Why is this useful?</em> In our polling example, if nobody in our sample of 100 said "Green," we'd estimate Pr(Green) = 1/105 ≈ 0.95% instead of 0%. This is more reasonable!</p>
+
+                    <!-- ========== CONJUGATE PRIORS ========== -->
+                    <h3>Conjugate Priors: A Powerful Pattern</h3>
+
+                    <h4>What Does "Conjugate" Mean?</h4>
+
+                    <p>This is our <strong>second example</strong> of a conjugate prior:</p>
+
+                    <ol>
+                        <li><strong>Beta prior + Bernoulli likelihood → Beta posterior</strong> (also works with binomial, geometric likelihoods)</li>
+                        <li><strong>Dirichlet prior + categorical likelihood → Dirichlet posterior</strong> (also works with multinomial)</li>
+                    </ol>
+
+                    <p>In general, we say a prior is <strong>conjugate to a likelihood</strong> when:</p>
+
+                    <blockquote>
+                        <p>The prior and posterior come from the same family of distributions</p>
+                    </blockquote>
+
+                    <p>Mathematically: If X ~ L(θ) and θ ~ P(α), then θ | X ~ P(α<sup>+</sup>)</p>
+
+                    <p>The updated parameters α<sup>+</sup> will depend on the observed data, but the <em>form</em> of the distribution stays the same.</p>
+
+                    <h4>Why Are Conjugate Priors So Useful?</h4>
+
+                    <ol>
+                        <li><strong>Analytical tractability:</strong> We can compute the posterior in closed form (no complex integrals)</li>
+                        <li><strong>Interpretability:</strong> The update from prior to posterior is often intuitive (e.g., "add counts")</li>
+                        <li><strong>Computational efficiency:</strong> No need for numerical approximations like MCMC</li>
+                        <li><strong>Sequential learning:</strong> Today's posterior becomes tomorrow's prior when new data arrives</li>
+                    </ol>
+
+                    <h4>Important Caveats</h4>
+
+                    <p>While conjugate priors are convenient, there are limitations:</p>
+
+                    <ul>
+                        <li><strong>Not all distributions have conjugate priors</strong> - this is a special property</li>
+                        <li><strong>Conjugate priors might not match your beliefs</strong> - convenience shouldn't override having an appropriate prior</li>
+                        <li><strong>Modern computational tools</strong> (like MCMC, variational inference) make non-conjugate priors practical</li>
+                    </ul>
+
+                    <p>That said, when a conjugate prior is appropriate for your problem, it makes Bayesian inference remarkably elegant!</p>
+
+                    <!-- ========== SUMMARY ========== -->
+                    <h3>Summary and Key Takeaways</h3>
+
+                    <p>This lecture covered the <strong>categorical distribution</strong>, which is fundamental for modeling discrete, unordered data:</p>
+
+                    <ol>
+                        <li><strong>Modeling:</strong> Cat(θ) with k parameters θ₁, ..., θₖ where Σθ<sub>c</sub> = 1</li>
+                        <li><strong>Inference:</strong> Computing unions (via addition), finding modes (argmax), computing likelihood (using counts), and sampling (using CDF)</li>
+                        <li><strong>Learning (MLE):</strong> θ̂<sub>c</sub> = n<sub>c</sub>/n, derived using the unnormalized parametrization trick</li>
+                        <li><strong>Learning (MAP):</strong> Use Dirichlet prior; get θ̂<sub>c</sub> = (n<sub>c</sub> + α<sub>c</sub> - 1) / Σ(n<sub>c'</sub> + α<sub>c'</sub> - 1)</li>
+                        <li><strong>Conjugacy:</strong> Dirichlet prior is conjugate to categorical likelihood, making Bayesian inference tractable</li>
+                    </ol>
+
+                    <p><mark>The categorical distribution is everywhere in machine learning</mark> - from simple applications like polling to complex models like language models (predicting the next word from a vocabulary) and classification (predicting which class an input belongs to).</p>
+
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li><strong>Categorical Distribution Fundamentals</strong> - Understanding distributions over k unordered categories, parametrization with θ, and the sum-to-1 constraint</li>
+                    <li><strong>Inference Tasks</strong> - Computing unions, finding modes (decoding), calculating likelihood using counts, and efficient sampling via CDF (roulette wheel sampling)</li>
+                    <li><strong>Maximum Likelihood Estimation</strong> - Deriving MLE with constrained optimization using unnormalized parameters and the normalizing constant Z</li>
+                    <li><strong>Dirichlet Prior and MAP Estimation</strong> - Bayesian approach with Dirichlet distribution as prior, computing MAP estimates, and understanding Laplace smoothing</li>
+                    <li><strong>Conjugate Priors</strong> - Understanding conjugacy between Dirichlet prior and categorical likelihood, benefits of analytical tractability, and sequential learning</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li><strong>Assignment 1</strong> - Due Friday, January 16th at 11:59pm</li>
+                    <li><strong>Quiz 1</strong> - Happening January 15-17 (tomorrow through Saturday). <mark>Schedule your time slot ASAP if you haven't already!</mark></li>
+                    <li><strong>Form Submissions</strong> - If you need any forms signed, post them privately on Piazza</li>
+                    <li><strong>Recommended Reading</strong> - For deeper understanding of sampling algorithms, check out "Darts, Dice, and Coins: Sampling from a Discrete Distribution" by Keith Schwarz</li>
+                    <li><strong>Review</strong> - Make sure you understand the difference between MLE and MAP estimates, and why the Dirichlet prior is conjugate to the categorical likelihood</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc440" class="back-link">← Back to CPSC_440</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+With n = 100,000 leaf pages and a 4levl index on employee ids, how many disk pages need to be read from both the index and the data table to count how many of 15 difernt employee ids supplied by the user are actually in the data table. The BP is empty and very lage. The root has 15 children. Give the worst-case sceanario, given all this information.
+
+Deleting a Data Entry from a B+ Tree
+ Start at root, find leaf L where data entry belongs
+ Remove the entry
+ If L is at least half-full, then we’re done!
+ If L has only d-1 entries,
+• Try to re-distribute, borrowing from sibling (adjacent 
+node with same parent as L)
+• If re-distribution fails, merge L and sibling
+ If merging occurred, we must delete the entry 
+(pointing to L or sibling) from the parent of L.
+ Merging could propagate to root, decreasing height
+
+
+which B+ tree is likely to be the shallowest of these:
+    A) A 3 level tree.
+    B) An order 25 tree with 40 leaf nodes (4k size) whose leaves are filled to capacity
+    C) a tree of height 2.
+    D All of the above are equal in the number of levels.
+
+Alt 1 vs Alt2 vs Alt3
+
+Clustering indexes can either be alt 1 alt 2 or alt 3
+We will have perfect clustering upon loading the data into the table
+Things degenerate soon after we complete the load operation, that is, after we start inserting, deleting, or modifying rows (or keys) during the normal operation of table and index
+Alt 1 is automatically a clustering index. Why?
+Alt 2 and alt 3 indexes (clustering or not) are always dense (one data entry per row in the table)
+
+
+Why can you only have 1 alt 1 index? 
+
+Clustering vs non-clustering indexes.
+
+
+Alt 2 works well, but alt 3 can let us deal more effectively with 
+
+
+Alt.1 vs. Alt. 2 vs. Alt 3 (cont.)
+ Alt. 2 works well, but Alt. 3 can let us deal more 
+effectively with lots of duplicate search keys.
+ Actual implementation details are vendor-dependent.
+ One approach for managing duplicates: Store each search key 
+once in the B+ tree, and maintain a bucket or list of rids for that 
+search key, either in the B+ tree leaf pages, or via overflow pages.
+ We can estimate the number of Alt. 3 pages by simply assuming j
+rids, on average, per search key, and then proceeding with 
+calculations similar to Alt. 2.
+22
+Alt.1 vs. Alt. 2 vs. Alt 3 (cont.)
+ We might consider an 85% fill factor (i.e., at load time) for 
+the data pages, to leave some room for growth.
+ It really depends on the expected growth, performance 
+considerations, and how often you can do reorg’s.
+ You can do the same for the index pages.
+ The fill factor for the data pages and index pages can be different.
+ The default fill factor for DB2 indexes is 90%.
+23
+B+ Tree Statistics, in Practice
+ Some stats:
+ Typical order: d = 100
+ Typical fill-factor = 67%
+ Average fanout = 133
+ Typical maximum capacities:
+ Height 4: 1334 = 312,900,721 leaf pages (not records)
+ Height 3: 1333 = 2,352,637 leaf pages
+ For a busy index, we can often keep the top levels in 
+the buffer pool. Why?
+ Level 0 = 1 page = 4 KB
+ Level 1 = 133 pages = ~0.5 MB
+ Level 2 = 17,689 pages = ~69 MB
+24
+DB2 Metadata for B+ Tree Indexes
+ For a clustering index: NEAROFFPOSF and FAROFFPOSF 
+indicate how many rows are away from their ideal data page 
+(recall our study of relocated rows, in the previous unit).
+ LEAFDIST indicates 100x the average number of physical pages 
+between successive (logical) leaf pages when doing a sequential 
+index scan.
+ CLUSTERRATIOF: 100% means the index and data ordering 
+match perfectly. Less than 100% means that some of the data 
+pages do not follow the index order. Don’t worry; the index will 
+still have the correct rids.
+ As CLUSTERRATIOF drops, think about reorganizing the 
+data.
+ For more information, and many other kinds of index metadata, 
+see the SYSIBM.SYSINDEX* DB2 catalog tables, such as 
+SYSIBM.SYSINDEXES and SYSIBM.SYSINDEXPART.

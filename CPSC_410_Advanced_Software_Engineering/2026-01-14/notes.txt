@@ -1,0 +1,453 @@
+
+Page
+19
+of 22
+5. ASTs
+(Abstract Syntax Trees)
+CPSC 410 Advanced Software Engineering - Winter Term 2 2025
+Instructor: Caroline Lemieux
+clemieux@cs.ubc.ca
+This Slide Deck Relates To:
+By the end of this (half of the) course, you will be able to...
+I. identify distinct modules in a software system / its design
+II. reason about how modular design decisions affect the complexity of
+developing and maintaining a software system
+III. decompose the task of implementing a Domain-Specific Language (DSL) into
+distinct modules,
+explaining the typical stages common to DSLs in general
+IV. evaluate motivations and designs for DSLs vs. alternative approaches
+(e.g. general-purpose programming languages)
+V. design and
+implement DSLs tailored to assist a target kind of user with a
+specific task, including clear and suitably-robust error-handling.
+VI. evaluate a language design’s effectiveness via user-studies, and
+incorporate
+user feedback by proposing revisions to a language design
+Recall: how would we make this little language?
+Title: My Day
+Table:
+[Date | Time | Activity ]
+[Sept 1 | 9am | running ]
+[Sept 1 | 11am | eating ]
+Syntax (“What is Written”) Stages
+Tokenization
+Parsing
+Evaluate
+AST Conversion
+(input)
+String
+R
+E
+S
+U
+L
+T
+Tokenizer
+error
+Parse error
+static check
+failed
+dynamic
+check failed
+Dynamic
+Checks
+Static Checks
+List<Token>
+Parse Tree
+AST
+Validated
+AST
+Tokenization
+Parsing
+Evaluate
+AST Conversion
+(input)
+String
+R
+E
+S
+U
+L
+T
+Tokenizer
+error
+Parse error
+static check
+failed
+dynamic
+check failed
+Dynamic
+Checks
+Static Checks
+List<Token>
+Parse Tree
+AST
+Validated
+AST
+Semantic (“What Does it Do”) Stages
+Tokenization
+Parsing
+Evaluate
+AST Conversion
+(input)
+String
+R
+E
+S
+U
+L
+T
+Tokenizer
+error
+Parse error
+static check
+failed
+dynamic
+check failed
+Dynamic
+Checks
+Static Checks
+List<Token>
+Parse Tree
+AST
+Validated
+AST
+Central Data Structure: AST
+Tokenization
+Parsing
+Evaluate
+AST Conversion
+(input)
+String
+R
+E
+S
+U
+L
+T
+Tokenizer
+error
+Parse error
+static check
+failed
+dynamic
+check failed
+Dynamic
+Checks
+Static Checks
+List<Token>
+Parse Tree
+AST
+Validated
+AST
+AST
+Central Data Structure: AST
+What is an AST?
+● AST =
+Abstract Syntax Tree
+● Most programming languages allow some level of nesting/recursion:
+(x + 3) + (4 + (x + 5))
+● A
+tree is a natural way to represent this nesting/recursion:
+Add
+Add Add
+Add
+Var Num Num
+Var Num
+“x” 3 4
+“x” 5
+left right
+right
+left
+rightleft
+left right
+name
+name
+val val
+val
+What is an AST?
+● AST =
+Abstract Syntax Tree
+● Most programming languages allow some level of nesting/recursion:
+(x + 3) + (4 + (x + 5))
+● A
+tree is a natural way to represent this nesting/recursion:
+Add
+Add Add
+Add
+Var Num Num
+Var Num
+“x” 3 4
+“x” 5
+left right
+right
+left
+rightleft
+left right
+name
+name
+val val
+val
+What is an AST?
+● AST =
+Abstract Syntax Tree
+● Most programming languages allow some level of nesting/recursion:
+(x + 3) + (4 + (x + 5))
+● A
+tree is a natural way to represent this nesting/recursion:
+Add
+Add Add
+Add
+Var Num Num
+Var Num
+“x” 3 4
+“x” 5
+left right
+right
+left
+rightleft
+left right
+name
+name
+val val
+val
+What is an AST?
+● AST =
+Abstract Syntax Tree
+● Most programming languages allow some level of nesting/recursion:
+(x + 3) + (4 + (x + 5))
+● A
+tree is a natural way to represent this nesting/recursion:
+Add
+Add Add
+Add
+Var Num Num
+Var Num
+“x” 3 4
+“x” 5
+left right
+right
+left
+rightleft
+left right
+name
+name
+val val
+val
+“The Structure of your Computation Should Follow
+the Structure of your Data” (CPSC 110 Paraphrase)
+● This tree-like structure educates a natural way to program the evaluator
+● E.g. what does (x + 3) + (4 + (x + 5)) evaluate to?
+Add
+Add Add
+Add
+Var Num Num
+Var Num
+“x” 3 4
+“x” 5
+left right
+right
+left
+rightleft
+left right
+name
+name
+val val
+val
+“The Structure of your Computation Should Follow
+the Structure of your Data” (CPSC 110 Paraphrase)
+● This tree-like structure educates a natural way to program the evaluator
+● E.g. what does (x + 3) + (4 + (x + 5)) evaluate to?
+● Pseudocode: eval(Add n) {return eval(n.left) + eval(n.right)}
+Add
+Add Add
+Add
+Var Num Num
+Var Num
+“x” 3 4
+“x” 5
+left right
+right
+left
+rightleft
+left right
+name
+name
+val val
+val
+eval(n.left) eval(n.right)
+Why Abstract Syntax?
+●
+Concrete syntax includes all the tokens/characters:
+(x + 3)
+●
+Abstract syntax abstracts away details that
+don’t affect the semantics:
+Note: tree has no parens or whitespace!
+à For an example of a complete AST design, Python’s ast module is easy to study:
+https://docs.python.org/3/library/ast.html
+Add
+Var Num
+“x” 3
+left right
+name val
+Exercise 1: Build Part of an AST
+● In the language (or pseudo-code of your choice), give a definition of an Add class
+that lets you represent (x + 3), (3 + 3), (x + x), (x + (x+3)),...
+● What fields should the class have? What should be the types of these fields?
+●
+Bonus: propose an additional design that supports an arbitrary number of
+operands, i.e.: x + 3 + 8 + 9 + 10 + y
+Add
+Var Num
+“x” 3
+left right
+name val
+Exercise 1: Build Part of an AST
+● In the language (or pseudo-code of your choice), give a definition of an Add class
+that lets you represent (x + 3), (3 + 3), (x + x), (x + (x+3)),...
+● What fields should the class have? What should be the types of these fields?
+○ left and right field
+○ They should be a type that can be
+numbers,
+variable references,
+instances of
+Add… need a supertype (
+Expression) that captures all these
+●
+Bonus: propose an additional design that supports an arbitrary number of
+operands, i.e.: x + 3 + 8 + 9 + 10 + y
+○ field will be a list of operands instead of left and right
+Common Class Hierarchy
+● You probably want a root Node type
+● You probably want an Expression type (subtype of Node)
+à Expressions in a language
+evaluate to a value and
+may not modify state
+● You probably want a Statement type (subtype of Node)
+à Statements in a language don’t generally evaluate to a value. Instead,
+evaluating them affects the
+evaluation state
+à May need subtype ExprStatement, wraps an expression in a statement
+● What parts of this program are expressions vs statements?
+def foo(x):
+return x + 3
+foo(2)
+Exercise 2
+def foo(x):
+return x + 3 (define (foo x) (+ x 3))
+● Draw
+potential ASTs for these programs:
+● You can write pseudocode
+Add(left=Var(name=“x”),right=Num(val=3))
+● …or draw in tree form
+● Label
+field names, and whether nodes are
+statements or
+expressions
+Add
+Var Num
+“x” 3
+left right
+name val
+● Here’s what I drew out
+((define (foo x) ..) is syntactic sugar for def’n a lambda…)
+● I don’t expect you drew exactly there: point of the exercise is to practice thinking
+about the tree-like structure of programs
+Different Concrete Syntax, Similar Abstract Syntax
+def foo(x):
+return x + 3 (define (foo x) (+ x 3))
+Def
+Lambda“foo”
+“x”
+name value
+body
+Plus
+Var Num
+name
+“x” 3
+value
+rightleft
+FnDef
+“foo”
+name body[0]
+“x”
+Returnargnames[0]
+val
+Plus
+Var Num
+name
+“x” 3
+value
+rightleft
+argnames[0]
+Statements
+Expressions
+Legend
+Tokenization
+Parsing
+Evaluate
+AST Conversion
+(input)
+String
+R
+E
+S
+U
+L
+T
+Tokenizer
+error
+Parse error
+static check
+failed
+dynamic
+check failed
+List<Token>
+Parse Tree
+Validated
+AST
+Spoiler: Links Between Projects 1 & 2
+Dynamic
+Checks
+Static Checks
+AST
+Tokenization
+Parsing
+Evaluate
+AST Conversion
+(input)
+String
+R
+E
+S
+U
+L
+T
+Tokenizer
+error
+Parse error
+static check
+failed
+dynamic
+check failed
+List<Token>
+Parse Tree
+Validated
+AST
+Spoiler: Links Between Projects 1 & 2
+Dynamic
+Analysis
+Static Analysis
+AST
+à In P1, you’ll build an
+AST for your language
+à If you build a static
+analysis in P2, you’ll likely
+interact with the AST for a
+conventional language
+Exit Tickets
+Q1. True or False: Given a concrete syntax, there is only one possible AST design.
+Q2. True or False: Given an AST, I should be able to map it back to
+exactly the same
+code the user wrote.

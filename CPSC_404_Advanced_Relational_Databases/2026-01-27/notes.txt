@@ -1,0 +1,34 @@
+Review:
+
+An index entry is a key,pointer pair on an internal index page. it directs traffic inside a tree index, aboe the leaf level, the pointer is an index page address (10bytes)
+A data entry is a <key,pointer> pair in the leaf pages
+
+
+Intro new unit:
+    Tree-structed indexing tech support both range searches and equality searches efficiently.
+        The later issometimes called a  point query
+
+    B+ tree: A dynamic balanced tree structure.
+        Adjusts gracefully for insertions and deletions
+        Skew is generally not an issue.
+
+How to Perform a Range Search in a Sorted File, but without an Index Structure? “Find all students with GPA > 3.0”
+ Consider a flat file (sometimes called a heap file, but note that
+“heap” is not the same as a CPSC 221 data structures heap).
+ If the data is sorted on GPA in this file, then a binary search on the value 3.0 will be helpful in finding a starting point.
+ But … the “cost” of binary search can be high on a large disk file.• How easy is it to find the “middle” page, that is, the page containing the median value of the search field? • Is there an even distribution of records on each page (e.g., are the pages full)?• Can you tell where the start and end of a range of pages is? Keep in mind that the pages may be non-contiguous. • What if the data values in the file are skewed? • How many seek operations might you have to do? • What would you do if you want to insert new records onto full pages?• What if you wanted to search on other fields than GPA?
+8Range Searches in a Sorted File (cont.) “Find all students with GPA > 3.0”
+SELECT STUDENT_NAME
+FROM GRADE G, STUDENT S
+WHERE G.STUDENT_ID = S.STUDENT_IDAND G.GPA > 3.0;
+ Simple idea: Create some kind of an ‘index’ file: Now, we can do a faster search using a smaller (index) file!
+
+
+
+B+ Tree
+(Unique) search, insert, or delete, is O(log_f(N)) where F = fanout and N = # of leaf pages. N approx = # records/ avg # records per page)
+    (we want to keep the tree height balanced)
+
+Each page must be at least half full (except root)
+Each node contains d<=m<=2d entries where d is called the order of the tree and m is the # of search keys in that node.
+    Therefore, the fanout for that node is m+1

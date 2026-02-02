@@ -1,0 +1,135 @@
+Use in density estimation
+    geneartive model: Estimate joint density p(x|y) can ue for p(y|x)
+    Discriminative: parameterize p(p|x) as a function of x do density estimationBernoulli likelihood for binary classification, categorical (with softmax) for multiclass
+Talked about priors for MAP learning
+
+Enough to do some really complicated things.
+What about when outputs y aren't binary/catagorical?
+
+Motivating problem: Phone battery life.
+How long until my phone dies?
+    Could model it as 0-30 minutes, 31-60 minutes, 1-2 hours
+    Orrr could model it as continuous quantiy.
+
+Other applications of continuous density estimation:
+    modeling sizes
+    modeling how longit takes to do this step of a manufacturing process
+    modeling income, maybe age
+    modeling blood pressure, cholesterol level
+    modeling grades
+often useful even if it's really categorical
+UBC grades are whole integers between 0 and 100.
+But 83 and 84 are more much similar to each other than 61 or 97.
+Usuaully easieer to predict 83.8 and round.
+
+Bernoulli/categorical distributions can model basically any binary/cateogircal dataThis is NOT TRUE for continuous data: lots of possible shapes.
+
+Your data might actually be gussian
+    Great reason to use if true, unfortunately usuaully not trueCentral limit therem: many sums of random variables converge to a guassian.
+        Very often a useful justification for saying x = 1/n sum ni=1 x^(i) is toughly guassianUsually doesnt mean that the data itself is guassianonly when ur data is approx, the sum of many independent factors
+        Its the distribution with the maximum entropy for a given mean and variance
+            in some sense, makes th fewest assumptions' to match given mean and variance   for complicated problems, matching mean and variance isnt Enough
+
+        Guassians make many computations and lots of theory much easieer    Often good enough to be useful 
+        Very common building block in more advanced methods.
+
+
+    Why not use a guaissian?
+    MLE is a good fit.
+    Sensitive to outliers
+    Can only handle on mode (no bimodal data)
+    Truncation, asymmetry, outliers.
+
+
+Guassian inference
+    Decoding the mode: The desnsity exp() is maximized if x = mew
+    Computing the likelihood of the iid data: Now a density, not a probability
+
+    Probability of X in an interval: using the cumlative distribution function (cdf)
+
+    if a=b this is zero.
+
+CDF: Definition
+    Monotonically increasing function, it can't go down but can stay flat.
+    For gaussian doesnt have an elementary closed form.
+        Sometimes witten with error function, but doesnt really help
+        can get numerically (scipy.stats.norm.cdf)
+
+PDF: Definition
+
+
+How to sample from a continuous desnity?
+    We want a function that based on u~unif[0,1],
+        50% of the time, returns a sample with F(x) <=0.5
+        10% of the time returns a samplewith 0.173<F(x)<=0.273
+
+            That is we want F(x) to be uniform on [0,1]
+            Pr(U<=u) = Pr(F(X)<=u) = Pr(X<=F^-1(u))=F(F^-1(u)) = u = integral u to 0 1du
+        If we use x=F^-1(u) then F(x_ = F(F^-1(u)) = u is uniform!
+        Inverse tranform method for sampling from a 1d continuous density with cdf F:
+            Take u ~ unif(0,1) return F^-1(u)
+            for gaussians no nice form
+    
+
+MLE for univariate GuassiansThe negative log likelihood (NLL) for n iid samples is:
+    -logp(X|u,sigma^2) = (expanded version)
+
+    For any sigma, convex in mew, derivative = zero gives sample mean u = 1/n sum i->n x^(i)
+
+Conjugate priornfor the mean
+    Fixed variance, conjugate prior for the mean is gaussianif x^(i) ~ N(mew,sigma^2) are iid and u~N(m,v) then
+    u | X,m,v,sigma^2 ~ N(m,v), m = un/(un+sigma^2)mew MLE + sigma^2/vn +sigma^2m, v= ()^-n/sigma^2 + 1/v1
+
+    m is a convex micture of the prior and the mle. 
+        When n=0 its the prior mean, when n= inf, its the mle. 
+        MAP is also m (maximizes the posterior desnsity)
+        v is half the harmonic mean of v (prior variance) and sigma^2/2 (MLE variancewhen n= 0 its the prior variance, when n = inf, its zero)
+
+    
+Supervised learning with Gaussians: discriminative models
+    Like before, we can yake y|x~N(u_x,sigma^2_x) 
+    negative log likelihood becomes:
+        -logp(y|X) = expansion
+    Linear regression uses u_x = w^Tx, sigma_x = sigma independent of x.
+        becomes scaled square loss, plus a constant
+    Deep models with square loss also use u_x=f_theta(x),sigma_x= sigma
+
+    Predictive uncertainty
+        MAP Estimation allows us to have predictive uncertainity
+        y|x,w~N(w^tx^theta,sigma^2) w_j~iid
+        Good for modelling irreducible uncertainty
+        if E[y,x] is roughly linear, and y - E[y|x] is Guassian enough!
+        bad if y|x is multimodal, bounded, has heavy tails
+        Also assumes that variance doesnt depend on x
+
+        MAP doesnt take into acount uncertainty in our model w
+            epistemic uncertainty
+        
+Bayesisan learning
+    MAP estimatino commits to the single 'best' choice of w for its predictions
+    w argmax_w p(y|X,w) p(w) y~p(y|x,w)
+    Fully bayesian learning marginlizes out the choice of w:
+    p(y|x,X,y) = integral_w p(y,w|x,X,y)down
+
+Posterior predictive distribution:
+    Bayesian learnign is based on 
+        p(y|x,X,y) = integral_w p*y|x,w)p(w|x,y)dw 
+        We call this the posterior predictive distribution
+        Could evaluate model quality with product n_test_i=1p(y^(i)|x^(i),X,y)
+        If we have to makea  single predictions 
+            The mode argmax_yp(y|x,X,y) would max the accurate, for discrete y 
+            The mean E[y|x,X,y] would minimize the expected square loss
+            Might do somethign else to minimize the different notion of loss.
+
+    Bayesian learning in the bernoulli beta model
+        Consider flipping coins with x|theta ~ Bern(theta) and prior theta~beta(a,b)
+        we showed before that the posterior for thera is theta | X~beta(a+n_1, b+n_0)
+        we can use this to fid the posterior predictive which wil be bernoulli
+                                        prediction, posterior
+        p(x=1|X,a,b) = integral_thetap(x=1|theta)p(theta|X,a,b)dtheta
+        = E_theta~Beta(a+n_1,b+n_0)[theta] = (a+n_1)/(a+n_1+b+n_0)
+
+        By comparions, MAP gave the more confident theta = (n_1+a-1)/(n+a+b-2)
+        with uniform prior a=b=1 map is MLE n_1/n; bayesian learning is (n_1+1)/(n+2)
+
+        Fully bayesian avoids committing to a single model.

@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_440 - Lecture 2026-01-19</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc440">CPSC_440</a> /
+            <span>2026-01-19</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Machine Learning</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-19</span>
+                <span class="instructor">👤 Danica Sutherland</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <h3>Discriminative vs Generative Classifiers</h3>
+                    <ul>
+                        <li>Generative: models p(x,y), then get p(y|x)</li>
+                        <li>Discriminative: directly model p(y|x) or just f(x)</li>
+                        <li>Vapnik philosophy: "don't solve a more general problem as intermediate step"</li>
+                    </ul>
+
+                    <h3>Hierarchy of Models</h3>
+                    <ul>
+                        <li>Generative (e.g., Naive Bayes): can do p(x,y), p(y|x), f(x)</li>
+                        <li>Discriminative probabilistic (e.g., logistic regression): p(y|x), f(x)</li>
+                        <li>Discriminative non-probabilistic (e.g., SVM): just f(x)</li>
+                    </ul>
+
+                    <h3>Logistic Regression</h3>
+                    <ul>
+                        <li>Linear model: p(y=1|x) = σ(w^T x) where σ(z) = 1/(1+exp(-z))</li>
+                        <li>MLE for discriminative: arg max_w p(y|X,w) (not p(X,y|w))</li>
+                        <li>Loss: binary cross-entropy</li>
+                        <li>Convex optimization, no closed form, use gradient descent</li>
+                        <li>MAP with Gaussian prior adds L2 regularization</li>
+                    </ul>
+
+                    <h3>Naive Bayes is Linear</h3>
+                    <ul>
+                        <li>Binary Naive Bayes can be written as σ(w^T x + b)</li>
+                        <li>Different parameters than logistic regression would choose</li>
+                    </ul>
+
+                    <h3>Fundamental Trade-off</h3>
+                    <ul>
+                        <li>Gen error = train error + generalization gap</li>
+                        <li>Simple models: low overfitting, higher training error</li>
+                        <li>Complex models: lower training error, more overfitting</li>
+                    </ul>
+
+                    <h3>Nonlinear Features & Deep Learning</h3>
+                    <ul>
+                        <li>Feature transforms: polynomial, RBF, periodic basis functions</li>
+                        <li>Deep learning: learn features automatically</li>
+                        <li>One-hidden-layer: ŷ(x) = v^T h(Wx)</li>
+                        <li>Deep networks: compose multiple layers</li>
+                        <li>CNNs: convolutional layers + pooling</li>
+                        <li>Skip connections: ResNets, DenseNets</li>
+                    </ul>
+
+                    <h3>Multi-class & Beyond</h3>
+                    <ul>
+                        <li>Softmax for k classes</li>
+                        <li>Can use other distributions: Poisson regression, linear regression with neural features</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+
+                    <!-- ==================== INTRODUCTION ==================== -->
+
+                    <h3>Introduction: Two Philosophies of Classification</h3>
+
+                    <p>Today's lecture introduces a fundamental conceptual shift in how we approach machine learning problems. Up until now, we've primarily focused on <strong>generative models</strong> like Naive Bayes, which model the full joint distribution p(x, y). Today we explore <strong>discriminative models</strong>, which take a more direct approach to classification.</p>
+
+                    <h4>The Generative Approach</h4>
+
+                    <p>Generative classifiers work by modeling p(x, y) - the joint probability of features and labels together. The typical strategy is to:</p>
+                    <ol>
+                        <li>Model p(y) - the prior probability of each class (usually simple)</li>
+                        <li>Model p(x | y) - what the features look like for each class (harder)</li>
+                        <li>Use Bayes' rule to compute p(y | x) for classification</li>
+                    </ol>
+
+                    <p><strong>Example:</strong> In spam classification with Naive Bayes, we model what spam emails look like (p(x | y = spam)) and what non-spam emails look like (p(x | y = not spam)), then use these to decide whether a new email is spam.</p>
+
+                    <p>This approach is powerful because it lets us generate new samples, detect outliers, and handle missing data. But it requires solving a harder problem than we actually need.</p>
+
+                    <h4>The Discriminative Philosophy: Vapnik's Principle</h4>
+
+                    <blockquote>
+                        <p>"When solving a problem of interest, do not solve a more general problem as an intermediate step."</p>
+                        <footer>— Vladimir Vapnik</footer>
+                    </blockquote>
+
+                    <p>This principle captures the essence of discriminative learning. If our goal is just to classify (predict y given x), why should we model the entire structure of x? The discriminative approach says: <strong>directly model p(y | x)</strong> or even just learn a classification function f(x) ≈ y.</p>
+
+                    <h4>Intuitive Distinction</h4>
+
+                    <p>Think about the difference in questions these approaches answer:</p>
+                    <ul>
+                        <li><strong>Discriminative:</strong> "Which pixels show me this picture is a dog?" (focus on decision boundary)</li>
+                        <li><strong>Generative:</strong> "What do pictures of dogs look like?" (model entire data distribution)</li>
+                    </ul>
+
+                    <p>Modeling what dog pictures look like in general is much harder than just finding features that distinguish dogs from cats. The discriminative approach focuses only on what matters for the decision.</p>
+
+                    <!-- ==================== ELI5 SECTION ==================== -->
+
+                    <h3>Understanding the Concepts: Explain Like I'm 5</h3>
+
+                    <p>Let's break down the key terminology in this lecture using simple analogies and memory aids.</p>
+
+                    <h4>Why "Generative" and "Discriminative"?</h4>
+
+                    <p><strong>Generative Models</strong> are called "generative" because they can <em>generate</em> new examples!</p>
+
+                    <ul>
+                        <li><strong>Think of it like:</strong> An artist who has studied what dogs look like. They can paint new pictures of dogs, tell you if a picture looks like a dog, and describe what makes something look like a dog.</li>
+                        <li><strong>Why this name?</strong> Because the model learns p(x, y) - the full joint distribution - it knows "what dogs look like" so well that it can create (generate) new dog examples.</li>
+                        <li><strong>Example:</strong> Naive Bayes learns "spam emails have words like 'lottery' and 'winner' 60% of the time, while regular emails have them 2% of the time." It models the full picture of what each class looks like.</li>
+                        <li><strong>Memory trick:</strong> <mark>GENERATE = can make new examples</mark></li>
+                    </ul>
+
+                    <p><strong>Discriminative Models</strong> are called "discriminative" because they <em>discriminate</em> (distinguish/separate) between classes!</p>
+
+                    <ul>
+                        <li><strong>Think of it like:</strong> A security guard at a club who doesn't care what people look like in general - they only care about the answer to one question: "Are you on the VIP list or not?" They discriminate between VIPs and non-VIPs.</li>
+                        <li><strong>Who are we discriminating against?</strong> We're discriminating between different classes! We're drawing a line (decision boundary) that separates dogs from cats, spam from not-spam, etc. We're asking: "Which side of the line are you on?"</li>
+                        <li><strong>Why this name?</strong> The model only learns to distinguish/discriminate between classes. It doesn't care about the full picture of what each class looks like - just how to tell them apart.</li>
+                        <li><strong>Example:</strong> Logistic regression learns "if the email has more than 3 spammy words, it's probably spam." It draws a boundary without modeling what spam "looks like" in general.</li>
+                        <li><strong>Memory trick:</strong> <mark>DISCRIMINATE = draw boundaries to separate classes</mark></li>
+                    </ul>
+
+                    <h4>Why "Probabilistic" vs "Non-Probabilistic"?</h4>
+
+                    <p><strong>Probabilistic Models</strong> give you probabilities (confidence levels):</p>
+
+                    <ul>
+                        <li><strong>Think of it like:</strong> A weather forecaster who says "70% chance of rain tomorrow" instead of just "yes" or "no".</li>
+                        <li><strong>What you get:</strong> Numbers between 0 and 1 that represent confidence. "I'm 85% sure this is spam" vs "I'm 51% sure this is spam" - both predict spam, but with different confidence levels.</li>
+                        <li><strong>Why this is useful:</strong>
+                            <ul>
+                                <li>You can set custom thresholds (maybe you only delete emails you're 95% sure are spam)</li>
+                                <li>You can quantify uncertainty</li>
+                                <li>You can do decision theory (weigh costs and benefits)</li>
+                            </ul>
+                        </li>
+                        <li><strong>Examples:</strong> Logistic regression, Naive Bayes</li>
+                        <li><strong>Memory trick:</strong> <mark>PROBABILISTIC = gives you a confidence score (0% to 100%)</mark></li>
+                    </ul>
+
+                    <p><strong>Non-Probabilistic Models</strong> just give you a decision or score:</p>
+
+                    <ul>
+                        <li><strong>Think of it like:</strong> A judge who only says "guilty" or "not guilty" without explaining how certain they are.</li>
+                        <li><strong>What you get:</strong> Just a classification (spam/not spam) or a score that isn't really a probability (it might be negative, or bigger than 1).</li>
+                        <li><strong>Why use this?</strong> Sometimes it's simpler, faster, or works better for the specific task - you don't always need probabilities.</li>
+                        <li><strong>Examples:</strong> Support Vector Machines (SVM), basic decision trees</li>
+                        <li><strong>Memory trick:</strong> <mark>NON-PROBABILISTIC = just gives you a yes/no answer or arbitrary score</mark></li>
+                    </ul>
+
+                    <h4>Putting It All Together: The 2×2 Grid</h4>
+
+                    <p>You can combine these concepts to get different types of models:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Probabilistic (gives confidence)</th>
+                                <th>Non-Probabilistic (yes/no only)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Generative<br>(can generate examples)</strong></td>
+                                <td>
+                                    <strong>Naive Bayes</strong><br>
+                                    "I know what spam looks like, and I'm 80% sure this is spam"
+                                </td>
+                                <td>
+                                    Rare<br>
+                                    (Most generative models are probabilistic by nature)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Discriminative<br>(just separates classes)</strong></td>
+                                <td>
+                                    <strong>Logistic Regression</strong><br>
+                                    "Based on the boundary I drew, I'm 90% sure this is spam"
+                                </td>
+                                <td>
+                                    <strong>SVM</strong><br>
+                                    "This is spam." (no confidence level)
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Real-World Analogies</h4>
+
+                    <p><strong>Scenario: Identifying fake $20 bills</strong></p>
+
+                    <p><strong>Generative approach:</strong></p>
+                    <blockquote>
+                        <p>"I've studied thousands of real $20 bills and thousands of fake ones. I know exactly what real bills look like: the texture of the paper, the exact shade of green, the intricate patterns in the background. I also know what fakes look like. Given a bill, I can tell you 'this has 85% of the characteristics of real bills and 15% of fake bills, so I'm 85% confident it's real.' If you asked me to, I could even draw a new $20 bill from memory because I know what they look like so well."</p>
+                    </blockquote>
+                    <p><em>This is Naive Bayes or other generative models - they model what each class looks like.</em></p>
+
+                    <p><strong>Discriminative approach:</strong></p>
+                    <blockquote>
+                        <p>"I don't care about all the details of what real or fake bills look like in general. I've just found that if you check these 5 specific features (watermark, security strip, color-shifting ink, texture, and micro-printing), you can perfectly separate real from fake. If a bill has 4+ of these features, it's real with 95% confidence. I can't draw a $20 bill from memory, but I can definitely tell you if one is real or fake."</p>
+                    </blockquote>
+                    <p><em>This is Logistic Regression - it only learns the decision boundary.</em></p>
+
+                    <p><strong>Non-probabilistic discriminative:</strong></p>
+                    <blockquote>
+                        <p>"I've drawn a line based on those 5 features. If you're on this side of the line, you're real. If you're on that side, you're fake. I'm not going to tell you how confident I am - just which side you're on."</p>
+                    </blockquote>
+                    <p><em>This is SVM - just a decision, no confidence.</em></p>
+
+                    <h4>Quick Mental Model for Remembering</h4>
+
+                    <div style="background-color: #f0f8ff; padding: 15px; border-left: 4px solid #4a90e2; margin: 20px 0;">
+                        <p><strong>Ask yourself three questions:</strong></p>
+                        <ol>
+                            <li><strong>Can it generate new examples?</strong>
+                                <ul>
+                                    <li>Yes → Generative (knows what each class looks like)</li>
+                                    <li>No → Discriminative (only knows how to separate)</li>
+                                </ul>
+                            </li>
+                            <li><strong>Does it give me confidence levels?</strong>
+                                <ul>
+                                    <li>Yes → Probabilistic (gives percentages)</li>
+                                    <li>No → Non-Probabilistic (just yes/no)</li>
+                                </ul>
+                            </li>
+                            <li><strong>What problem is it solving?</strong>
+                                <ul>
+                                    <li>Generative: "Learn what X looks like" → harder problem</li>
+                                    <li>Discriminative: "Learn to distinguish X from Y" → easier problem (Vapnik's principle!)</li>
+                                </ul>
+                            </li>
+                        </ol>
+                    </div>
+
+                    <h4>Why Does This Matter?</h4>
+
+                    <p><strong>When to use Generative:</strong></p>
+                    <ul>
+                        <li>You want to generate new samples (create fake data, fill in missing values)</li>
+                        <li>You want to detect outliers ("this doesn't look like anything I've seen")</li>
+                        <li>You have limited data and strong assumptions about the structure</li>
+                        <li>You need to combine multiple pieces of information (Bayesian reasoning)</li>
+                    </ul>
+
+                    <p><strong>When to use Discriminative:</strong></p>
+                    <ul>
+                        <li>You <em>only</em> care about classification (the most common case!)</li>
+                        <li>Your features violate the assumptions of generative models</li>
+                        <li>You want the best possible classification accuracy</li>
+                        <li>You have lots of data (discriminative models often need more data)</li>
+                    </ul>
+
+                    <p><strong>When to use Probabilistic:</strong></p>
+                    <ul>
+                        <li>You need to know <em>how confident</em> the model is</li>
+                        <li>Different mistakes have different costs (medical diagnosis, fraud detection)</li>
+                        <li>You want to combine the model with other decision-making systems</li>
+                        <li>You need to do downstream probability calculations</li>
+                    </ul>
+
+                    <p><strong>When Non-Probabilistic is fine:</strong></p>
+                    <ul>
+                        <li>You just need a binary decision with no confidence</li>
+                        <li>The non-probabilistic model works better in practice</li>
+                        <li>Simpler is better for your use case</li>
+                    </ul>
+
+                    <p><mark>Key Takeaway:</mark> Most modern machine learning uses <strong>discriminative</strong> models because we usually just want classification, not full modeling of data. But understanding generative models helps us understand why discriminative models work!</p>
+
+                    <!-- ==================== HIERARCHY ==================== -->
+
+                    <h3>Hierarchy of Predictor Types</h3>
+
+                    <p>Different types of models can answer different types of questions. Understanding this hierarchy helps us choose the right tool for each task:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Example</th>
+                                <th>Can compute p(x, y)?</th>
+                                <th>Can compute p(y | x)?</th>
+                                <th>Can compute f(x) ≈ y?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Generative</strong></td>
+                                <td>Naive Bayes</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Discriminative (probabilistic)</strong></td>
+                                <td>Logistic Regression</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                                <td>✓</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Discriminative (non-probabilistic)</strong></td>
+                                <td>SVM</td>
+                                <td>✗</td>
+                                <td>✗</td>
+                                <td>✓</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h4>Trade-offs in Model Complexity</h4>
+
+                    <p>As we move down this hierarchy, the problem generally gets "easier" (more or less):</p>
+                    <ul>
+                        <li>Fewer things to model means simpler optimization</li>
+                        <li>Less prone to modeling irrelevant structure in the data</li>
+                        <li>Often better performance when you only care about classification</li>
+                    </ul>
+
+                    <p>But there's a cost - you can't do as much with simpler models:</p>
+                    <ul>
+                        <li>Discriminative models can't generate new samples</li>
+                        <li>Can't do outlier detection (need p(x) for that)</li>
+                        <li>Pure classifiers can't easily combine into broader probabilistic inference</li>
+                        <li>Can't apply decision theory as cleanly without probabilities</li>
+                    </ul>
+
+                    <p><mark>Key insight:</mark> Choose your model type based on what you need to do, not just classification accuracy.</p>
+
+                    <!-- ==================== DISCRIMINATIVE BINARY ==================== -->
+
+                    <h3>Discriminative Models for Binary Data</h3>
+
+                    <h4>The Fully Parameterized Approach</h4>
+
+                    <p>Let's start with the most flexible discriminative model possible. For binary features x₁, ..., x_d (like in our spam email example), we could have a completely separate parameter for every possible input:</p>
+
+                    <pre><code class="language-plaintext">Pr(spam | aardvark=0, ..., lotto=0, ..., zyzzyva=0) = θ₀...₀...₀
+...
+Pr(spam | aardvark=1, ..., lotto=1, ..., zyzzyva=1) = θ₁...₁...₁</code></pre>
+
+                    <p>This is called a <strong>tabular parameterization</strong> or "full categorical" model.</p>
+
+                    <h4>Parameter Count Analysis</h4>
+
+                    <p><strong>How many parameters do we need?</strong> With d binary features, there are 2^d possible input combinations. So we need 2^d parameters.</p>
+
+                    <p><em>Wait, shouldn't it be 2^d - 1?</em> Yes! Since probabilities must sum to 1, we only need 2^d - 1 independent parameters (the last one is determined by the others). This is a common pattern in categorical distributions.</p>
+
+                    <h4>Comparison to Generative Models</h4>
+
+                    <p>Recall "galaxy brain Bayes" from earlier lectures - the fully flexible generative model that models the complete joint distribution. That required <strong>2(2^d - 1)</strong> parameters:</p>
+                    <ul>
+                        <li>2^d - 1 parameters for p(x | y = 0)</li>
+                        <li>2^d - 1 parameters for p(x | y = 1)</li>
+                        <li>1 parameter for p(y)</li>
+                    </ul>
+
+                    <p>The discriminative version only needs <strong>2^d</strong> parameters - about half as many! This illustrates Vapnik's principle: by not modeling p(x), we reduce complexity.</p>
+
+                    <h4>The Overfitting Problem</h4>
+
+                    <p>In theory, we can fit this model easily: each x corresponds to a separate Bernoulli distribution for y. We can just use MLE or MAP for each one independently.</p>
+
+                    <p><strong>But here's the problem:</strong> In practice, we probably don't see very many emails per unique x. In fact, many possible x combinations will have n_x = 0 (we've never seen that exact combination).</p>
+
+                    <p><em>Example:</em> If you have 1000 binary features (words), there are 2^1000 ≈ 10^301 possible emails. Even if you had a trillion training emails, you'd see only a tiny fraction of possible combinations.</p>
+
+                    <p><mark>The solution:</mark> We need to <strong>share information across similar x values</strong>. This is where structured parameterizations like logistic regression come in.</p>
+
+                    <!-- ==================== LINEAR PARAMETERIZATION ==================== -->
+
+                    <h3>Linear Parameterization of Conditionals</h3>
+
+                    <h4>The Parsimony Principle</h4>
+
+                    <p>We want a "parsimonious" (economical) parameterization that strikes a balance:</p>
+                    <ul>
+                        <li><strong>Full categorical:</strong> Can model anything, but way too many parameters</li>
+                        <li><strong>Structured model:</strong> Can't model everything, but much less complex</li>
+                    </ul>
+
+                    <p>The key idea: <em>make stronger assumptions to reduce model complexity</em>.</p>
+
+                    <h4>The Linear Model Assumption</h4>
+
+                    <p>The standard basic choice is to assume a <strong>linear model</strong>:</p>
+
+                    <pre><code class="language-plaintext">p(y = 1 | x₁, ..., x_d, w) = f(w₁x₁ + ··· + w_d x_d) = f(w^T x)</code></pre>
+
+                    <p>where:</p>
+                    <ul>
+                        <li><code>w</code> is our vector of <em>d</em> parameters (not 2^d!)</li>
+                        <li><code>f</code> is some function from ℝ → [0, 1] (to get valid probabilities)</li>
+                    </ul>
+
+                    <p><strong>Why is this better?</strong> We've gone from 2^d parameters to just d parameters. This is exponentially fewer! It means we can share statistical strength across similar inputs.</p>
+
+                    <p><em>In other words:</em> Instead of learning completely separately for each possible email, we learn one weight per word. An email with words {lottery, winner, money} will be treated similarly to {lottery, prize, money} because they share words.</p>
+
+                    <h4>Choosing the Link Function: The Sigmoid</h4>
+
+                    <p>For the function f that maps ℝ → [0, 1], the standard choice is the <strong>sigmoid function</strong> (also called the logistic function):</p>
+
+                    <pre><code class="language-plaintext">σ(z) = 1 / (1 + exp(-z))</code></pre>
+
+                    <p>This gives us <strong>logistic regression</strong>:</p>
+
+                    <pre><code class="language-plaintext">p(y = 1 | x, w) = σ(w^T x) = 1 / (1 + exp(-w^T x))</code></pre>
+
+                    <h4>Why the Sigmoid Function?</h4>
+
+                    <p>The sigmoid has several nice properties:</p>
+                    <ul>
+                        <li><strong>Smooth S-shape:</strong> Transitions smoothly from 0 to 1</li>
+                        <li><strong>Output range [0, 1]:</strong> Perfect for probabilities</li>
+                        <li><strong>Symmetric around 0.5:</strong> σ(0) = 0.5, σ(-z) = 1 - σ(z)</li>
+                        <li><strong>Nice derivatives:</strong> σ'(z) = σ(z)(1 - σ(z)), which is convenient for optimization</li>
+                        <li><strong>Probabilistic interpretation:</strong> Can be derived from assuming logistic distribution of errors</li>
+                    </ul>
+
+                    <p>When w^T x is large and positive, σ(w^T x) ≈ 1 (confident it's class 1). When w^T x is large and negative, σ(w^T x) ≈ 0 (confident it's class 0). When w^T x ≈ 0, we're uncertain.</p>
+
+                    <!-- ==================== LOGISTIC INFERENCE ==================== -->
+
+                    <h3>Inference with Logistic Regression</h3>
+
+                    <p>Once we have trained weights w, logistic regression gives us a Bernoulli distribution over y for any input x:</p>
+
+                    <pre><code class="language-plaintext">Pr(Y = 1 | X = x, w) = 1 / (1 + exp(-w^T x))</code></pre>
+
+                    <h4>What Can We Do With This?</h4>
+
+                    <p>Having a full probability distribution (not just a classification) enables many useful operations:</p>
+
+                    <ol>
+                        <li>
+                            <strong>Standard classification:</strong> Take the mode (most likely y)
+                            <pre><code class="language-plaintext">ŷ = 1 if p(y=1|x) > 0.5, else 0</code></pre>
+                        </li>
+
+                        <li>
+                            <strong>Confidence thresholds:</strong> Use decision theory to set custom thresholds
+                            <p><em>Example:</em> In medical diagnosis, you might classify as "disease" if p(disease|symptoms) > 0.3 because false negatives are very costly.</p>
+                        </li>
+
+                        <li>
+                            <strong>Sampling:</strong> Generate random ys given x
+                            <p>Useful for simulation and Monte Carlo methods</p>
+                        </li>
+
+                        <li>
+                            <strong>Aggregate probabilities:</strong> Compute probability of seeing 5 positives out of 10 examples with this x
+                            <p>This follows a Binomial(10, p(y=1|x)) distribution</p>
+                        </li>
+
+                        <li>
+                            <strong>Expected values:</strong> Expected number of samples with this x needed to see a single positive
+                            <p>This is a geometric distribution: E[N] = 1/p(y=1|x)</p>
+                        </li>
+
+                        <li>
+                            <strong>Independence:</strong> Compute how likely both x and an independent x' are to be positive
+                            <p>p(y=1|x) · p(y'=1|x') (assuming conditional independence)</p>
+                        </li>
+                    </ol>
+
+                    <p><mark>Key advantage:</mark> Probabilistic outputs are much more useful than hard classifications. They let us quantify uncertainty and make risk-aware decisions.</p>
+
+                    <!-- ==================== MLE ==================== -->
+
+                    <h3>Maximum Conditional Likelihood</h3>
+
+                    <h4>A Critical Distinction</h4>
+
+                    <p>For generative models, MLE means:</p>
+                    <pre><code class="language-plaintext">arg max_w p(X, y | w)</code></pre>
+
+                    <p>We're maximizing the probability of seeing both the features X and labels y.</p>
+
+                    <p>For discriminative models, <strong>we can't do that</strong> - we don't have a model of p(X | w)! Instead, when we say "MLE for discriminative models," we mean:</p>
+
+                    <pre><code class="language-plaintext">arg max_w p(y | X, w)</code></pre>
+
+                    <p>We <strong>treat X as fixed</strong> and maximize the <strong>conditional likelihood</strong>.</p>
+
+                    <h4>Continuous Features</h4>
+
+                    <p>An interesting consequence: logistic regression makes sense even for <strong>continuous x</strong>, even though it only uses binary probabilities for y!</p>
+
+                    <p>This is fundamentally different from Naive Bayes:</p>
+                    <ul>
+                        <li><strong>Naive Bayes models X | Y:</strong> If X is continuous, we need to use continuous distributions (Gaussian, etc.)</li>
+                        <li><strong>Logistic regression models Y | X:</strong> Y is binary, so we only need Bernoulli, regardless of whether X is continuous or discrete</li>
+                    </ul>
+
+                    <p><em>Example:</em> You can use logistic regression to predict spam (binary) based on email length (continuous), number of exclamation marks (continuous), etc., without needing to specify probability distributions for these features.</p>
+
+                    <!-- ==================== LIKELIHOOD DERIVATION ==================== -->
+
+                    <h3>The Logistic Likelihood Function</h3>
+
+                    <h4>Setting Up the Likelihood</h4>
+
+                    <p>For logistic regression, assuming examples are independent:</p>
+
+                    <pre><code class="language-plaintext">p(y | X, w) = ∏ᵢ₌₁ⁿ p(y⁽ⁱ⁾ | x⁽ⁱ⁾, w)</code></pre>
+
+                    <p>Taking the negative log-likelihood (which we'll minimize):</p>
+
+                    <pre><code class="language-plaintext">-log p(y | X, w) = ∑ᵢ₌₁ⁿ -log p(y⁽ⁱ⁾ | x⁽ⁱ⁾, w)</code></pre>
+
+                    <h4>Simplifying with ±1 Labels</h4>
+
+                    <p>A convenient trick: use y ∈ {-1, 1} instead of {0, 1} for binary classification. This lets us write a single unified expression.</p>
+
+                    <p>For y⁽ⁱ⁾ ∈ {-1, 1}, each term becomes:</p>
+
+                    <pre><code class="language-plaintext">-log p(y⁽ⁱ⁾ | x⁽ⁱ⁾, w) = log(1 + exp(-ỹ⁽ⁱ⁾ w^T x⁽ⁱ⁾))</code></pre>
+
+                    <p><strong>Why does this work?</strong> Let's verify both cases:</p>
+
+                    <ul>
+                        <li>
+                            <strong>If y⁽ⁱ⁾ = 1:</strong>
+                            <pre><code class="language-plaintext">-log[1/(1+exp(-w^T x))] = log(1 + exp(-w^T x))</code></pre>
+                        </li>
+                        <li>
+                            <strong>If y⁽ⁱ⁾ = -1 (equivalently, y=0):</strong>
+                            <pre><code class="language-plaintext">-log[1 - 1/(1+exp(-w^T x))] = -log[exp(-w^T x)/(1+exp(-w^T x))]
+                                  = log(1 + exp(-w^T x)) - (-w^T x)
+                                  = log(1 + exp(w^T x))</code></pre>
+                        </li>
+                    </ul>
+
+                    <p>With the ±1 encoding, both cases unify into the single expression: log(1 + exp(-y⁽ⁱ⁾ w^T x⁽ⁱ⁾))</p>
+
+                    <h4>The Final Objective</h4>
+
+                    <p>Our MLE optimization problem becomes:</p>
+
+                    <pre><code class="language-plaintext">minimize f(w) = ∑ᵢ₌₁ⁿ log(1 + exp(-y⁽ⁱ⁾ w^T x⁽ⁱ⁾))</code></pre>
+
+                    <p>This is also known as <strong>binary cross-entropy</strong> or <strong>logistic loss</strong>.</p>
+
+                    <!-- ==================== OPTIMIZATION ==================== -->
+
+                    <h3>Optimizing Logistic Regression</h3>
+
+                    <h4>Computational Complexity</h4>
+
+                    <p>To evaluate f(w), we need to compute all the w^T x⁽ⁱ⁾ terms. In matrix notation, this is Xw, which costs <strong>O(nd)</strong> time:</p>
+                    <ul>
+                        <li>n = number of training examples</li>
+                        <li>d = number of features</li>
+                    </ul>
+
+                    <h4>The Gradient</h4>
+
+                    <p>The gradient of f(w) is:</p>
+
+                    <pre><code class="language-plaintext">∇f(w) = -X^T (y ⊘ (1 + exp(y ⊙ Xw)))</code></pre>
+
+                    <p>where ⊙ and ⊘ denote element-wise multiplication and division.</p>
+
+                    <p>Computing this gradient also takes <strong>O(nd)</strong> time, dominated by the matrix-vector multiplication X^T·(vector).</p>
+
+                    <h4>Convexity: A Major Advantage</h4>
+
+                    <p><mark>Critical property:</mark> The logistic regression objective is <strong>convex</strong>. This means:</p>
+                    <ul>
+                        <li>No bad local minima - any local minimum is a global minimum</li>
+                        <li>Gradient descent is guaranteed to converge (with appropriate step size)</li>
+                        <li>We can use powerful convex optimization algorithms</li>
+                    </ul>
+
+                    <p><em>Why is it convex?</em> The log-sum-exp function is convex, and we're summing convex functions (which preserves convexity).</p>
+
+                    <h4>No Closed Form</h4>
+
+                    <p>Unlike linear regression, we can't solve ∇f(w) = 0 in closed form. The equation:</p>
+
+                    <pre><code class="language-plaintext">X^T (y ⊘ (1 + exp(y ⊙ Xw))) = 0</code></pre>
+
+                    <p>is transcendental (involves both linear and exponential terms) and has no algebraic solution.</p>
+
+                    <p><strong>Solution:</strong> Use iterative optimization algorithms like:</p>
+                    <ul>
+                        <li><strong>Gradient descent:</strong> Simple, works for large n and d</li>
+                        <li><strong>Stochastic gradient descent (SGD):</strong> Better for very large n</li>
+                        <li><strong>Newton's method:</strong> Faster convergence, but O(d³) per iteration</li>
+                        <li><strong>L-BFGS:</strong> Quasi-Newton method, good middle ground</li>
+                        <li><strong>Coordinate descent:</strong> Update one weight at a time</li>
+                    </ul>
+
+                    <p>The best choice depends on n, d, desired accuracy, and computational setup (GPU vs CPU, distributed vs single machine, etc.)</p>
+
+                    <!-- ==================== REGULARIZATION ==================== -->
+
+                    <h3>Regularization via MAP Estimation</h3>
+
+                    <h4>Adding a Gaussian Prior</h4>
+
+                    <p>Instead of pure MLE, we can use MAP estimation with a prior on w:</p>
+
+                    <pre><code class="language-plaintext">wⱼ ~ N(0, 1/λ) for each feature j</code></pre>
+
+                    <p>This adds a penalty term to our objective:</p>
+
+                    <pre><code class="language-plaintext">minimize f(w) + (1/2)λ‖w‖²</code></pre>
+
+                    <p>where ‖w‖² = ∑ⱼ wⱼ² is the squared L2 norm.</p>
+
+                    <h4>Why This Helps</h4>
+
+                    <ol>
+                        <li>
+                            <strong>Strong convexity:</strong> The objective is now strongly convex, which often makes optimization faster and more stable
+                        </li>
+                        <li>
+                            <strong>Better generalization:</strong> Regularization typically gives better test error when λ is chosen appropriately (prevents overfitting)
+                        </li>
+                        <li>
+                            <strong>Prevents extreme weights:</strong> Without regularization, logistic regression can push weights to infinity if data is separable
+                        </li>
+                    </ol>
+
+                    <h4>Discriminative vs Generative MAP</h4>
+
+                    <p>Note the subtle but important difference in what we're maximizing:</p>
+
+                    <ul>
+                        <li>
+                            <strong>Discriminative MAP:</strong>
+                            <pre><code class="language-plaintext">arg max_w p(w | X, y) = arg max_w p(y | X, w)p(w)</code></pre>
+                        </li>
+                        <li>
+                            <strong>Generative MAP:</strong>
+                            <pre><code class="language-plaintext">arg max_w p(w | X, y) = arg max_w p(X, y | w)p(w)</code></pre>
+                        </li>
+                    </ul>
+
+                    <p>The prior p(w) is the same, but the likelihood term is different: p(y | X, w) vs p(X, y | w).</p>
+
+                    <h4>Choosing λ</h4>
+
+                    <p>The regularization parameter λ controls the strength of the penalty:</p>
+                    <ul>
+                        <li><strong>λ = 0:</strong> No regularization (pure MLE)</li>
+                        <li><strong>λ → ∞:</strong> Forces w → 0 (extremely simple model)</li>
+                        <li><strong>Optimal λ:</strong> Usually chosen by cross-validation</li>
+                    </ul>
+
+                    <!-- ==================== NAIVE BAYES IS LINEAR ==================== -->
+
+                    <h3>Surprising Connection: Naive Bayes is a Linear Model!</h3>
+
+                    <p>This is one of the most interesting theoretical results in the lecture. It turns out that binary Naive Bayes can be written as logistic regression with specific weights.</p>
+
+                    <h4>The Derivation</h4>
+
+                    <p>Starting with Bayes' rule:</p>
+
+                    <pre><code class="language-plaintext">Pr(Y = 1 | X = x) = p(x | y=1)p(y=1) / [p(x | y=1)p(y=1) + p(x | y=0)p(y=0)]</code></pre>
+
+                    <p>Divide numerator and denominator by p(x | y=1)p(y=1):</p>
+
+                    <pre><code class="language-plaintext">= 1 / [1 + p(x|y=0)p(y=0) / p(x|y=1)p(y=1)]</code></pre>
+
+                    <p>Take the log of the ratio:</p>
+
+                    <pre><code class="language-plaintext">= 1 / [1 + exp(-log[p(x|y=1)p(y=1) / p(x|y=0)p(y=0)])]
+= σ(log[p(x|y=1)p(y=1) / p(x|y=0)p(y=0)])</code></pre>
+
+                    <p>Now, use the Naive Bayes independence assumption p(x|y) = ∏ⱼ p(xⱼ|y):</p>
+
+                    <pre><code class="language-plaintext">= σ(∑ⱼ log[p(xⱼ|y=1)/p(xⱼ|y=0)] + log[p(y=1)/p(y=0)])</code></pre>
+
+                    <p>For binary features with Bernoulli distributions θⱼ|y:</p>
+
+                    <pre><code class="language-plaintext">p(xⱼ|y) = θⱼ|y^xⱼ · (1-θⱼ|y)^(1-xⱼ)</code></pre>
+
+                    <p>Substituting and simplifying (see lecture notes for full algebra):</p>
+
+                    <pre><code class="language-plaintext">= σ(∑ⱼ xⱼ·log[(θⱼ|₁/θⱼ|₀)·((1-θⱼ|₀)/(1-θⱼ|₁))] + ∑ⱼ log[(1-θⱼ|₁)/(1-θⱼ|₀)] + log[p(y=1)/p(y=0)])</code></pre>
+
+                    <p>This has the form σ(w^T x + b) where:</p>
+                    <ul>
+                        <li><strong>wⱼ</strong> = log[(θⱼ|₁/θⱼ|₀)·((1-θⱼ|₀)/(1-θⱼ|₁))]</li>
+                        <li><strong>b</strong> = ∑ⱼ log[(1-θⱼ|₁)/(1-θⱼ|₀)] + log[p(y=1)/p(y=0)]</li>
+                    </ul>
+
+                    <h4>What This Means</h4>
+
+                    <p><mark>Key insight:</mark> Naive Bayes makes a linear decision boundary in feature space, just like logistic regression!</p>
+
+                    <p>However, there are important differences:</p>
+                    <ul>
+                        <li><strong>Parameters:</strong> Naive Bayes uses specific weights determined by the generative model. Logistic regression learns weights directly and would generally pick different values.</li>
+                        <li><strong>Likelihood:</strong> The logistic regression MLE would typically give higher conditional likelihood p(y|X,w) because it directly optimizes this.</li>
+                        <li><strong>Assumptions:</strong> Naive Bayes assumes features are conditionally independent given y. Logistic regression makes no such assumption about X|Y.</li>
+                    </ul>
+
+                    <p><em>Practical implication:</em> If the Naive Bayes independence assumption is badly violated, logistic regression will usually outperform it. But if the assumption is approximately true and you have limited data, Naive Bayes might do better (stronger inductive bias).</p>
+
+                    <!-- ==================== INTERCEPTS ==================== -->
+
+                    <h3>Adding Intercepts to Linear Models</h3>
+
+                    <h4>Homogeneous vs Inhomogeneous Models</h4>
+
+                    <p>We often distinguish between:</p>
+                    <ul>
+                        <li><strong>Homogeneous:</strong> f(w^T x) - decision boundary passes through origin</li>
+                        <li><strong>Inhomogeneous:</strong> f(w^T x + b) - decision boundary can be offset</li>
+                    </ul>
+
+                    <p>In practice, the intercept term b (also called bias) is very useful. It lets the model shift the decision boundary without having to adjust all the feature weights.</p>
+
+                    <h4>Two Ways to Implement Intercepts</h4>
+
+                    <p><strong>Method 1: Explicit bias parameter</strong></p>
+                    <p>Treat b as a separate parameter to fit. Update equations to include b everywhere:</p>
+                    <pre><code class="language-plaintext">minimize ∑ᵢ log(1 + exp(-y⁽ⁱ⁾(w^T x⁽ⁱ⁾ + b)))</code></pre>
+
+                    <p><strong>Method 2: Dummy feature</strong></p>
+                    <p>Add a constant feature X₀ = 1 to all examples. The corresponding weight w₀ acts like b:</p>
+                    <pre><code class="language-plaintext">w^T x = w₀·1 + w₁·x₁ + ··· + w_d·x_d
+      = b + w₁·x₁ + ··· + w_d·x_d</code></pre>
+
+                    <p>Both methods work equally well in practice. The dummy feature approach is often cleaner to implement (no special case code).</p>
+
+                    <h4>Handling Intercepts in the Probabilistic Framework</h4>
+
+                    <p>When using MAP with priors, you need to be careful about the intercept:</p>
+
+                    <ul>
+                        <li><strong>Same prior on all weights (including b/w₀):</strong> Simple, but might over-regularize the intercept</li>
+                        <li><strong>Improper uniform prior on b:</strong> p(b) ∝ 1 (not a proper probability distribution)
+                            <p>This makes sense when you "don't care about y location" - i.e., the overall prevalence of classes shouldn't affect the regularization</p>
+                        </li>
+                        <li><strong>Center the ys first:</strong> Make ∑ᵢ y⁽ⁱ⁾ = 0, then put a gentle prior on w₀
+                            <p>This reduces correlation between w₀ and the other weights</p>
+                        </li>
+                    </ul>
+
+                    <!-- ==================== TABULAR VS LOGISTIC ==================== -->
+
+                    <h3>Comparing Tabular and Logistic Parameterizations</h3>
+
+                    <p>Let's formally compare our two extremes:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Aspect</th>
+                                <th>Tabular</th>
+                                <th>Logistic Regression</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Parameters</strong></td>
+                                <td>Each θ_x totally separate</td>
+                                <td>Each θ_x = σ(w^T x + b)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Number of params</strong></td>
+                                <td>2^d (binary features)</td>
+                                <td>d or d+1</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Expressiveness</strong></td>
+                                <td>Can model any binary conditional</td>
+                                <td>Can only model linear conditionals</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Typical behavior</strong></td>
+                                <td>Tends to overfit unless 2^d ≪ n</td>
+                                <td>Tends to underfit unless d is large or truth is linear</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <p>This comparison illustrates a fundamental theme in machine learning: the <strong>bias-variance tradeoff</strong>.</p>
+
+                    <!-- ==================== FUNDAMENTAL TRADEOFF ==================== -->
+
+                    <h3>The Fundamental Tradeoff of Machine Learning</h3>
+
+                    <h4>Decomposing Generalization Error</h4>
+
+                    <p>The error we care about is <strong>generalization error</strong> (test error). It can be decomposed as:</p>
+
+                    <pre><code class="language-plaintext">generalization error = training error + (generalization error - training error)
+                                                      └─────────────┬─────────────┘
+                                                         generalization gap</code></pre>
+
+                    <p>Furthermore, there's often an <strong>irreducible error</strong> (Bayes error) - the error of the best possible classifier given the features and noise in the data.</p>
+
+                    <h4>Model Complexity and the Tradeoff</h4>
+
+                    <p><strong>Simple models</strong> (like logistic regression with few features):</p>
+                    <ul>
+                        <li>✓ <strong>Small generalization gap:</strong> Training and test performance are similar (don't overfit much)</li>
+                        <li>✗ <strong>Larger training error:</strong> Can't fit complex patterns in the data (high bias)</li>
+                    </ul>
+
+                    <p><strong>Complex models</strong> (like tabular conditionals with many features):</p>
+                    <ul>
+                        <li>✓ <strong>Small training error:</strong> Can fit data very well (low bias)</li>
+                        <li>✗ <strong>Larger generalization gap:</strong> Tend to overfit (high variance)</li>
+                    </ul>
+
+                    <h4>The Classic U-Shaped Curve</h4>
+
+                    <p>As model complexity increases:</p>
+                    <ol>
+                        <li>Training error decreases monotonically (more parameters = better fit)</li>
+                        <li>Generalization gap increases (more overfitting)</li>
+                        <li>Test error typically forms a U-shape: decreases then increases</li>
+                    </ol>
+
+                    <p>The optimal model complexity is somewhere in the middle, balancing fitting ability with generalization.</p>
+
+                    <p><mark>Important caveat:</mark> Modern deep learning has complicated this picture. Very large neural networks sometimes achieve low training error AND low test error, seemingly violating the traditional tradeoff. This is an active area of research.</p>
+
+                    <!-- ==================== FEATURE TRANSFORMS ==================== -->
+
+                    <h3>Bridging the Gap: Nonlinear Feature Transformations</h3>
+
+                    <p>We don't have to choose between purely linear and fully tabular models. We can get intermediate complexity through <strong>feature transformations</strong>.</p>
+
+                    <h4>The Basic Idea</h4>
+
+                    <p>The approach is simple but powerful:</p>
+                    <ol>
+                        <li>Transform each x⁽ⁱ⁾ into some new z⁽ⁱ⁾ = φ(x⁽ⁱ⁾)</li>
+                        <li>Train logistic regression on the z⁽ⁱ⁾ features</li>
+                        <li>At test time, apply the same transformation to test inputs</li>
+                    </ol>
+
+                    <p>The model is <em>linear in the transformed features</em> but <em>nonlinear in the original features</em>.</p>
+
+                    <h4>Common Feature Transformations</h4>
+
+                    <p><strong>1. Polynomial features</strong></p>
+                    <p>For x = [x₁, x₂], create z = [1, x₁, x₂, x₁², x₁x₂, x₂²]</p>
+                    <p><em>Use case:</em> When relationships are polynomial (quadratic trends, interactions)</p>
+
+                    <p><strong>2. Radial Basis Functions (RBF)</strong></p>
+                    <p>Create features z_j = exp(-‖x - c_j‖² / (2σ²)) for various centers c_j</p>
+                    <p><em>Use case:</em> When classes form clusters in feature space</p>
+
+                    <p><strong>3. Periodic basis functions</strong></p>
+                    <p>Create features like z = [sin(x), cos(x), sin(2x), cos(2x), ...]</p>
+                    <p><em>Use case:</em> Cyclic patterns (time of day, seasonal data)</p>
+
+                    <p><strong>4. Kernel methods</strong></p>
+                    <p>Can be framed as implicit feature transformations to very high (even infinite) dimensional spaces</p>
+
+                    <h4>The Complexity-Performance Relationship</h4>
+
+                    <ul>
+                        <li><strong>More complex features</strong> → lower training error (can fit more complex patterns)</li>
+                        <li><strong>More complex features</strong> → risk of overfitting (larger generalization gap)</li>
+                        <li><strong>Performance depends on match to truth:</strong> If the features match the "true" conditional structure, you get low test error</li>
+                    </ul>
+
+                    <h4>Practical Recommendation</h4>
+
+                    <p><mark>Baseline approach:</mark> Gaussian RBF features (or Gaussian kernel), with λ (regularization) and σ (length scale) chosen via cross-validation, is often an excellent baseline.</p>
+
+                    <p>This is a good starting point before trying more specialized feature engineering or deep learning.</p>
+
+                    <!-- ==================== DEEP LEARNING ==================== -->
+
+                    <h3>Deep Learning: Learning Feature Transformations</h3>
+
+                    <h4>The Problem with Hand-Crafted Features</h4>
+
+                    <p>Feature engineering is powerful but has limitations:</p>
+                    <ul>
+                        <li>Requires domain expertise and trial-and-error</li>
+                        <li>Hard to know which transformations are "right"</li>
+                        <li>Different problems need different features</li>
+                    </ul>
+
+                    <p><strong>Deep learning's solution:</strong> <em>Learn the features automatically from data.</em></p>
+
+                    <h4>Parameterized Features</h4>
+
+                    <p>Instead of choosing a fixed transformation φ(x), use a <strong>parameterized transformation</strong> φ(x; W) and optimize W along with the classification weights.</p>
+
+                    <p>The key requirements:</p>
+                    <ul>
+                        <li>Use a flexible-enough class of transformations</li>
+                        <li>Make it differentiable so we can optimize with gradient descent</li>
+                    </ul>
+
+                    <h4>One-Hidden-Layer Neural Network</h4>
+
+                    <p>The simplest version:</p>
+
+                    <pre><code class="language-plaintext">ŷ(x) = v^T h(Wx)</code></pre>
+
+                    <p>where:</p>
+                    <ul>
+                        <li><strong>W</strong> is an m × d matrix (transforms d-dimensional input to m-dimensional hidden layer)</li>
+                        <li><strong>h</strong> is an element-wise nonlinear activation function
+                            <ul>
+                                <li>ReLU: h(z) = max{0, z} (most common today)</li>
+                                <li>Sigmoid: h(z) = 1/(1 + exp(-z))</li>
+                                <li>tanh: h(z) = (exp(z) - exp(-z))/(exp(z) + exp(-z))</li>
+                            </ul>
+                        </li>
+                        <li><strong>v</strong> is an m-dimensional weight vector for the final linear combination</li>
+                    </ul>
+
+                    <h4>Why Do We Need the Nonlinearity h?</h4>
+
+                    <p>If h were linear (e.g., h(z) = z), then:</p>
+
+                    <pre><code class="language-plaintext">ŷ(x) = v^T(Wx) = (v^T W)x = w^T x</code></pre>
+
+                    <p>This collapses back to a linear model! The nonlinearity h is what gives neural networks their power.</p>
+
+                    <h4>Why ReLU?</h4>
+
+                    <p>ReLU has become the default activation function because:</p>
+                    <ul>
+                        <li><strong>Simple:</strong> max{0, z} is easy to compute</li>
+                        <li><strong>Avoids vanishing gradients:</strong> Gradient is either 0 or 1, never shrinks to near-zero</li>
+                        <li><strong>Sparse activations:</strong> About half the neurons are inactive (output 0), which aids generalization</li>
+                        <li><strong>Empirically works better:</strong> Often outperforms sigmoid and tanh in deep networks</li>
+                    </ul>
+
+                    <!-- ==================== FITTING NEURAL NETS ==================== -->
+
+                    <h3>Training Neural Networks</h3>
+
+                    <h4>The Optimization Problem</h4>
+
+                    <p>For binary classification with ŷ(x) = v^T h(Wx), we use the logistic likelihood:</p>
+
+                    <pre><code class="language-plaintext">p(y | x, W, v) = σ(y · ŷ(x)) = σ(y · v^T h(Wx))</code></pre>
+
+                    <p>where y ∈ {-1, 1}.</p>
+
+                    <p>We minimize the negative log-likelihood:</p>
+
+                    <pre><code class="language-plaintext">minimize_{W,v} ∑ᵢ log(1 + exp(-y⁽ⁱ⁾ v^T h(Wx⁽ⁱ⁾)))</code></pre>
+
+                    <p>Now we're optimizing over both W (the feature transformation) and v (the final linear layer).</p>
+
+                    <h4>Fixed W vs. Learning W</h4>
+
+                    <p>An important observation: <strong>with fixed W</strong>, this is just logistic regression on the transformed features h(Wx). The only difference is that we're also optimizing W!</p>
+
+                    <p>This means neural network training alternates between:</p>
+                    <ul>
+                        <li>Learning good features (updating W)</li>
+                        <li>Learning how to combine those features (updating v)</li>
+                    </ul>
+
+                    <h4>Deep Networks: Stacking Layers</h4>
+
+                    <p>The same principle extends to deeper networks. A fully-connected L-layer network looks like:</p>
+
+                    <pre><code class="language-plaintext">ŷ(x) = W_L h_{L-1}(W_{L-1} h_{L-2}(W_{L-2} ··· h_1(W_1 x) ···))</code></pre>
+
+                    <p>Or more commonly, with bias terms at each layer:</p>
+
+                    <pre><code class="language-plaintext">ŷ(x) = b_L + W_L h_{L-1}(b_{L-1} + W_{L-1} h_{L-2}(b_{L-2} + ··· h_1(b_1 + W_1 x) ···))</code></pre>
+
+                    <p>Each layer transforms its input through a linear transformation (W_j, b_j) followed by a nonlinearity (h_j).</p>
+
+                    <h4>Dimensions and Parameters</h4>
+
+                    <p>If layer j has d_j activations and layer j-1 has d_{j-1} activations:</p>
+                    <ul>
+                        <li><strong>W_j:</strong> d_j × d_{j-1} matrix (d_j · d_{j-1} parameters)</li>
+                        <li><strong>b_j:</strong> d_j-dimensional vector (d_j parameters)</li>
+                        <li><strong>Total at layer j:</strong> d_j(d_{j-1} + 1) parameters</li>
+                    </ul>
+
+                    <p><em>Example:</em> A network with layers [784, 128, 64, 10] (for MNIST) has:</p>
+                    <ul>
+                        <li>Layer 1: 784 × 128 + 128 = 100,480 parameters</li>
+                        <li>Layer 2: 128 × 64 + 64 = 8,256 parameters</li>
+                        <li>Layer 3: 64 × 10 + 10 = 650 parameters</li>
+                        <li><strong>Total: 109,386 parameters</strong></li>
+                    </ul>
+
+                    <h4>Training Deep Networks</h4>
+
+                    <p>We still use gradient-based optimization, but now with respect to all the W_j and b_j parameters:</p>
+                    <ul>
+                        <li><strong>Backpropagation:</strong> Efficient algorithm for computing gradients using the chain rule</li>
+                        <li><strong>SGD variants:</strong> Adam, RMSprop, AdaGrad, etc.</li>
+                        <li><strong>Mini-batches:</strong> Compute gradients on small batches of data (e.g., 32-256 examples)</li>
+                        <li><strong>Regularization:</strong> Dropout, batch normalization, early stopping, weight decay</li>
+                    </ul>
+
+                    <p><mark>Key challenge:</mark> Deep networks are non-convex! Unlike logistic regression, we're not guaranteed to find the global optimum. But in practice, gradient descent finds good solutions.</p>
+
+                    <!-- ==================== MULTICLASS ==================== -->
+
+                    <h3>Multi-Class Classification with Naive Bayes</h3>
+
+                    <p>Before continuing with neural architectures, let's see how to extend our framework to multiple classes using generative models.</p>
+
+                    <h4>Generative Framework for K Classes</h4>
+
+                    <p>We can generalize Naive Bayes from binary to multi-class:</p>
+
+                    <pre><code class="language-plaintext">Y ~ Categorical(θ_y)    e.g., Pr(Y = spam) = 0.4
+                                  Pr(Y = important) = 0.1
+                                  Pr(Y = promo) = 0.3
+                                  Pr(Y = other) = 0.2
+
+X_j | (Y = y) ~ Bernoulli(θ_{j|y})    e.g., Pr("ASAP" in email | Y = important) = 0.05</code></pre>
+
+                    <p>Classification uses Bayes' rule:</p>
+
+                    <pre><code class="language-plaintext">p(y = c | x) = p(x | y=c)p(y=c) / ∑_{c'} p(x | y=c')p(y=c')</code></pre>
+
+                    <h4>Fitting Multi-Class Naive Bayes</h4>
+
+                    <p>Parameters Θ = {θ_y, θ_{1|1}, θ_{1|2}, ..., θ_{d|K}} can be fit with:</p>
+                    <ul>
+                        <li><strong>MLE:</strong> arg max_Θ p(X, y | Θ)</li>
+                        <li><strong>MAP:</strong> arg max_Θ p(X, y | Θ)p(Θ)
+                            <ul>
+                                <li>Dirichlet prior for θ_y (generalizes Beta to K classes)</li>
+                                <li>Beta priors for each θ_{j|y}</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <h4>Example: MNIST Digit Classification</h4>
+
+                    <p>The lecture shows results on binarized MNIST (28×28 pixel images of digits 0-9):</p>
+
+                    <p><strong>Multi-class Naive Bayes:</strong></p>
+                    <ul>
+                        <li>Y ~ Categorical(10 classes)</li>
+                        <li>Each pixel is Bernoulli given the class</li>
+                        <li>Parameters: 10 class probabilities + 784 × 10 pixel probabilities = 7,850 parameters</li>
+                        <li>Learns what each digit "looks like" on average</li>
+                    </ul>
+
+                    <p><strong>"Galaxy Brain Bayes":</strong></p>
+                    <ul>
+                        <li>Y ~ Categorical(10 classes)</li>
+                        <li>X | Y ~ Categorical over all possible 28×28 binary images</li>
+                        <li>No independence assumption - can model anything!</li>
+                        <li>Parameters: ~10 × 2^784 (astronomically large)</li>
+                        <li>Samples look great, but test likelihood is zero (complete overfitting)</li>
+                    </ul>
+
+                    <p>This dramatically illustrates the overfitting problem with overly flexible models.</p>
+
+                    <!-- ==================== DISCRIMINATIVE MULTICLASS ==================== -->
+
+                    <h3>Discriminative Multi-Class Models</h3>
+
+                    <h4>From Binary to Multi-Class</h4>
+
+                    <p>We've seen several ways to parameterize binary classifiers:</p>
+                    <ul>
+                        <li>Tabular: separate θ_x for each x (extremely flexible, overfits)</li>
+                        <li>Constant: same θ for all x (extremely simple, underfits)</li>
+                        <li>Logistic regression: θ_x = σ(w^T x + b) (sweet spot for many problems)</li>
+                    </ul>
+
+                    <p>The same logic applies to K-class classification, just with different output representations.</p>
+
+                    <h4>Challenge: Parameterizing K-Class Probabilities</h4>
+
+                    <p>For K classes, we need to output a probability distribution θ̂(x) = [θ̂₁(x), ..., θ̂_K(x)] such that:</p>
+                    <ul>
+                        <li>θ̂_c(x) ≥ 0 for all c (non-negative)</li>
+                        <li>∑_c θ̂_c(x) = 1 (sums to one)</li>
+                    </ul>
+
+                    <h4>The Softmax Function</h4>
+
+                    <p>The standard solution is the <strong>softmax</strong> function:</p>
+
+                    <pre><code class="language-plaintext">θ̂_c = [softmax(z)]_c = exp(z_c) / ∑_{c'=1}^K exp(z_c')</code></pre>
+
+                    <p>where z = [z₁, ..., z_K] is a vector of "logits" (unconstrained real numbers).</p>
+
+                    <p><strong>How softmax works:</strong></p>
+                    <ol>
+                        <li>Take exp of each logit (ensures non-negative)</li>
+                        <li>Normalize by the sum (ensures sums to one)</li>
+                    </ol>
+
+                    <p><em>Connection to binary case:</em> For K=2, softmax reduces to the sigmoid function.</p>
+
+                    <h4>Multi-Class Logistic Regression</h4>
+
+                    <p>To get the logits z from features x, use a linear model:</p>
+
+                    <pre><code class="language-plaintext">z_c = w_c^T x + b_c for each class c</code></pre>
+
+                    <p>Then apply softmax:</p>
+
+                    <pre><code class="language-plaintext">p(y = c | x) = exp(w_c^T x + b_c) / ∑_{c'} exp(w_{c'}^T x + b_{c'})</code></pre>
+
+                    <p>Parameters: K weight vectors w_c and K biases b_c.</p>
+
+                    <h4>Multi-Class Neural Networks</h4>
+
+                    <p>For neural networks, just make the last layer output K values instead of 1:</p>
+
+                    <pre><code class="language-plaintext">z = W_L h_{L-1}(...h_1(W_1 x)...)    where z ∈ ℝ^K
+θ̂(x) = softmax(z)</code></pre>
+
+                    <p>The rest of the training procedure is identical - just use cross-entropy loss for K classes:</p>
+
+                    <pre><code class="language-plaintext">-log p(y | x) = -log θ̂_y(x) = -z_y + log(∑_c exp(z_c))</code></pre>
+
+                    <!-- ==================== FEATURE ENGINEERING ==================== -->
+
+                    <h3>Practical Feature Engineering</h3>
+
+                    <h4>Handling Categorical Features</h4>
+
+                    <p>Linear models expect numerical inputs, but we often have categorical features (city, color, country, etc.). How do we handle these?</p>
+
+                    <p><strong>One-hot encoding (also called "one-of-K" encoding):</strong></p>
+
+                    <p>Convert each categorical feature into multiple binary features:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Age</th>
+                                <th>City</th>
+                                <th>Income</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>23</td><td>Van</td><td>26,000</td></tr>
+                            <tr><td>25</td><td>Sur</td><td>67,000</td></tr>
+                            <tr><td>19</td><td>Bur</td><td>16,500</td></tr>
+                            <tr><td>43</td><td>Sur</td><td>183,000</td></tr>
+                        </tbody>
+                    </table>
+
+                    <p>Becomes:</p>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Age</th>
+                                <th>Van</th>
+                                <th>Bur</th>
+                                <th>Sur</th>
+                                <th>Income</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>23</td><td>1</td><td>0</td><td>0</td><td>26,000</td></tr>
+                            <tr><td>25</td><td>0</td><td>0</td><td>1</td><td>67,000</td></tr>
+                            <tr><td>19</td><td>0</td><td>1</td><td>0</td><td>16,500</td></tr>
+                            <tr><td>43</td><td>0</td><td>0</td><td>1</td><td>183,000</td></tr>
+                        </tbody>
+                    </table>
+
+                    <p><strong>Handling unseen categories:</strong> If you encounter a category at test time that wasn't in training, typically set all corresponding one-hot features to zero.</p>
+
+                    <h4>Feature Standardization</h4>
+
+                    <p>Often beneficial to <strong>standardize</strong> continuous features:</p>
+
+                    <pre><code class="language-plaintext">x_j ← (x_j - mean_j) / std_j</code></pre>
+
+                    <p><strong>Why standardize?</strong></p>
+                    <ul>
+                        <li>Puts features on similar scales (age in years vs income in dollars)</li>
+                        <li>Makes optimization better-conditioned (similar gradient magnitudes)</li>
+                        <li>Makes regularization more sensible (λ applies equally to all features)</li>
+                        <li>Helps with numerical stability</li>
+                    </ul>
+
+                    <p><strong>For one-hot encoded features:</strong> Standardization is often skipped because they're already on a common [0,1] scale.</p>
+
+                    <!-- ==================== CONVOLUTIONAL ==================== -->
+
+                    <h3>Convolutional Neural Networks</h3>
+
+                    <h4>Motivation: Exploiting Structure in Images</h4>
+
+                    <p>Fully-connected networks treat images as flat vectors, ignoring spatial structure. For a 28×28 image:</p>
+                    <ul>
+                        <li>Input: 784 features</li>
+                        <li>First hidden layer (128 neurons): 784 × 128 = 100,352 parameters!</li>
+                    </ul>
+
+                    <p>This is wasteful because:</p>
+                    <ul>
+                        <li>Patterns are local (edges, textures appear in small regions)</li>
+                        <li>Patterns are translation-invariant (an edge is an edge regardless of position)</li>
+                        <li>Most pixel pairs are far apart and weakly related</li>
+                    </ul>
+
+                    <h4>Convolutional Layers</h4>
+
+                    <p><strong>Idea:</strong> Instead of a full weight matrix W, use a bank of small filters (kernels) that scan across the image.</p>
+
+                    <p>Key properties:</p>
+                    <ul>
+                        <li><strong>Local connectivity:</strong> Each neuron connects only to a small spatial region (e.g., 3×3 or 5×5)</li>
+                        <li><strong>Weight sharing:</strong> The same filter is applied at every position</li>
+                        <li><strong>Translation invariance:</strong> A feature detector works the same everywhere in the image</li>
+                    </ul>
+
+                    <p><em>Parameter reduction:</em> Instead of 100K+ parameters, a 3×3 filter has only 9 parameters per output channel!</p>
+
+                    <h4>Pooling Layers</h4>
+
+                    <p>Pooling layers reduce spatial dimensions without learnable parameters:</p>
+
+                    <p><strong>Max pooling:</strong></p>
+                    <ul>
+                        <li>Take the maximum value in each small region (e.g., 2×2)</li>
+                        <li>Interpretation: "There's an edge around here, I don't care exactly where"</li>
+                        <li>Provides small translation invariance</li>
+                    </ul>
+
+                    <p><strong>Average pooling:</strong></p>
+                    <ul>
+                        <li>Take the average value in each region</li>
+                        <li>Interpretation: "Most of these patches look like they're part of an airplane"</li>
+                        <li>Smoother than max pooling</li>
+                    </ul>
+
+                    <h4>Traditional CNN Architecture</h4>
+
+                    <p>Classic pattern:</p>
+                    <pre><code class="language-plaintext">Input → [Conv → ReLU → Pool] × N → Flatten → Fully-Connected → Output</code></pre>
+
+                    <p>Early layers detect simple patterns (edges, corners), later layers combine them into complex patterns (faces, objects).</p>
+
+                    <h4>Beyond 2D Convolutions</h4>
+
+                    <p>Convolutions make sense whenever there's a notion of neighborhood:</p>
+                    <ul>
+                        <li><strong>1D convolution:</strong> Time series, text sequences, audio</li>
+                        <li><strong>3D convolution:</strong> Video (spatial + temporal), medical imaging</li>
+                        <li><strong>Graph convolution:</strong> Social networks, molecules, citation networks (coming in Assignment 2!)</li>
+                    </ul>
+
+                    <!-- ==================== SKIP CONNECTIONS ==================== -->
+
+                    <h3>Skip Connections and Modern Architectures</h3>
+
+                    <h4>The Degradation Problem</h4>
+
+                    <p>In theory, deeper networks should be at least as good as shallow ones (they can learn to copy earlier layers). In practice, very deep networks were hard to train - performance would degrade.</p>
+
+                    <p><strong>Skip connections</strong> solve this by allowing gradients to flow directly through the network.</p>
+
+                    <h4>Standard Layer</h4>
+
+                    <pre><code class="language-plaintext">f_j(x) = h_j(b_j + W_j f_{j-1}(x))</code></pre>
+
+                    <p>All information must pass through W_j and the nonlinearity.</p>
+
+                    <h4>Skip Connection</h4>
+
+                    <pre><code class="language-plaintext">f_j(x) = h_j(b_j + W_j f_{j-1}(x) + W_{j-2}⊙_j f_{j-2}(x))</code></pre>
+
+                    <p>Now layer j can see information from layer j-2 directly.</p>
+
+                    <h4>Residual Connections (ResNets)</h4>
+
+                    <p>The most influential variant uses identity skip connections:</p>
+
+                    <pre><code class="language-plaintext">f_{2j}(x) = h_{2j}(b_{2j} + W_{2j-1}⊙_{2j} h_{2j-1}(W_{2j-1} f_{2j-2}(x)) + f_{2j-2}(x))</code></pre>
+
+                    <p>The key: <code>+ f_{2j-2}(x)</code> is just added directly (no weight matrix).</p>
+
+                    <p><strong>Why this works:</strong></p>
+                    <ul>
+                        <li>The network learns <em>residuals</em> (changes from identity mapping)</li>
+                        <li>Gradients can flow directly backward through the identity connection</li>
+                        <li>Easy to learn "do nothing" (just set W ≈ 0)</li>
+                        <li>Enables training networks with 100+ layers</li>
+                    </ul>
+
+                    <h4>DenseNets</h4>
+
+                    <p>An extreme version: connect each layer to ALL previous layers:</p>
+
+                    <pre><code class="language-plaintext">f_j(x) = h_j(b_j + ∑_{ℓ=0}^{j-1} W_ℓ⊙_j f_ℓ(x))</code></pre>
+
+                    <p>This maximizes information flow but increases memory requirements.</p>
+
+                    <!-- ==================== BEYOND CLASSIFICATION ==================== -->
+
+                    <h3>Beyond Multi-Class Classification</h3>
+
+                    <p>The discriminative framework extends naturally to other output types by choosing appropriate distributions.</p>
+
+                    <h4>Count Data: Poisson Regression</h4>
+
+                    <p>For non-negative integer outputs (counts):</p>
+
+                    <pre><code class="language-plaintext">Y | (X = x) ~ Poisson(λ_x)
+
+Pr(Y = y | X = x) = λ_x^y exp(-λ_x) / y!  for y ∈ {0, 1, 2, ...}</code></pre>
+
+                    <p>Parameterize λ_x to ensure it's positive:</p>
+
+                    <pre><code class="language-plaintext">λ_x = exp(w^T x)  (or exp(neural_net(x)))</code></pre>
+
+                    <p><em>Example applications:</em> Number of emails received per day, number of hospital visits, count of defects in manufacturing</p>
+
+                    <h4>Continuous Outputs: Linear Regression</h4>
+
+                    <p>For real-valued outputs:</p>
+
+                    <pre><code class="language-plaintext">Y | (X = x) ~ N(μ_x, σ²)
+
+μ_x = w^T x  (or neural_net(x))</code></pre>
+
+                    <p>Can also make variance a function of x:</p>
+
+                    <pre><code class="language-plaintext">μ_x = f(x; θ₁)
+σ_x² = exp(g(x; θ₂))  (exp ensures positivity)</code></pre>
+
+                    <p>This allows <strong>heteroscedastic</strong> models where prediction uncertainty varies with input.</p>
+
+                    <h4>The Power of Mix-and-Match</h4>
+
+                    <p><mark>Key insight:</mark> We can mix and match:</p>
+                    <ul>
+                        <li><strong>Output distributions:</strong> Bernoulli, Categorical, Poisson, Gaussian, Beta, Gamma, ...</li>
+                        <li><strong>Feature transformations:</strong> Linear, polynomial, RBF, neural networks, CNNs, ...</li>
+                        <li><strong>Optimization:</strong> MLE, MAP, full Bayesian inference, ...</li>
+                    </ul>
+
+                    <p>This framework unifies a huge variety of models under a common conceptual umbrella!</p>
+
+                    <!-- ==================== SUMMARY ==================== -->
+
+                    <h3>Lecture Summary</h3>
+
+                    <h4>Key Concepts</h4>
+
+                    <ol>
+                        <li>
+                            <strong>Discriminative vs Generative:</strong>
+                            <p>Discriminative models directly model p(y|x) or just f(x), avoiding the harder problem of modeling p(x). This follows Vapnik's principle: don't solve a more general problem as an intermediate step.</p>
+                        </li>
+
+                        <li>
+                            <strong>Hierarchy of Models:</strong>
+                            <p>Generative (Naive Bayes) → Discriminative probabilistic (Logistic Regression) → Discriminative non-probabilistic (SVM). Each level can do less, but focuses the complexity where it matters.</p>
+                        </li>
+
+                        <li>
+                            <strong>Logistic Regression:</strong>
+                            <p>Linear discriminative model p(y=1|x) = σ(w^T x). Uses sigmoid function, optimized via gradient descent on binary cross-entropy loss. Can be regularized with L2 penalty (equivalent to MAP with Gaussian prior).</p>
+                        </li>
+
+                        <li>
+                            <strong>Surprising Result:</strong>
+                            <p>Binary Naive Bayes is a linear model! It can be written as σ(w^T x + b), just with different parameters than logistic regression would learn.</p>
+                        </li>
+
+                        <li>
+                            <strong>Fundamental Tradeoff:</strong>
+                            <p>Simple models have low generalization gap but high training error (underfit). Complex models have low training error but large generalization gap (overfit). Need to balance bias and variance.</p>
+                        </li>
+
+                        <li>
+                            <strong>Feature Transformations:</strong>
+                            <p>Bridge the gap between simple and complex models. Use nonlinear transformations (polynomial, RBF, etc.) before applying linear models.</p>
+                        </li>
+
+                        <li>
+                            <strong>Deep Learning:</strong>
+                            <p>Learn feature transformations from data. Stack layers of linear transformations + nonlinearities. Optimize all parameters jointly with gradient descent.</p>
+                        </li>
+
+                        <li>
+                            <strong>Specialized Architectures:</strong>
+                            <p>CNNs exploit spatial structure through convolution and pooling. Skip connections (ResNets, DenseNets) enable very deep networks by facilitating gradient flow.</p>
+                        </li>
+
+                        <li>
+                            <strong>Extensibility:</strong>
+                            <p>The framework extends to multi-class (softmax), counts (Poisson), continuous outputs (Gaussian), and more. Mix and match distributions, features, and optimization as needed.</p>
+                        </li>
+                    </ol>
+
+                    <h4>What's Next</h4>
+
+                    <p>Next lecture: Handling continuous x in more detail, including kernel methods and Gaussian processes.</p>
+
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Discriminative vs Generative Classification Philosophies</li>
+                    <li>Logistic Regression: Theory, Optimization, and Regularization</li>
+                    <li>Understanding the Bias-Variance Tradeoff</li>
+                    <li>Nonlinear Feature Transformations and Kernel Methods</li>
+                    <li>Deep Learning Fundamentals: Neural Networks and Backpropagation</li>
+                    <li>Convolutional Neural Networks and Modern Architectures</li>
+                    <li>Multi-Class Classification with Softmax</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li>Review the derivation showing that binary Naive Bayes is a linear model</li>
+                    <li>Practice implementing logistic regression with gradient descent</li>
+                    <li>Explore different activation functions (ReLU, sigmoid, tanh) and their properties</li>
+                    <li>Remember: Assignment 2 will involve graph convolutional networks</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc440" class="back-link">← Back to CPSC_440</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

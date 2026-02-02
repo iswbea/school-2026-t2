@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naive Bayes - Interactive Guide</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        /* Concept guide specific styles */
+        .concept-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .difficulty-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+
+        .beginner { background-color: #10b981; color: white; }
+        .intermediate { background-color: #f59e0b; color: white; }
+        .advanced { background-color: #ef4444; color: white; }
+
+        .learning-path {
+            display: flex;
+            justify-content: space-between;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .learning-path::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 4px;
+            background: linear-gradient(to right, #10b981, #f59e0b, #ef4444);
+            z-index: 0;
+        }
+
+        .path-stage {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .path-stage-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid;
+            margin: 0 auto 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .level-section {
+            margin: 3rem 0;
+            padding: 2rem;
+            border-radius: 8px;
+            border-left: 5px solid;
+        }
+
+        .level-beginner {
+            background-color: #f0fdf4;
+            border-color: #10b981;
+        }
+
+        .level-intermediate {
+            background-color: #fffbeb;
+            border-color: #f59e0b;
+        }
+
+        .level-advanced {
+            background-color: #fef2f2;
+            border-color: #ef4444;
+        }
+
+        .interactive-demo {
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .demo-controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .demo-controls button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            background-color: #667eea;
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .demo-controls button:hover {
+            background-color: #5568d3;
+        }
+
+        .demo-controls button:active {
+            background-color: #4451b8;
+        }
+
+        .visualization-area {
+            min-height: 300px;
+            background-color: white;
+            border-radius: 4px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .key-insight {
+            background-color: #fef3c7;
+            border-left: 5px solid #f59e0b;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .key-insight::before {
+            content: "💡 ";
+            font-size: 1.2rem;
+        }
+
+        .prerequisite-box {
+            background-color: #e0e7ff;
+            border: 2px solid #818cf8;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .related-concepts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .related-concept-card {
+            background-color: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+        }
+
+        .related-concept-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .quiz-section {
+            background-color: #faf5ff;
+            border: 2px solid #c084fc;
+            border-radius: 8px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+
+        .quiz-question {
+            margin: 1.5rem 0;
+        }
+
+        .quiz-options {
+            list-style: none;
+            padding: 0;
+        }
+
+        .quiz-options li {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background-color: white;
+            border: 2px solid #e9d5ff;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quiz-options li:hover {
+            border-color: #c084fc;
+            background-color: #faf5ff;
+        }
+
+        .quiz-options li.correct {
+            background-color: #d1fae5;
+            border-color: #10b981;
+        }
+
+        .quiz-options li.incorrect {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+
+        .common-mistake {
+            background-color: #fee2e2;
+            border-left: 5px solid #ef4444;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: 4px;
+        }
+
+        .common-mistake::before {
+            content: "⚠️ Common Mistake: ";
+            font-weight: bold;
+        }
+
+        canvas {
+            max-width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+
+        .email-demo {
+            font-family: monospace;
+            background-color: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .probability-bar {
+            height: 30px;
+            background-color: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+            position: relative;
+        }
+
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(to right, #10b981, #059669);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc440">CPSC 440</a> /
+            <span>Concepts</span> /
+            <span>Naive Bayes</span>
+        </nav>
+
+        <div class="concept-header">
+            <h1>Naive Bayes Classifier <span class="difficulty-badge intermediate">Intermediate</span></h1>
+            <p class="subtitle">A probabilistic classifier based on Bayes' theorem with "naive" independence assumptions</p>
+        </div>
+
+        <!-- Learning Path Progress -->
+        <div class="learning-path">
+            <div class="path-stage">
+                <div class="path-stage-icon" style="border-color: #10b981; color: #10b981;">1</div>
+                <div>Beginner</div>
+                <small>Foundation</small>
+            </div>
+            <div class="path-stage">
+                <div class="path-stage-icon" style="border-color: #f59e0b; color: #f59e0b;">2</div>
+                <div>Intermediate</div>
+                <small>Deep Dive</small>
+            </div>
+            <div class="path-stage">
+                <div class="path-stage-icon" style="border-color: #ef4444; color: #ef4444;">3</div>
+                <div>Advanced</div>
+                <small>Mastery</small>
+            </div>
+        </div>
+
+        <!-- Prerequisites -->
+        <div class="prerequisite-box">
+            <h3>📚 Prerequisites</h3>
+            <p>Before diving into this concept, you should understand:</p>
+            <ul>
+                <li>Basic probability theory (conditional probability, independence)</li>
+                <li>Bayes' theorem: P(A|B) = P(B|A)P(A) / P(B)</li>
+                <li>What classification means in machine learning</li>
+            </ul>
+        </div>
+
+        <!-- ==================== BEGINNER LEVEL ==================== -->
+        <div class="level-section level-beginner">
+            <h2>🌱 Beginner Level: The Basics</h2>
+
+            <h3>What is Naive Bayes? (ELI5)</h3>
+            <p>Imagine you're a detective trying to figure out if an email is spam or not. You've seen thousands of emails before, and you've noticed patterns:</p>
+            <ul>
+                <li>Spam emails usually have words like "FREE", "WINNER", and "CLICK HERE"</li>
+                <li>Real emails usually have words like "meeting", "attached", and your name</li>
+            </ul>
+            <p>Naive Bayes is like having a smart assistant who remembers <em>exactly how often</em> each word appears in spam vs. real emails. When a new email arrives, the assistant looks at each word and says: "Based on these words, I'm 95% sure this is spam!"</p>
+
+            <h4>Real-World Analogy</h4>
+            <blockquote>
+                <p><strong>The Weather Forecaster Analogy:</strong></p>
+                <p>Imagine you're trying to predict if someone will bring an umbrella. You know:</p>
+                <ul>
+                    <li>On rainy days, 90% of people bring umbrellas</li>
+                    <li>On sunny days, only 5% of people bring umbrellas</li>
+                    <li>It rains 30% of days in your city</li>
+                </ul>
+                <p>If you see someone with an umbrella, you can work backward: "It's way more likely that it's a rainy day than a sunny day, because umbrellas are so much more common when it rains!"</p>
+                <p>That's exactly what Naive Bayes does - it works backward from observed features (umbrella) to predict the class (rainy vs sunny).</p>
+            </blockquote>
+
+            <div class="key-insight">
+                <strong>Key Insight:</strong> Naive Bayes is a "generative" model that learns what each class "looks like" by studying examples, then uses probability to classify new data.
+            </div>
+
+            <h4>Simple Example: Spam Detection</h4>
+            <pre><code class="language-plaintext">Training Data:
+Email 1: "Buy now FREE offer" → SPAM
+Email 2: "Meeting tomorrow at 3pm" → NOT SPAM
+Email 3: "FREE money WINNER" → SPAM
+Email 4: "Project update attached" → NOT SPAM
+
+What Naive Bayes Learns:
+- P(SPAM) = 50% (2 out of 4 emails are spam)
+- P("FREE" | SPAM) = 100% (appears in all spam)
+- P("FREE" | NOT SPAM) = 0% (never appears in real emails)
+- P("meeting" | SPAM) = 0%
+- P("meeting" | NOT SPAM) = 50%
+
+New Email: "FREE meeting offer"
+Naive Bayes thinks: "Hmm, has 'FREE' (very spammy!) and 'meeting' (not spammy)...
+Overall, I'm 75% confident this is SPAM"
+            </code></pre>
+
+            <!-- Interactive Demo (Beginner) -->
+            <div class="interactive-demo">
+                <h4>Interactive Demo: Classify This Email</h4>
+                <p>Type words into the email below and watch Naive Bayes classify it in real-time!</p>
+                <div class="demo-controls">
+                    <textarea id="email-input" rows="4" style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 2px solid #e2e8f0;" placeholder="Type an email here... try words like 'free', 'winner', 'meeting', 'project'">Click here for FREE money winner!</textarea>
+                    <button onclick="classifyEmail()">Classify Email</button>
+                    <button onclick="document.getElementById('email-input').value = ''; document.getElementById('result').innerHTML = '';">Clear</button>
+                </div>
+                <div class="visualization-area" id="beginner-viz">
+                    <div id="result"></div>
+                </div>
+            </div>
+
+            <div class="common-mistake">
+                <strong>Don't</strong> think Naive Bayes "understands" the meaning of words. It only knows statistics: "This word appears X% of the time in spam emails." It doesn't know what "free" means!
+            </div>
+        </div>
+
+        <!-- ==================== INTERMEDIATE LEVEL ==================== -->
+        <div class="level-section level-intermediate">
+            <h2>🚀 Intermediate Level: Going Deeper</h2>
+
+            <h3>How Naive Bayes Actually Works</h3>
+            <p>Naive Bayes is based on <strong>Bayes' theorem</strong>, which lets us flip conditional probabilities around:</p>
+
+            <h4>Mathematical Foundation</h4>
+            <p>We want to find P(class | features), but it's easier to learn P(features | class). Bayes' theorem connects them:</p>
+            <pre><code class="language-plaintext">P(spam | email) = P(email | spam) × P(spam) / P(email)
+
+Breaking it down:
+- P(spam | email): What we want - probability it's spam given the words
+- P(email | spam): What we learn from data - how likely these words appear in spam
+- P(spam): Prior - overall rate of spam (e.g., 40% of all emails)
+- P(email): Normalizing constant (same for all classes)
+
+The "Naive" Part:
+We assume each word is independent given the class!
+P(email | spam) = P(word₁ | spam) × P(word₂ | spam) × ... × P(wordₙ | spam)
+
+This is "naive" because words aren't truly independent ("free" and "money" often
+appear together in spam), but it works surprisingly well!
+            </code></pre>
+
+            <h4>Step-by-Step: Classifying an Email</h4>
+            <ol>
+                <li><strong>Training Phase:</strong> Count word frequencies
+                    <pre><code class="language-plaintext">For each class (spam/not spam):
+  - Count how many emails are in this class
+  - Count how many times each word appears in this class
+  - Calculate P(word | class) = count(word in class) / count(total words in class)</code></pre>
+                </li>
+                <li><strong>Classification Phase:</strong> For each possible class
+                    <pre><code class="language-plaintext">score(spam) = P(spam) × P(word₁|spam) × P(word₂|spam) × ...
+score(not_spam) = P(not_spam) × P(word₁|not_spam) × P(word₂|not_spam) × ...</code></pre>
+                </li>
+                <li><strong>Decision:</strong> Pick the class with the highest score
+                    <pre><code class="language-plaintext">if score(spam) > score(not_spam):
+    return "SPAM"
+else:
+    return "NOT SPAM"</code></pre>
+                </li>
+            </ol>
+
+            <!-- Interactive Demo (Intermediate) -->
+            <div class="interactive-demo">
+                <h4>Interactive Visualization: Watch the Math</h4>
+                <p>See how Naive Bayes calculates probabilities step by step</p>
+                <div class="demo-controls">
+                    <button onclick="visualizeCalculation()">Show Calculation</button>
+                    <button onclick="resetVisualization()">Reset</button>
+                </div>
+                <div class="visualization-area">
+                    <canvas id="intermediate-canvas" width="800" height="500"></canvas>
+                </div>
+            </div>
+
+            <div class="key-insight">
+                <strong>Deeper Insight:</strong> The "independence assumption" is why it's called "naive" - we pretend words don't affect each other. Real language has dependencies (if you see "free", you're more likely to see "money"), but ignoring this often works fine in practice!
+            </div>
+
+            <h4>Practical Implementation</h4>
+            <pre><code class="language-python">from collections import defaultdict
+import math
+
+class NaiveBayes:
+    def __init__(self):
+        self.class_word_counts = defaultdict(lambda: defaultdict(int))
+        self.class_totals = defaultdict(int)
+        self.vocab = set()
+
+    def train(self, documents, labels):
+        """Train on (document, label) pairs"""
+        for doc, label in zip(documents, labels):
+            words = doc.lower().split()
+            for word in words:
+                self.class_word_counts[label][word] += 1
+                self.class_totals[label] += 1
+                self.vocab.add(word)
+
+    def predict(self, document):
+        """Predict the most likely class"""
+        words = document.lower().split()
+        scores = {}
+
+        for class_name in self.class_totals:
+            # Start with prior probability (log scale to avoid underflow)
+            score = math.log(self.class_totals[class_name] /
+                           sum(self.class_totals.values()))
+
+            # Multiply by likelihood of each word (add in log scale)
+            for word in words:
+                word_count = self.class_word_counts[class_name][word]
+                # Laplace smoothing (+1 to avoid zero probabilities)
+                prob = (word_count + 1) / (self.class_totals[class_name] + len(self.vocab))
+                score += math.log(prob)
+
+            scores[class_name] = score
+
+        # Return class with highest score
+        return max(scores, key=scores.get)
+
+# Example usage
+nb = NaiveBayes()
+nb.train(
+    ["buy now free offer", "meeting at 3pm", "free money winner", "project update"],
+    ["spam", "ham", "spam", "ham"]
+)
+print(nb.predict("free meeting offer"))  # Likely: "spam"
+            </code></pre>
+
+            <div class="common-mistake">
+                <strong>Zero probability problem:</strong> If a word never appeared in training data for a class, P(word|class) = 0, which makes the entire product zero! Solution: <em>Laplace smoothing</em> - add 1 to all counts.
+            </div>
+        </div>
+
+        <!-- ==================== ADVANCED LEVEL ==================== -->
+        <div class="level-section level-advanced">
+            <h2>🎓 Advanced Level: Mastery</h2>
+
+            <h3>Advanced Concepts and Theoretical Foundations</h3>
+            <p>Naive Bayes can be viewed through several theoretical lenses:</p>
+
+            <h4>1. As a Generative Model</h4>
+            <p>Unlike discriminative models (which learn p(y|x) directly), Naive Bayes learns the joint distribution p(x,y) by modeling:</p>
+            <ul>
+                <li><strong>p(y):</strong> The prior distribution over classes</li>
+                <li><strong>p(x|y):</strong> The likelihood of features given each class</li>
+            </ul>
+            <p>This means Naive Bayes can generate new samples, detect outliers, and handle missing data naturally.</p>
+
+            <h4>2. As a Linear Classifier (Surprising Result!)</h4>
+            <p>For binary Naive Bayes with Bernoulli features, the decision boundary is actually linear!</p>
+            <pre><code class="language-plaintext">P(y=1|x) = σ(w^T x + b)  where σ is the sigmoid function
+
+The weights are:
+w_j = log(θ_{j|1}/θ_{j|0} × (1-θ_{j|0})/(1-θ_{j|1}))
+b = Σ log((1-θ_{j|1})/(1-θ_{j|0})) + log(P(y=1)/P(y=0))
+
+This means Naive Bayes draws a straight line (in high-dimensional space)
+to separate classes - just like logistic regression!
+            </code></pre>
+
+            <h4>3. Different Variants for Different Data Types</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Variant</th>
+                        <th>Data Type</th>
+                        <th>P(x_j | y) Distribution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Bernoulli NB</strong></td>
+                        <td>Binary features (word present/absent)</td>
+                        <td>Bernoulli(θ)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multinomial NB</strong></td>
+                        <td>Count data (word frequencies)</td>
+                        <td>Multinomial(θ)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gaussian NB</strong></td>
+                        <td>Continuous features</td>
+                        <td>Normal(μ, σ²)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>Optimizations and Best Practices</h4>
+            <ul>
+                <li><strong>Log-space computation:</strong> Use log probabilities to avoid numerical underflow (multiplying many small numbers)</li>
+                <li><strong>Laplace smoothing:</strong> Add-1 smoothing prevents zero probabilities</li>
+                <li><strong>Feature selection:</strong> Remove irrelevant features to improve the independence assumption</li>
+                <li><strong>TF-IDF weighting:</strong> For text, weight words by importance (rare words matter more)</li>
+            </ul>
+
+            <!-- Interactive Demo (Advanced) -->
+            <div class="interactive-demo">
+                <h4>Advanced Playground: Decision Boundary Visualization</h4>
+                <p>Adjust parameters to see how Naive Bayes creates decision boundaries</p>
+                <div class="demo-controls">
+                    <label style="display: block; margin: 0.5rem 0;">
+                        Class separation:
+                        <input type="range" id="separation" min="1" max="10" value="5"
+                               oninput="updateBoundary()">
+                        <span id="sep-value">5</span>
+                    </label>
+                    <label style="display: block; margin: 0.5rem 0;">
+                        Feature correlation:
+                        <input type="range" id="correlation" min="0" max="100" value="0"
+                               oninput="updateBoundary()">
+                        <span id="corr-value">0%</span>
+                    </label>
+                    <button onclick="generateNewData()">Generate New Data</button>
+                </div>
+                <div class="visualization-area">
+                    <canvas id="advanced-canvas" width="800" height="500"></canvas>
+                </div>
+                <p style="margin-top: 1rem;"><small><em>Note: When correlation increases, the independence assumption is violated more, but Naive Bayes still works reasonably well!</em></small></p>
+            </div>
+
+            <h4>When Naive Bayes Excels vs. Struggles</h4>
+
+            <p><strong>✅ Naive Bayes Works Great When:</strong></p>
+            <ul>
+                <li>Features are (approximately) independent given the class</li>
+                <li>You have limited training data (simple model, fewer parameters)</li>
+                <li>You need fast training and prediction</li>
+                <li>You need probability estimates (not just classifications)</li>
+                <li>Text classification (spam detection, sentiment analysis)</li>
+            </ul>
+
+            <p><strong>❌ Naive Bayes Struggles When:</strong></p>
+            <ul>
+                <li>Features have strong dependencies (e.g., "San" and "Francisco" always appear together)</li>
+                <li>You have lots of training data (more complex models can outperform)</li>
+                <li>The decision boundary is highly non-linear</li>
+                <li>Feature distributions don't match assumed distribution (Gaussian, Bernoulli, etc.)</li>
+            </ul>
+
+            <h4>Comparison to Discriminative Models</h4>
+            <pre><code class="language-plaintext">Naive Bayes (Generative)        vs.    Logistic Regression (Discriminative)
+----------------------------             ------------------------------------
+Models p(x,y) = p(y)p(x|y)              Models p(y|x) directly
+Needs fewer training examples           Needs more training examples
+Makes independence assumption           No independence assumption
+Can generate new samples                Can't generate samples
+Often has higher bias                   Often has lower bias
+Fast to train                           Slower to train (iterative)
+Probability estimates may be off        Better calibrated probabilities
+
+SURPRISING: Both create linear decision boundaries for binary data!
+            </code></pre>
+
+            <h4>Real-World Applications</h4>
+            <ul>
+                <li><strong>Email Spam Filtering:</strong> Gmail's original spam filter (1998-2004) used Naive Bayes</li>
+                <li><strong>Text Classification:</strong> News categorization, sentiment analysis, language detection</li>
+                <li><strong>Medical Diagnosis:</strong> Disease prediction from symptoms (features are symptoms, classes are diseases)</li>
+                <li><strong>Recommendation Systems:</strong> Collaborative filtering based on user preferences</li>
+                <li><strong>Real-time Classification:</strong> When speed matters (fraud detection, content moderation)</li>
+            </ul>
+        </div>
+
+        <!-- ==================== QUIZ SECTION ==================== -->
+        <div class="quiz-section">
+            <h3>🧠 Test Your Understanding</h3>
+
+            <div class="quiz-question">
+                <p><strong>Question 1:</strong> Why is Naive Bayes called "naive"?</p>
+                <ul class="quiz-options">
+                    <li onclick="checkAnswer(this, false)">Because it's a simple algorithm that anyone can understand</li>
+                    <li onclick="checkAnswer(this, true)">Because it assumes features are independent given the class, which is often unrealistic</li>
+                    <li onclick="checkAnswer(this, false)">Because it was invented by someone named Naive</li>
+                    <li onclick="checkAnswer(this, false)">Because it makes naive predictions without looking at the data</li>
+                </ul>
+                <div class="explanation" style="display: none; margin-top: 1rem; padding: 1rem; background-color: white; border-radius: 4px;">
+                    <strong>Explanation:</strong> The "naive" assumption is that features are conditionally independent given the class. For example, it assumes that seeing "free" in an email doesn't make "money" more likely - but in reality, these words often appear together in spam! Despite this unrealistic assumption, Naive Bayes often works well in practice.
+                </div>
+            </div>
+
+            <div class="quiz-question">
+                <p><strong>Question 2:</strong> What happens if a word in your test email never appeared in the training data?</p>
+                <ul class="quiz-options">
+                    <li onclick="checkAnswer(this, false)">The algorithm crashes because it can't handle unknown words</li>
+                    <li onclick="checkAnswer(this, false)">It ignores the word completely</li>
+                    <li onclick="checkAnswer(this, true)">Without smoothing, P(word|class) = 0, making the entire probability 0. With Laplace smoothing, it gets a small non-zero probability</li>
+                    <li onclick="checkAnswer(this, false)">It automatically classifies the email as spam</li>
+                </ul>
+                <div class="explanation" style="display: none; margin-top: 1rem; padding: 1rem; background-color: white; border-radius: 4px;">
+                    <strong>Explanation:</strong> This is the "zero frequency problem." If a word never appeared in spam emails during training, P(word|spam) = 0. Since Naive Bayes multiplies probabilities, one zero makes everything zero! Laplace smoothing solves this by pretending we saw every word at least once in each class, giving unseen words a small but non-zero probability.
+                </div>
+            </div>
+
+            <div class="quiz-question">
+                <p><strong>Question 3:</strong> True or False: Naive Bayes is a generative model, meaning it models p(x,y) rather than just p(y|x).</p>
+                <ul class="quiz-options">
+                    <li onclick="checkAnswer(this, true)">True - it learns p(y) and p(x|y), which together give p(x,y)</li>
+                    <li onclick="checkAnswer(this, false)">False - it only learns p(y|x) directly like logistic regression</li>
+                </ul>
+                <div class="explanation" style="display: none; margin-top: 1rem; padding: 1rem; background-color: white; border-radius: 4px;">
+                    <strong>Explanation:</strong> TRUE! Naive Bayes is a generative model. It learns p(y) (the prior - how common each class is) and p(x|y) (the likelihood - what features look like for each class). This is different from discriminative models like logistic regression, which directly learn the decision boundary. Being generative means Naive Bayes can generate new samples, handle missing data naturally, and detect outliers.
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== RELATED CONCEPTS ==================== -->
+        <div style="margin-top: 3rem;">
+            <h3>Related Concepts</h3>
+            <div class="related-concepts">
+                <a href="../../index.html#cpsc440" class="related-concept-card">
+                    <h4>Logistic Regression</h4>
+                    <p>A discriminative alternative that learns p(y|x) directly - often compared to Naive Bayes</p>
+                </a>
+                <a href="../../index.html#cpsc440" class="related-concept-card">
+                    <h4>Bayes' Theorem</h4>
+                    <p>The mathematical foundation of Naive Bayes - learn how to flip conditional probabilities</p>
+                </a>
+                <a href="../../index.html#cpsc440" class="related-concept-card">
+                    <h4>Generative vs Discriminative</h4>
+                    <p>Understand the fundamental distinction between these two modeling approaches</p>
+                </a>
+            </div>
+        </div>
+
+        <!-- ==================== FURTHER READING ==================== -->
+        <div style="margin-top: 3rem; padding: 2rem; background-color: #f8fafc; border-radius: 8px;">
+            <h3>📖 Further Reading</h3>
+            <ul>
+                <li><a href="https://www.cs.ubc.ca/~dsuth/440/25w2">CPSC 440 Course Website</a> - Lecture notes and slides</li>
+                <li><a href="https://scikit-learn.org/stable/modules/naive_bayes.html">Scikit-learn Naive Bayes Documentation</a> - Practical implementation guide</li>
+                <li><a href="https://www.youtube.com/watch?v=O2L2Uv9pdDA">3Blue1Brown: Bayes Theorem</a> - Visual explanation of the core concept</li>
+            </ul>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc440" class="back-link">← Back to CPSC 440</a>
+        </footer>
+    </div>
+
+    <script>
+        // Simple spam word database for demo
+        const spamWords = {
+            'free': 0.9, 'winner': 0.95, 'click': 0.8, 'money': 0.85,
+            'offer': 0.7, 'buy': 0.75, 'now': 0.6
+        };
+        const hamWords = {
+            'meeting': 0.8, 'project': 0.85, 'attached': 0.9, 'update': 0.75,
+            'team': 0.7, 'schedule': 0.8
+        };
+
+        function classifyEmail() {
+            const text = document.getElementById('email-input').value.toLowerCase();
+            const words = text.split(/\s+/);
+
+            let spamScore = 0.5; // Prior probability
+            let hamScore = 0.5;
+
+            const analysis = [];
+            words.forEach(word => {
+                if (spamWords[word]) {
+                    spamScore *= spamWords[word];
+                    analysis.push(`"${word}" is spammy (${(spamWords[word]*100).toFixed(0)}%)`);
+                }
+                if (hamWords[word]) {
+                    hamScore *= hamWords[word];
+                    analysis.push(`"${word}" is legitimate (${(hamWords[word]*100).toFixed(0)}%)`);
+                }
+            });
+
+            const total = spamScore + hamScore;
+            const spamProb = spamScore / total;
+            const hamProb = hamScore / total;
+
+            const result = document.getElementById('result');
+            result.innerHTML = `
+                <h4>Classification Result:</h4>
+                <p><strong>${spamProb > hamProb ? '🚫 SPAM' : '✅ LEGITIMATE EMAIL'}</strong></p>
+                <div class="probability-bar">
+                    <div class="probability-fill" style="width: ${(spamProb * 100).toFixed(0)}%">
+                        ${(spamProb * 100).toFixed(1)}% Spam
+                    </div>
+                </div>
+                <div class="probability-bar" style="margin-top: 0.5rem;">
+                    <div class="probability-fill" style="width: ${(hamProb * 100).toFixed(0)}%; background: linear-gradient(to right, #3b82f6, #2563eb);">
+                        ${(hamProb * 100).toFixed(1)}% Legitimate
+                    </div>
+                </div>
+                <details style="margin-top: 1rem;">
+                    <summary style="cursor: pointer; font-weight: bold;">Show Analysis</summary>
+                    <ul style="margin-top: 0.5rem;">
+                        ${analysis.map(a => `<li>${a}</li>`).join('')}
+                    </ul>
+                </details>
+            `;
+        }
+
+        function visualizeCalculation() {
+            const canvas = document.getElementById('intermediate-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw visualization of probability calculation
+            ctx.font = '16px monospace';
+            ctx.fillStyle = '#1e293b';
+
+            let y = 30;
+            const lines = [
+                'Email: "FREE money winner!"',
+                '',
+                'Step 1: Calculate P(spam) and P(ham)',
+                '  P(spam) = 0.5  (50% of training emails were spam)',
+                '  P(ham) = 0.5',
+                '',
+                'Step 2: Calculate likelihood of each word',
+                '  P("free"|spam) = 0.9   P("free"|ham) = 0.1',
+                '  P("money"|spam) = 0.85  P("money"|ham) = 0.15',
+                '  P("winner"|spam) = 0.95 P("winner"|ham) = 0.05',
+                '',
+                'Step 3: Multiply (independence assumption!)',
+                '  score(spam) = 0.5 × 0.9 × 0.85 × 0.95 = 0.364',
+                '  score(ham) = 0.5 × 0.1 × 0.15 × 0.05 = 0.000375',
+                '',
+                'Step 4: Normalize to get probabilities',
+                '  P(spam|email) = 0.364 / (0.364 + 0.000375) = 99.9%',
+                '  P(ham|email) = 0.1%',
+                '',
+                'Decision: SPAM! 🚫'
+            ];
+
+            lines.forEach(line => {
+                if (line.startsWith('Step')) {
+                    ctx.fillStyle = '#667eea';
+                    ctx.font = 'bold 16px monospace';
+                } else if (line.includes('Decision:')) {
+                    ctx.fillStyle = '#ef4444';
+                    ctx.font = 'bold 18px monospace';
+                } else {
+                    ctx.fillStyle = '#1e293b';
+                    ctx.font = '14px monospace';
+                }
+                ctx.fillText(line, 20, y);
+                y += 24;
+            });
+        }
+
+        function resetVisualization() {
+            const canvas = document.getElementById('intermediate-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Advanced visualization
+        let dataPoints = [];
+
+        function generateNewData() {
+            const separation = parseFloat(document.getElementById('separation').value);
+            dataPoints = [];
+
+            // Generate two clusters
+            for (let i = 0; i < 50; i++) {
+                dataPoints.push({
+                    x: 200 + Math.random() * 100 - separation * 10,
+                    y: 200 + Math.random() * 100,
+                    class: 0
+                });
+                dataPoints.push({
+                    x: 500 + Math.random() * 100 + separation * 10,
+                    y: 300 + Math.random() * 100,
+                    class: 1
+                });
+            }
+            updateBoundary();
+        }
+
+        function updateBoundary() {
+            const canvas = document.getElementById('advanced-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const separation = document.getElementById('separation').value;
+            const correlation = document.getElementById('correlation').value;
+
+            document.getElementById('sep-value').textContent = separation;
+            document.getElementById('corr-value').textContent = correlation + '%';
+
+            if (dataPoints.length === 0) generateNewData();
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw decision boundary (linear)
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(400, 0);
+            ctx.lineTo(400, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw data points
+            dataPoints.forEach(point => {
+                ctx.fillStyle = point.class === 0 ? '#ef4444' : '#10b981';
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw legend
+            ctx.font = '14px sans-serif';
+            ctx.fillStyle = '#ef4444';
+            ctx.fillText('● Class 0', 20, 30);
+            ctx.fillStyle = '#10b981';
+            ctx.fillText('● Class 1', 20, 50);
+            ctx.fillStyle = '#667eea';
+            ctx.fillText('--- Decision Boundary', 20, 70);
+        }
+
+        // Quiz functionality
+        function checkAnswer(element, isCorrect) {
+            const options = element.parentElement.children;
+            const explanation = element.parentElement.nextElementSibling;
+
+            for (let option of options) {
+                option.classList.remove('correct', 'incorrect');
+                option.style.pointerEvents = 'none';
+            }
+
+            if (isCorrect) {
+                element.classList.add('correct');
+            } else {
+                element.classList.add('incorrect');
+                // Also highlight the correct answer
+                for (let option of options) {
+                    if (option.onclick && option.onclick.toString().includes('true')) {
+                        option.classList.add('correct');
+                    }
+                }
+            }
+
+            explanation.style.display = 'block';
+        }
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('advanced-canvas')) {
+                generateNewData();
+            }
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

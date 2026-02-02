@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_404 - Lecture 2026-01-27</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <style>
+        .btree-container {
+            margin: 30px 0;
+            padding: 30px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a7b 100%);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .btree-canvas {
+            background: white;
+            border-radius: 8px;
+            width: 100%;
+            height: 500px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .btree-controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .btree-controls button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+        .btree-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+        }
+        .btree-controls input {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 100px;
+            transition: border-color 0.3s ease;
+        }
+        .btree-controls input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        .btree-legend {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+        }
+        .btree-legend-item {
+            display: inline-block;
+            margin-right: 25px;
+            margin-bottom: 10px;
+        }
+        .btree-legend-color {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            margin-right: 8px;
+            vertical-align: middle;
+            border: 2px solid white;
+        }
+        .comparison-table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #444;
+        }
+        .comparison-table th {
+            background: linear-gradient(135deg, #2c5f7c 0%, #1e4a5f 100%);
+            color: white;
+            font-weight: 600;
+        }
+        .comparison-table tr:nth-child(even) {
+            background: rgba(255,255,255,0.02);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc404">CPSC_404</a> /
+            <span>2026-01-27</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Relational Databases</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-27</span>
+                <span class="instructor">👤 Ed Knorr</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <h3>Review:</h3>
+                    <ul>
+                        <li>An index entry is a key,pointer pair on an internal index page. It directs traffic inside a tree index, above the leaf level. The pointer is an index page address (10 bytes)</li>
+                        <li>A data entry is a &lt;key,pointer&gt; pair in the leaf pages</li>
+                    </ul>
+
+                    <h3>Intro new unit:</h3>
+                    <ul>
+                        <li>Tree-structured indexing tech support both range searches and equality searches efficiently.</li>
+                        <li>The latter is sometimes called a point query</li>
+                        <li>B+ tree: A dynamic balanced tree structure</li>
+                        <li>Adjusts gracefully for insertions and deletions</li>
+                        <li>Skew is generally not an issue</li>
+                    </ul>
+
+                    <h3>Range Search Problem</h3>
+                    <p>"Find all students with GPA > 3.0"</p>
+                    <ul>
+                        <li>Consider a flat file (sometimes called a heap file)</li>
+                        <li>If data is sorted on GPA, binary search can help find starting point</li>
+                        <li>But... cost of binary search can be high on large disk file</li>
+                        <li>Problems: finding middle page, distribution of records, non-contiguous pages, skewed data, multiple seeks, insertions on full pages, searching on other fields</li>
+                        <li>Solution: Create an index file for faster search!</li>
+                    </ul>
+
+                    <h3>B+ Tree Properties</h3>
+                    <ul>
+                        <li>(Unique) search, insert, or delete is O(log<sub>f</sub>(N)) where F = fanout and N = # of leaf pages</li>
+                        <li>We want to keep the tree height balanced</li>
+                        <li>Each page must be at least half full (except root)</li>
+                        <li>Each node contains d ≤ m ≤ 2d entries where d is the order and m is # of search keys</li>
+                        <li>Therefore, fanout for that node is m+1</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+                    <!-- Review Section -->
+                    <article>
+                        <h3>Review: Understanding Index Structures</h3>
+
+                        <h4>Index Entries vs. Data Entries</h4>
+                        <p>Before diving into B+ trees, it's crucial to understand the distinction between two fundamental concepts in database indexing:</p>
+
+                        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-left: 4px solid #4CAF50; margin: 20px 0;">
+                            <p><strong>Index Entry:</strong> An <em>index entry</em> is a <code>&lt;key, pointer&gt;</code> pair that exists on <strong>internal (non-leaf) pages</strong> of a tree index structure. Think of these as the "signposts" or "directory entries" that help navigate through the tree.</p>
+                            <ul>
+                                <li><strong>Location:</strong> Internal index pages (above the leaf level)</li>
+                                <li><strong>Purpose:</strong> Direct traffic through the tree structure</li>
+                                <li><strong>Pointer target:</strong> Points to another index page (a child node)</li>
+                                <li><strong>Size:</strong> Typically 10 bytes (this includes the key and the pointer)</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-left: 4px solid #2196F3; margin: 20px 0;">
+                            <p><strong>Data Entry:</strong> A <em>data entry</em> is a <code>&lt;key, pointer&gt;</code> pair that exists on <strong>leaf pages</strong> of the index structure. These are the "actual destinations" where you find references to the real data.</p>
+                            <ul>
+                                <li><strong>Location:</strong> Leaf pages (bottom level of the tree)</li>
+                                <li><strong>Purpose:</strong> Provide access to actual data records</li>
+                                <li><strong>Pointer target:</strong> Points to actual data records in the database</li>
+                                <li><strong>Organization:</strong> Often linked together (in a B+ tree, leaf pages form a linked list)</li>
+                            </ul>
+                        </div>
+
+                        <p><strong>Analogy:</strong> Think of a library card catalog system:</p>
+                        <ul>
+                            <li><strong>Index entries</strong> are like the divider cards that say "A-C", "D-F", etc. They help you navigate to the right section</li>
+                            <li><strong>Data entries</strong> are like the actual catalog cards that tell you the exact shelf location of each book</li>
+                        </ul>
+
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>Aspect</th>
+                                    <th>Index Entry</th>
+                                    <th>Data Entry</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Location</strong></td>
+                                    <td>Internal nodes (non-leaf)</td>
+                                    <td>Leaf nodes</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Pointer Points To</strong></td>
+                                    <td>Child index page</td>
+                                    <td>Actual data record</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Purpose</strong></td>
+                                    <td>Navigation/routing</td>
+                                    <td>Data access</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Level in Tree</strong></td>
+                                    <td>Above leaves</td>
+                                    <td>At leaves (bottom)</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </article>
+
+                    <!-- Introduction to Tree Indexing -->
+                    <article style="margin-top: 40px;">
+                        <h3>Introduction to Tree-Structured Indexing</h3>
+
+                        <h4>Why Tree Structures?</h4>
+                        <p>Tree-structured indexing techniques are fundamental to modern database systems because they efficiently support <strong>two critical types of queries</strong>:</p>
+
+                        <ol>
+                            <li>
+                                <strong>Range Searches (Range Queries):</strong> Finding all records within a range of values
+                                <ul>
+                                    <li>Example: "Find all students with GPA between 3.0 and 4.0"</li>
+                                    <li>Example: "Find all orders placed between January 1 and January 31"</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Equality Searches (Point Queries):</strong> Finding records with an exact value
+                                <ul>
+                                    <li>Example: "Find the student with ID = 12345"</li>
+                                    <li>Example: "Find the order with order_number = 'ORD-2024-001'"</li>
+                                </ul>
+                            </li>
+                        </ol>
+
+                        <p><mark>Key insight: Unlike hash-based indexes (which only support equality searches efficiently), tree-based indexes can handle BOTH types of queries with logarithmic time complexity.</mark></p>
+
+                        <h4>The B+ Tree: A Dynamic Balanced Structure</h4>
+                        <p>The <strong>B+ tree</strong> is the most widely used indexing structure in relational database systems. Let's break down what makes it special:</p>
+
+                        <div style="background: rgba(76, 175, 80, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h5>B+ Tree Characteristics:</h5>
+                            <ul>
+                                <li><strong>Dynamic:</strong> The tree structure adapts automatically as data is inserted or deleted. You don't need to rebuild it from scratch.</li>
+                                <li><strong>Balanced:</strong> All leaf nodes are at the same depth, ensuring predictable and efficient search performance.</li>
+                                <li><strong>Graceful Adaptation:</strong> Handles insertions and deletions through a well-defined algorithm that maintains balance.</li>
+                                <li><strong>Skew-Resistant:</strong> Unlike binary search trees, B+ trees don't degrade into linked lists if data arrives in sorted order.</li>
+                            </ul>
+                        </div>
+
+                        <p><strong>Why "graceful adaptation" matters:</strong> In a traditional binary search tree, if you insert data in sorted order, you can end up with a completely unbalanced tree that performs like a linked list (O(n) search time). B+ trees avoid this problem through their balancing algorithms, maintaining O(log n) performance regardless of insertion patterns.</p>
+
+                        <p><strong>Real-world impact:</strong> This is why databases can maintain excellent query performance even as millions of records are added or deleted over time. The index automatically reorganizes itself to stay efficient.</p>
+                    </article>
+
+                    <!-- The Range Search Problem -->
+                    <article style="margin-top: 40px;">
+                        <h3>The Range Search Problem: Why We Need Better Solutions</h3>
+
+                        <h4>The Scenario</h4>
+                        <p>Let's consider a concrete example that illustrates why naive approaches fail for large databases:</p>
+
+                        <blockquote style="border-left: 4px solid #2196F3; padding-left: 20px; margin: 20px 0; font-style: italic;">
+                            Query: "Find all students with GPA > 3.0"
+                        </blockquote>
+
+                        <pre><code class="language-sql">SELECT STUDENT_NAME
+FROM GRADE G, STUDENT S
+WHERE G.STUDENT_ID = S.STUDENT_ID
+  AND G.GPA > 3.0;</code></pre>
+
+                        <h4>Approach 1: Heap File (Unordered File)</h4>
+                        <p>A <strong>heap file</strong> (also called a <strong>flat file</strong>) is simply a file where records are stored in no particular order—typically in the order they were inserted.</p>
+
+                        <p><em>Note: This is NOT the same as a "heap" data structure from CPSC 221. In database terminology, "heap" just means "unordered collection."</em></p>
+
+                        <p><strong>Problem:</strong> To answer our query, we'd need to perform a <strong>full table scan</strong>—reading every single record in the file to check if GPA > 3.0.</p>
+
+                        <ul>
+                            <li><strong>Time complexity:</strong> O(N) where N = number of records</li>
+                            <li><strong>Disk I/O:</strong> Must read every page from disk</li>
+                            <li><strong>Performance:</strong> Unacceptable for large tables</li>
+                        </ul>
+
+                        <h4>Approach 2: Sorted File with Binary Search</h4>
+                        <p>What if we sort the file by GPA? Then we could use <strong>binary search</strong> to find where GPA = 3.0 starts, right?</p>
+
+                        <p><strong>In theory, yes.</strong> Binary search gives us O(log N) comparisons. But here's where theory meets reality...</p>
+
+                        <h5>The Many Problems with Binary Search on Disk Files:</h5>
+
+                        <div style="background: rgba(255, 82, 82, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <ol>
+                                <li>
+                                    <strong>Finding the "middle" is expensive:</strong>
+                                    <p>In memory, finding the middle element is trivial—just calculate <code>array[length/2]</code>. On disk, finding the "middle page" requires knowing exactly where it is on disk, which isn't straightforward.</p>
+                                </li>
+                                <li>
+                                    <strong>Pages may not be full:</strong>
+                                    <p>If each page contains a variable number of records (some pages 80% full, others 50% full), you can't easily calculate where the median value is stored.</p>
+                                </li>
+                                <li>
+                                    <strong>Non-contiguous storage:</strong>
+                                    <p>Pages might be scattered across the disk. How do you know where a range of pages starts and ends? You may need metadata or a separate structure to track this.</p>
+                                </li>
+                                <li>
+                                    <strong>Data skew:</strong>
+                                    <p>What if 90% of students have GPA > 3.0? Your "binary search" might land you far from the actual start of your result set.</p>
+                                </li>
+                                <li>
+                                    <strong>Disk seeks are expensive:</strong>
+                                    <p>Each comparison in binary search requires a disk seek (mechanical head movement). With a million pages, log₂(1,000,000) ≈ 20 seeks. Each seek takes milliseconds—the slowest operation in a database.</p>
+                                </li>
+                                <li>
+                                    <strong>Insertions are painful:</strong>
+                                    <p>What happens when a page is full and you need to insert a new record? You'd need to reorganize potentially large portions of the file to maintain sort order.</p>
+                                </li>
+                                <li>
+                                    <strong>Limited to one sort order:</strong>
+                                    <p>If you sort by GPA, you can't efficiently search by student name or ID. You'd need separate sorted copies of the entire file.</p>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <h4>The Solution: Create an Index Structure</h4>
+                        <p><mark>The key insight: Instead of searching through the data file itself, create a smaller auxiliary structure—an <strong>index</strong>—that helps you quickly find the right location in the data file.</mark></p>
+
+                        <p><strong>Benefits of an index:</strong></p>
+                        <ul>
+                            <li><strong>Smaller size:</strong> The index only stores keys and pointers, not full records</li>
+                            <li><strong>Faster search:</strong> Fewer pages to read into memory</li>
+                            <li><strong>Fewer seeks:</strong> Structured to minimize disk head movement</li>
+                            <li><strong>Multiple indexes:</strong> You can have different indexes on different columns</li>
+                            <li><strong>Dynamic updates:</strong> Indexes can be updated without reorganizing the entire data file</li>
+                        </ul>
+
+                        <p><strong>Analogy:</strong> Instead of reading through an entire textbook to find information about "binary search," you check the index at the back, which tells you "binary search: see pages 145-152." The index is much smaller than the book and organized specifically for fast lookup.</p>
+                    </article>
+
+                    <!-- B+ Tree Structure and Properties -->
+                    <article style="margin-top: 40px;">
+                        <h3>B+ Tree: Structure and Properties</h3>
+
+                        <h4>Fundamental Properties</h4>
+                        <p>The B+ tree is carefully designed to maintain specific invariants that guarantee performance. Let's understand each property and why it matters:</p>
+
+                        <h5>1. Balanced Height</h5>
+                        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <p><strong>Property:</strong> All leaf nodes are at the same depth (distance from the root).</p>
+                            <p><strong>Why it matters:</strong> This ensures that searching for <em>any</em> key takes the same number of disk I/O operations. No key is "hidden deeper" than others.</p>
+                            <p><strong>Time complexity for operations:</strong></p>
+                            <ul>
+                                <li><strong>Search:</strong> O(log<sub>F</sub>(N)) where F = fanout, N = number of leaf pages</li>
+                                <li><strong>Insert:</strong> O(log<sub>F</sub>(N)) plus potential node splits</li>
+                                <li><strong>Delete:</strong> O(log<sub>F</sub>(N)) plus potential node merges</li>
+                            </ul>
+                        </div>
+
+                        <p><strong>Understanding the log<sub>F</sub>(N) complexity:</strong></p>
+                        <ul>
+                            <li><strong>F (fanout):</strong> The maximum number of children a node can have. This is equal to m+1 where m is the number of keys.</li>
+                            <li><strong>N:</strong> The number of leaf pages, which is approximately equal to (total records / average records per page)</li>
+                            <li><strong>Why is it better than binary search?</strong> With F = 100, log₁₀₀(1,000,000) = 3. Only 3 levels! Compare to binary search tree: log₂(1,000,000) ≈ 20 levels.</li>
+                        </ul>
+
+                        <p><em>In other words:</em> B+ trees are "short and fat" rather than "tall and skinny," which is exactly what we want when each level requires a disk access.</p>
+
+                        <h5>2. Minimum Occupancy (Half-Full Guarantee)</h5>
+                        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <p><strong>Property:</strong> Each page (node) must be at least 50% full, except the root node.</p>
+                            <p><strong>Formal statement:</strong> Each node contains <code>d ≤ m ≤ 2d</code> entries, where:</p>
+                            <ul>
+                                <li><strong>d:</strong> The order of the tree (minimum number of keys)</li>
+                                <li><strong>m:</strong> The actual number of keys in the node</li>
+                                <li><strong>2d:</strong> The maximum number of keys (capacity)</li>
+                            </ul>
+                            <p><strong>Why it matters:</strong> This prevents the tree from wasting space and ensures efficient use of disk pages. Without this constraint, nodes could become nearly empty, wasting memory and making the tree unnecessarily tall.</p>
+                        </div>
+
+                        <p><strong>Example:</strong> If d = 2 (order 2), then:</p>
+                        <ul>
+                            <li>Minimum keys per node: 2</li>
+                            <li>Maximum keys per node: 4</li>
+                            <li>Fanout (children): 3 to 5</li>
+                        </ul>
+
+                        <h5>3. Fanout Relationship</h5>
+                        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <p><strong>Property:</strong> If a node has m keys, it has m+1 children (pointers).</p>
+                            <p><strong>Why:</strong> In a B+ tree, keys act as separators. If you have keys [10, 20, 30], you need 4 pointers:</p>
+                            <ul>
+                                <li>Pointer 1: to children with values &lt; 10</li>
+                                <li>Pointer 2: to children with values ≥ 10 and &lt; 20</li>
+                                <li>Pointer 3: to children with values ≥ 20 and &lt; 30</li>
+                                <li>Pointer 4: to children with values ≥ 30</li>
+                            </ul>
+                        </div>
+
+                        <p><mark>Key takeaway: The fanout (number of children) is what determines the height of the tree. Higher fanout = shorter tree = fewer disk I/Os per query!</mark></p>
+
+                        <h4>Why These Properties Matter for Performance</h4>
+                        <p>Let's see a concrete example with numbers:</p>
+
+                        <div style="background: rgba(33, 150, 243, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h5>Scenario: 1 million student records</h5>
+                            <ul>
+                                <li>Page size: 8 KB</li>
+                                <li>Each data entry: ~80 bytes (key + pointer + some metadata)</li>
+                                <li>Entries per leaf page: ~100</li>
+                                <li>Order of tree (d): 50 (so each internal node has 50-100 keys)</li>
+                                <li>Fanout: 51-101 children per node</li>
+                            </ul>
+
+                            <p><strong>Calculating tree height:</strong></p>
+                            <ul>
+                                <li>Leaf pages needed: 1,000,000 / 100 = 10,000 leaf pages</li>
+                                <li>With average fanout of 75: height = log₇₅(10,000) ≈ 2.2 → 3 levels</li>
+                            </ul>
+
+                            <p><strong>Query cost:</strong> 3 disk page reads to find any student's GPA!</p>
+                            <p><strong>Compare to binary search tree:</strong> log₂(1,000,000) ≈ 20 disk reads!</p>
+                        </div>
+
+                        <h4>Interactive B+ Tree Visualization</h4>
+                        <p>Use the interactive visualization below to understand how B+ trees work. Insert values to see how the tree grows and maintains balance. Notice how:</p>
+                        <ul>
+                            <li>All leaves stay at the same level</li>
+                            <li>Nodes split when they become too full</li>
+                            <li>The tree height only increases when the root splits</li>
+                            <li>Internal nodes guide searches but don't contain data</li>
+                            <li>Leaf nodes contain the actual data entries and are linked together</li>
+                        </ul>
+
+                        <div class="btree-container">
+                            <canvas id="btreeCanvas" class="btree-canvas"></canvas>
+                            <div class="btree-controls">
+                                <input type="number" id="insertValue" placeholder="Value" min="1" max="99">
+                                <button onclick="insertValue()">Insert Value</button>
+                                <button onclick="searchValue()">Search Value</button>
+                                <button onclick="clearTree()">Clear Tree</button>
+                                <button onclick="loadExample()">Load Example</button>
+                            </div>
+                            <div class="btree-legend">
+                                <div class="btree-legend-item">
+                                    <span class="btree-legend-color" style="background: #4CAF50;"></span>
+                                    <span>Internal Node (Index Entries)</span>
+                                </div>
+                                <div class="btree-legend-item">
+                                    <span class="btree-legend-color" style="background: #2196F3;"></span>
+                                    <span>Leaf Node (Data Entries)</span>
+                                </div>
+                                <div class="btree-legend-item">
+                                    <span class="btree-legend-color" style="background: #FF9800;"></span>
+                                    <span>Highlighted Node</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Summary -->
+                    <article style="margin-top: 40px;">
+                        <h3>Summary: Why B+ Trees Dominate Database Indexing</h3>
+
+                        <p>B+ trees have become the standard indexing structure in relational databases because they elegantly solve multiple problems:</p>
+
+                        <div style="background: rgba(76, 175, 80, 0.1); padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h4>Advantages:</h4>
+                            <ul>
+                                <li>✓ <strong>Efficient range queries:</strong> Leaf nodes are linked, making range scans fast</li>
+                                <li>✓ <strong>Efficient point queries:</strong> Logarithmic search with high fanout</li>
+                                <li>✓ <strong>Predictable performance:</strong> Balanced structure guarantees consistent query times</li>
+                                <li>✓ <strong>Dynamic adaptation:</strong> Handles insertions/deletions without manual reorganization</li>
+                                <li>✓ <strong>Space-efficient:</strong> Half-full guarantee prevents waste</li>
+                                <li>✓ <strong>Disk-optimized:</strong> High fanout minimizes disk I/Os</li>
+                                <li>✓ <strong>Scalable:</strong> Works well from thousands to billions of records</li>
+                            </ul>
+                        </div>
+
+                        <p><mark>Next lecture: We'll dive deeper into the algorithms for insertion, deletion, and search in B+ trees, including how node splits and merges maintain the tree properties.</mark></p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Understanding index entries vs. data entries in tree structures</li>
+                    <li>Introduction to tree-structured indexing and its advantages</li>
+                    <li>B+ tree fundamentals: dynamic, balanced, and graceful adaptation</li>
+                    <li>The range search problem and limitations of sorted files</li>
+                    <li>B+ tree properties: balanced height, minimum occupancy, and fanout relationships</li>
+                    <li>Performance analysis: O(log<sub>F</sub>(N)) complexity and its practical implications</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li>Review the distinction between index entries and data entries—this will be crucial for understanding B+ tree operations</li>
+                    <li>Practice calculating B+ tree height and fanout given different scenarios</li>
+                    <li>Experiment with the interactive B+ tree visualization to build intuition</li>
+                    <li>Think about why maintaining the "half-full" property is important for both space efficiency and performance</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc404" class="back-link">← Back to CPSC_404</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <script>
+        // B+ Tree Visualization
+        const canvas = document.getElementById('btreeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            drawTree();
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // B+ Tree implementation (simplified for visualization)
+        const ORDER = 2; // Order of tree (d = 2, so max keys = 4)
+
+        class BPlusTreeNode {
+            constructor(isLeaf = false) {
+                this.keys = [];
+                this.children = [];
+                this.isLeaf = isLeaf;
+                this.next = null; // For leaf nodes
+                this.highlighted = false;
+            }
+        }
+
+        let root = new BPlusTreeNode(true);
+
+        function insertValue() {
+            const value = parseInt(document.getElementById('insertValue').value);
+            if (isNaN(value) || value < 1 || value > 99) {
+                alert('Please enter a valid number between 1 and 99');
+                return;
+            }
+
+            // Check if value already exists
+            if (searchInTree(root, value)) {
+                alert('Value already exists in tree');
+                return;
+            }
+
+            insertIntoTree(value);
+            document.getElementById('insertValue').value = '';
+            drawTree();
+        }
+
+        function insertIntoTree(value) {
+            // Simple insertion - find the leaf and insert
+            let node = root;
+            let path = [root];
+
+            // Navigate to leaf
+            while (!node.isLeaf) {
+                let i = 0;
+                while (i < node.keys.length && value >= node.keys[i]) {
+                    i++;
+                }
+                node = node.children[i];
+                path.push(node);
+            }
+
+            // Insert in sorted order
+            let i = 0;
+            while (i < node.keys.length && value > node.keys[i]) {
+                i++;
+            }
+            node.keys.splice(i, 0, value);
+
+            // Check if split needed
+            if (node.keys.length > ORDER * 2) {
+                splitNode(path);
+            }
+        }
+
+        function splitNode(path) {
+            const node = path[path.length - 1];
+            const mid = Math.floor(node.keys.length / 2);
+
+            const newNode = new BPlusTreeNode(node.isLeaf);
+            newNode.keys = node.keys.splice(mid);
+
+            if (!node.isLeaf) {
+                newNode.children = node.children.splice(mid);
+            } else {
+                // For leaf nodes, maintain linked list
+                newNode.next = node.next;
+                node.next = newNode;
+            }
+
+            const promoteKey = newNode.keys[0];
+
+            if (path.length === 1) {
+                // Create new root
+                const newRoot = new BPlusTreeNode(false);
+                newRoot.keys = [promoteKey];
+                newRoot.children = [node, newNode];
+                root = newRoot;
+            } else {
+                // Insert into parent
+                const parent = path[path.length - 2];
+                let i = 0;
+                while (i < parent.keys.length && promoteKey >= parent.keys[i]) {
+                    i++;
+                }
+                parent.keys.splice(i, 0, promoteKey);
+                parent.children.splice(i + 1, 0, newNode);
+
+                // Check if parent needs split
+                if (parent.keys.length > ORDER * 2) {
+                    splitNode(path.slice(0, -1));
+                }
+            }
+        }
+
+        function searchValue() {
+            const value = parseInt(document.getElementById('insertValue').value);
+            if (isNaN(value)) {
+                alert('Please enter a valid number');
+                return;
+            }
+
+            const found = searchInTree(root, value, true);
+            if (found) {
+                alert(`Value ${value} found in the tree!`);
+            } else {
+                alert(`Value ${value} not found in the tree.`);
+            }
+            drawTree();
+        }
+
+        function searchInTree(node, value, highlight = false) {
+            if (highlight) clearHighlights(root);
+
+            while (node) {
+                if (highlight) node.highlighted = true;
+
+                if (node.isLeaf) {
+                    return node.keys.includes(value);
+                }
+
+                let i = 0;
+                while (i < node.keys.length && value >= node.keys[i]) {
+                    i++;
+                }
+                node = node.children[i];
+            }
+            return false;
+        }
+
+        function clearHighlights(node) {
+            if (!node) return;
+            node.highlighted = false;
+            if (!node.isLeaf) {
+                node.children.forEach(child => clearHighlights(child));
+            }
+        }
+
+        function clearTree() {
+            root = new BPlusTreeNode(true);
+            drawTree();
+        }
+
+        function loadExample() {
+            clearTree();
+            const values = [15, 30, 45, 10, 20, 25, 35, 40, 50, 5];
+            values.forEach(v => insertIntoTree(v));
+            drawTree();
+        }
+
+        function drawTree() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (!root || root.keys.length === 0) {
+                ctx.fillStyle = '#666';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Empty tree - insert values to begin', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            // Calculate tree dimensions
+            const levels = getTreeHeight(root);
+            const nodeWidth = 80;
+            const nodeHeight = 40;
+            const levelHeight = 100;
+
+            drawNode(root, canvas.width / 2, 40, canvas.width / 2, 0, levels, nodeWidth, nodeHeight, levelHeight);
+        }
+
+        function getTreeHeight(node) {
+            if (!node || node.isLeaf) return 1;
+            let maxHeight = 0;
+            node.children.forEach(child => {
+                maxHeight = Math.max(maxHeight, getTreeHeight(child));
+            });
+            return maxHeight + 1;
+        }
+
+        function drawNode(node, x, y, spread, level, maxLevels, nodeWidth, nodeHeight, levelHeight) {
+            if (!node) return;
+
+            // Draw node box
+            const color = node.highlighted ? '#FF9800' : (node.isLeaf ? '#2196F3' : '#4CAF50');
+
+            ctx.fillStyle = color;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+
+            const boxWidth = Math.max(nodeWidth, node.keys.length * 25 + 20);
+            ctx.fillRect(x - boxWidth/2, y - nodeHeight/2, boxWidth, nodeHeight);
+            ctx.strokeRect(x - boxWidth/2, y - nodeHeight/2, boxWidth, nodeHeight);
+
+            // Draw keys
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node.keys.join(', '), x, y);
+
+            // Draw children
+            if (!node.isLeaf && node.children.length > 0) {
+                const childSpread = spread / (node.children.length + 1);
+                const startX = x - spread / 2;
+
+                node.children.forEach((child, i) => {
+                    const childX = startX + childSpread * (i + 1);
+                    const childY = y + levelHeight;
+
+                    // Draw connection line
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y + nodeHeight/2);
+                    ctx.lineTo(childX, childY - nodeHeight/2);
+                    ctx.stroke();
+
+                    drawNode(child, childX, childY, childSpread, level + 1, maxLevels, nodeWidth, nodeHeight, levelHeight);
+                });
+            }
+
+            // Draw leaf links
+            if (node.isLeaf && node.next) {
+                ctx.strokeStyle = 'rgba(255, 193, 7, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(x + boxWidth/2, y);
+                ctx.lineTo(x + boxWidth/2 + 20, y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+    </script>
+</body>
+</html>

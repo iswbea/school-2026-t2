@@ -1,0 +1,13 @@
+Building a language:
+Tokenization -> Parsing -> AST Conversion -> static checks -> evaluate
+How to define language elements is via grammar rules, eg:
+add : '+' NUM ',' NUM ';';
+num : [0-9] ;
+
+Non-terminal symbol: a name for the new construct this grammar rule defines
+Grammar rule operator: Seperates non-terminal defined from its definition
+Grammar rule body: Defines sequences of constructs to match for the defined grammar element
+Grammar rules end with semicolons
+Single qupotes strings are token literals.
+Parenthesis group sub-rule
++ is repition, * is zero or more, ? is optional element.

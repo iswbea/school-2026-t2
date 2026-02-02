@@ -1,0 +1,1815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Notation Guide - Interactive Reference</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <style>
+        /* Concept guide specific styles */
+        .concept-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .difficulty-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+
+        .beginner { background-color: #10b981; color: white; }
+
+        .variable-card {
+            background-color: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            transition: all 0.2s;
+        }
+
+        .variable-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .variable-symbol {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            font-family: 'Times New Roman', serif;
+            margin-bottom: 0.5rem;
+        }
+
+        .variable-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .eli5-explanation {
+            background-color: #fef3c7;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .eli5-explanation::before {
+            content: "👶 Like you're 5: ";
+            font-weight: bold;
+            color: #f59e0b;
+        }
+
+        .technical-note {
+            background-color: #e0e7ff;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+        }
+
+        .example-usage {
+            background-color: #f0fdf4;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+        }
+
+        .category-section {
+            margin: 3rem 0;
+            padding: 2rem;
+            border-radius: 8px;
+            background-color: #f8fafc;
+        }
+
+        .category-header {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .dimension-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .dimension-table th,
+        .dimension-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid #e2e8f0;
+        }
+
+        .dimension-table th {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .dimension-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .quick-reference {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .notation-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .notation-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-box {
+            padding: 1rem;
+            border-radius: 4px;
+            border: 2px solid #e2e8f0;
+            background-color: white;
+        }
+
+        .math-symbol {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc440">CPSC 440 - Advanced Machine Learning</a> /
+            <span>Concepts</span> /
+            <span>ML Notation Guide</span>
+        </nav>
+
+        <div class="concept-header">
+            <h1>Machine Learning Notation Guide <span class="difficulty-badge beginner">Reference</span></h1>
+            <p class="subtitle">Your friendly decoder for all those mysterious mathematical symbols</p>
+        </div>
+
+        <!-- Search Box -->
+        <input type="text"
+               id="searchBox"
+               class="search-box"
+               placeholder="🔍 Search for a variable or symbol (e.g., 'theta', 'argmax', 'sigma')..."
+               onkeyup="filterVariables()">
+
+        <!-- Quick Navigation -->
+        <div class="quick-reference">
+            <h3>🚀 Quick Reference - Click Any Term to Jump</h3>
+            <p style="margin-bottom: 1rem;">All variables, symbols, and concepts in this guide:</p>
+
+            <table class="dimension-table" style="font-size: 0.9rem;">
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Symbol</th>
+                        <th style="width: 35%;">Name</th>
+                        <th style="width: 50%;">Quick Meaning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data & Features -->
+                    <tr style="background-color: #f0f9ff;">
+                        <td colspan="3" style="font-weight: bold; color: #667eea;">📊 DATA & FEATURES</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">X</span></td>
+                        <td><a href="#var-X" style="text-decoration: none; color: #667eea;">Feature Matrix</a></td>
+                        <td>All your data (rows = examples, cols = features)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">x</span></td>
+                        <td><a href="#var-x" style="text-decoration: none; color: #667eea;">Single Example</a></td>
+                        <td>One row / one data point</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">x<sub>j</sub></span></td>
+                        <td><a href="#var-xj" style="text-decoration: none; color: #667eea;">Single Feature Value</a></td>
+                        <td>One specific feature of one example</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">y</span></td>
+                        <td><a href="#var-y" style="text-decoration: none; color: #667eea;">Labels/Targets</a></td>
+                        <td>The correct answers</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">ŷ</span></td>
+                        <td><a href="#var-yhat" style="text-decoration: none; color: #667eea;">Predictions</a></td>
+                        <td>Model's guesses</td>
+                    </tr>
+
+                    <!-- Parameters & Weights -->
+                    <tr style="background-color: #f0f9ff;">
+                        <td colspan="3" style="font-weight: bold; color: #667eea;">⚙️ PARAMETERS & WEIGHTS</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">w</span></td>
+                        <td><a href="#var-w" style="text-decoration: none; color: #667eea;">Weights</a></td>
+                        <td>How important each feature is</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">θ</span></td>
+                        <td><a href="#var-theta" style="text-decoration: none; color: #667eea;">Parameters</a></td>
+                        <td>Model settings (often same as w)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">b</span></td>
+                        <td><a href="#var-b" style="text-decoration: none; color: #667eea;">Bias/Intercept</a></td>
+                        <td>Baseline value / y-intercept</td>
+                    </tr>
+
+                    <!-- Probability & Statistics -->
+                    <tr style="background-color: #f0f9ff;">
+                        <td colspan="3" style="font-weight: bold; color: #667eea;">🎲 PROBABILITY & STATISTICS</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">p(a|b)</span></td>
+                        <td><a href="#var-prob" style="text-decoration: none; color: #667eea;">Conditional Probability</a></td>
+                        <td>Probability of a given b happened</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">σ</span></td>
+                        <td><a href="#var-sigma" style="text-decoration: none; color: #667eea;">Standard Deviation</a></td>
+                        <td>How spread out the data is</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">μ</span></td>
+                        <td><a href="#var-mu" style="text-decoration: none; color: #667eea;">Mean</a></td>
+                        <td>Average value</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">ε</span></td>
+                        <td><a href="#var-epsilon" style="text-decoration: none; color: #667eea;">Error/Noise</a></td>
+                        <td>Random unpredictable variation</td>
+                    </tr>
+
+                    <!-- Optimization -->
+                    <tr style="background-color: #f0f9ff;">
+                        <td colspan="3" style="font-weight: bold; color: #667eea;">🎯 OPTIMIZATION & REGULARIZATION</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">λ</span></td>
+                        <td><a href="#var-lambda" style="text-decoration: none; color: #667eea;">Regularization</a></td>
+                        <td>Penalty for complexity</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">α, η</span></td>
+                        <td><a href="#var-alpha" style="text-decoration: none; color: #667eea;">Learning Rate</a></td>
+                        <td>Step size when learning</td>
+                    </tr>
+                    <tr>
+                        <td>argmax</td>
+                        <td><a href="#var-argmax" style="text-decoration: none; color: #667eea;">Argument of Max</a></td>
+                        <td>Which input gives maximum output</td>
+                    </tr>
+                    <tr>
+                        <td>argmin</td>
+                        <td><a href="#var-argmin" style="text-decoration: none; color: #667eea;">Argument of Min</a></td>
+                        <td>Which input gives minimum output</td>
+                    </tr>
+
+                    <!-- Matrix Operations -->
+                    <tr style="background-color: #f0f9ff;">
+                        <td colspan="3" style="font-weight: bold; color: #667eea;">📐 MATRIX OPERATIONS</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">X<sup>T</sup></span></td>
+                        <td><a href="#var-transpose" style="text-decoration: none; color: #667eea;">Transpose</a></td>
+                        <td>Flip rows and columns</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">n</span></td>
+                        <td><a href="#var-n" style="text-decoration: none; color: #667eea;">Number of Examples</a></td>
+                        <td>How many data points (rows)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">d</span></td>
+                        <td><a href="#var-d" style="text-decoration: none; color: #667eea;">Number of Features</a></td>
+                        <td>How many dimensions (columns)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">k</span></td>
+                        <td><a href="#var-k" style="text-decoration: none; color: #667eea;">Number of Classes</a></td>
+                        <td>How many categories/clusters</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">w<sup>T</sup>x</span></td>
+                        <td><a href="#var-dot" style="text-decoration: none; color: #667eea;">Dot Product</a></td>
+                        <td>Weighted sum of features</td>
+                    </tr>
+
+                    <!-- Summations -->
+                    <tr style="background-color: #f0f9ff;">
+                        <td colspan="3" style="font-weight: bold; color: #667eea;">➕ SUMMATIONS & PRODUCTS</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">Σ</span></td>
+                        <td><a href="#var-sum" style="text-decoration: none; color: #667eea;">Summation</a></td>
+                        <td>Add everything up</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">Π</span></td>
+                        <td><a href="#var-prod" style="text-decoration: none; color: #667eea;">Product</a></td>
+                        <td>Multiply everything together</td>
+                    </tr>
+
+                    <!-- Loss & Error -->
+                    <tr style="background-color: #f0f9ff;">
+                        <td colspan="3" style="font-weight: bold; color: #667eea;">📉 LOSS & ERROR</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">L, J</span></td>
+                        <td><a href="#var-loss" style="text-decoration: none; color: #667eea;">Loss Function</a></td>
+                        <td>How bad the predictions are</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">∇</span></td>
+                        <td><a href="#var-grad" style="text-decoration: none; color: #667eea;">Gradient</a></td>
+                        <td>Direction of steepest increase</td>
+                    </tr>
+
+                    <!-- Functions -->
+                    <tr style="background-color: #f0f9ff;">
+                        <td colspan="3" style="font-weight: bold; color: #667eea;">🔢 SPECIAL FUNCTIONS</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">exp, e<sup>x</sup></span></td>
+                        <td><a href="#var-exp" style="text-decoration: none; color: #667eea;">Exponential</a></td>
+                        <td>Fast growth function</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">log</span></td>
+                        <td><a href="#var-log" style="text-decoration: none; color: #667eea;">Logarithm</a></td>
+                        <td>Inverse of exponential</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">σ(x)</span></td>
+                        <td><a href="#var-sigmoid" style="text-decoration: none; color: #667eea;">Sigmoid</a></td>
+                        <td>Squash to [0,1]</td>
+                    </tr>
+                    <tr>
+                        <td>logit(p)</td>
+                        <td><a href="#var-logit" style="text-decoration: none; color: #667eea;">Logit (Log-Odds)</a></td>
+                        <td>Inverse of sigmoid, probability → real number</td>
+                    </tr>
+                    <tr>
+                        <td>softmax</td>
+                        <td><a href="#var-softmax" style="text-decoration: none; color: #667eea;">Softmax</a></td>
+                        <td>Turn scores into probabilities</td>
+                    </tr>
+
+                    <!-- Other Notation -->
+                    <tr style="background-color: #f0f9ff;">
+                        <td colspan="3" style="font-weight: bold; color: #667eea;">🎨 OTHER NOTATION</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">||x||</span></td>
+                        <td><a href="#var-norm" style="text-decoration: none; color: #667eea;">Norm</a></td>
+                        <td>Length/magnitude of vector</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">β</span></td>
+                        <td><a href="#var-beta" style="text-decoration: none; color: #667eea;">Beta</a></td>
+                        <td>Coefficients or hyperparameters</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">δ</span></td>
+                        <td><a href="#var-delta" style="text-decoration: none; color: #667eea;">Delta</a></td>
+                        <td>Change or error term</td>
+                    </tr>
+
+                    <!-- ML Concepts -->
+                    <tr style="background-color: #d1fae5;">
+                        <td colspan="3" style="font-weight: bold; color: #10b981;">🧠 KEY ML CONCEPTS</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-reg" style="text-decoration: none; color: #10b981;">Regularization</a></td>
+                        <td>Preventing overfitting with penalties</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-tradeoff" style="text-decoration: none; color: #10b981;">Bias-Variance Tradeoff</a></td>
+                        <td>Balance between underfitting and overfitting</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-train-error" style="text-decoration: none; color: #10b981;">Training Error</a></td>
+                        <td>Performance on training data</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-gen-error" style="text-decoration: none; color: #10b981;">Generalization Error</a></td>
+                        <td>Performance on new, unseen data</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-linear" style="text-decoration: none; color: #10b981;">Linear vs Tabular</a></td>
+                        <td>Model type vs data format</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-transforms" style="text-decoration: none; color: #10b981;">Feature Transforms</a></td>
+                        <td>Creating new features from old ones</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-poly" style="text-decoration: none; color: #10b981;">Polynomial Features</a></td>
+                        <td>x, x², x³, interaction terms</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-rbf" style="text-decoration: none; color: #10b981;">RBF Features</a></td>
+                        <td>Gaussian bump functions</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-periodic" style="text-decoration: none; color: #10b981;">Periodic Basis</a></td>
+                        <td>Sin/cos for seasonal patterns</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-kernel" style="text-decoration: none; color: #10b981;">Kernel Method</a></td>
+                        <td>Implicit high-dimensional features</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-gaussian-kernel" style="text-decoration: none; color: #10b981;">Gaussian Kernel</a></td>
+                        <td>RBF kernel for similarity</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-cv" style="text-decoration: none; color: #10b981;">K-Fold Cross-Validation</a></td>
+                        <td>Reliable model evaluation</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-kmeans" style="text-decoration: none; color: #10b981;">K-Means Clustering</a></td>
+                        <td>Unsupervised grouping</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-regression" style="text-decoration: none; color: #10b981;">Regression</a></td>
+                        <td>Predicting continuous values</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-classification" style="text-decoration: none; color: #10b981;">Classification</a></td>
+                        <td>Predicting categories</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-multiclass" style="text-decoration: none; color: #10b981;">Multi-Class Classification</a></td>
+                        <td>Classification with K>2 classes</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-onehot" style="text-decoration: none; color: #10b981;">One-Hot Encoding</a></td>
+                        <td>Converting categories to binary vectors</td>
+                    </tr>
+                    <tr>
+                        <td>-</td>
+                        <td><a href="#concept-standardize" style="text-decoration: none; color: #10b981;">Standardizing Features</a></td>
+                        <td>Scaling features to mean=0, std=1</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 2px solid #e2e8f0; font-style: italic;">
+                💡 <strong>Tip:</strong> Use Ctrl+F (Cmd+F on Mac) to search for any term, or use the search box below!
+            </p>
+        </div>
+
+        <!-- ==================== DATA & FEATURES ==================== -->
+        <div class="category-section" id="data-section">
+            <h2 class="category-header">📊 Data & Features</h2>
+
+            <div class="variable-card" data-search="x features input data matrix">
+                <div class="variable-symbol">X</div>
+                <div class="variable-name">X (Capital X) - Feature Matrix / Input Data</div>
+
+                <div class="eli5-explanation">
+                    Imagine you have a big spreadsheet with information. Each row is one thing (like a person), and each column is a fact about that thing (like height, weight, age). <strong>X</strong> is that whole spreadsheet!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> The feature matrix containing all training examples. Usually an <span class="math-symbol">n × d</span> matrix where <span class="math-symbol">n</span> is the number of examples and <span class="math-symbol">d</span> is the number of features.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> If you have 100 houses with 5 features each (size, bedrooms, age, location, garage), then <span class="math-symbol">X</span> is a 100 × 5 matrix.
+                </div>
+
+                <table class="dimension-table">
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Meaning</th>
+                        <th>Common Names</th>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">n</span></td>
+                        <td>Number of rows (examples/samples)</td>
+                        <td>num_samples, num_examples, m</td>
+                    </tr>
+                    <tr>
+                        <td><span class="math-symbol">d</span></td>
+                        <td>Number of columns (features/dimensions)</td>
+                        <td>num_features, p, D</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="variable-card" data-search="x lowercase single example instance sample row">
+                <div class="variable-symbol">x</div>
+                <div class="variable-name">x (lowercase x) - Single Example / Instance</div>
+
+                <div class="eli5-explanation">
+                    If <strong>X</strong> is the whole spreadsheet, then <strong>x</strong> is just one row - one person's information, or one house's details.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> A single feature vector, usually a <span class="math-symbol">d</span>-dimensional vector representing one data point. Often written as <span class="math-symbol">x<sub>i</sub></span> to refer to the <span class="math-symbol">i</span>-th example.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> <span class="math-symbol">x<sub>1</sub> = [2000 sq ft, 3 bedrooms, 10 years old, downtown, yes garage]</span><br>
+                    This represents one house with its 5 features.
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="x subscript j feature column dimension single feature">
+                <div class="variable-symbol">x<sub>j</sub></div>
+                <div class="variable-name">x<sub>j</sub> - Single Feature Value</div>
+
+                <div class="eli5-explanation">
+                    This is just ONE piece of information. Like just the "age" column for one person, or just the "bedrooms" for one house.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> The <span class="math-symbol">j</span>-th feature of a data point. When combined with row index: <span class="math-symbol">x<sub>i,j</sub></span> means the <span class="math-symbol">j</span>-th feature of the <span class="math-symbol">i</span>-th example.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> If <span class="math-symbol">x<sub>2</sub></span> represents "number of bedrooms", then <span class="math-symbol">x<sub>1,2</sub> = 3</span> means house #1 has 3 bedrooms.
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="y output label target prediction ground truth">
+                <div class="variable-symbol">y</div>
+                <div class="variable-name">y - Output / Label / Target</div>
+
+                <div class="eli5-explanation">
+                    This is the answer you're trying to guess! If you're trying to predict house prices, <strong>y</strong> is the actual price. If you're trying to guess if an email is spam, <strong>y</strong> is "spam" or "not spam".
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> The target variable or ground truth labels. Can be a vector <span class="math-symbol">y</span> of length <span class="math-symbol">n</span> for all examples, or <span class="math-symbol">y<sub>i</sub></span> for a single example.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example (Regression):</strong> <span class="math-symbol">y = [300000, 450000, 250000, ...]</span> (house prices)<br>
+                    <strong>Example (Classification):</strong> <span class="math-symbol">y = [1, 0, 1, 0, ...]</span> (spam or not spam)
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="y hat prediction estimate output model prediction">
+                <div class="variable-symbol">ŷ</div>
+                <div class="variable-name">ŷ (y-hat) - Predicted Value</div>
+
+                <div class="eli5-explanation">
+                    This is your <strong>guess</strong>! The computer's prediction based on what it learned. The real answer is <strong>y</strong>, but <strong>ŷ</strong> is what your model thinks it is.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> The model's prediction for a given input. We want <span class="math-symbol">ŷ<sub>i</sub></span> to be as close as possible to <span class="math-symbol">y<sub>i</sub></span>.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> If the actual house price is <span class="math-symbol">y = $350,000</span> and your model predicts <span class="math-symbol">ŷ = $345,000</span>, you're off by $5,000. Pretty good!
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PARAMETERS & WEIGHTS ==================== -->
+        <div class="category-section" id="parameters-section">
+            <h2 class="category-header">⚙️ Parameters & Weights</h2>
+
+            <div class="variable-card" data-search="w weights coefficients linear model parameters">
+                <div class="variable-symbol">w</div>
+                <div class="variable-name">w - Weights</div>
+
+                <div class="eli5-explanation">
+                    Imagine you're baking a cake and each ingredient has a different importance. Flour might be super important (big weight), but food coloring not so much (small weight). <strong>w</strong> tells the computer how important each feature is!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Weight vector of dimension <span class="math-symbol">d</span>, where each <span class="math-symbol">w<sub>j</sub></span> represents the importance/coefficient of feature <span class="math-symbol">j</span>. The prediction is often <span class="math-symbol">ŷ = w<sup>T</sup>x</span>.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> For house prices:<br>
+                    <span class="math-symbol">w = [200, 50000, -1000, 30000, 15000]</span><br>
+                    Means: Each sq ft adds $200, each bedroom adds $50k, each year old subtracts $1k, etc.
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="theta parameters model parameters">
+                <div class="variable-symbol">θ</div>
+                <div class="variable-name">θ (theta) - Parameters</div>
+
+                <div class="eli5-explanation">
+                    This is like the "settings" or "knobs" of your machine learning model. The computer adjusts these settings to make better predictions. Often used the same way as <strong>w</strong>, just a different letter!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> General parameter vector. Can represent all learnable parameters in a model. Sometimes <span class="math-symbol">θ = [w, b]</span> (weights and bias combined).
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> In linear regression, <span class="math-symbol">θ</span> contains all the coefficients that multiply your features to make a prediction.
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="b bias intercept offset constant term">
+                <div class="variable-symbol">b</div>
+                <div class="variable-name">b - Bias / Intercept</div>
+
+                <div class="eli5-explanation">
+                    Imagine a baseline or starting point. Even if all features are zero, there's still a "base price" for houses. That's the bias! It shifts your prediction up or down.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Scalar bias term (intercept) added to the weighted sum. The full prediction is <span class="math-symbol">ŷ = w<sup>T</sup>x + b</span>. Allows the model to fit data that doesn't go through the origin.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> If <span class="math-symbol">b = 100,000</span>, it means even a house with 0 sq ft, 0 bedrooms, etc. would have a "base value" of $100k in your model.
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== PROBABILITY & STATISTICS ==================== -->
+        <div class="category-section" id="probability-section">
+            <h2 class="category-header">🎲 Probability & Statistics</h2>
+
+            <div class="variable-card" data-search="p probability chance likelihood">
+                <div class="variable-symbol">p(a | b)</div>
+                <div class="variable-name">p(a | b) - Conditional Probability</div>
+
+                <div class="eli5-explanation">
+                    Read as: "What's the chance of <strong>a</strong> happening if we ALREADY KNOW <strong>b</strong> happened?" The vertical bar "|" means "given that" or "if we know". It's like asking "What's the chance it rains TODAY given that it was cloudy THIS MORNING?"
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> The probability of event <span class="math-symbol">a</span> occurring given that event <span class="math-symbol">b</span> has occurred. Calculated as <span class="math-symbol">p(a|b) = p(a,b) / p(b)</span>.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> <span class="math-symbol">p(spam | contains "FREE")</span><br>
+                    "What's the probability an email is spam GIVEN that it contains the word 'FREE'?"<br>
+                    Maybe <span class="math-symbol">p(spam | contains "FREE") = 0.8</span> (80% chance)
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="sigma standard deviation spread variance dispersion">
+                <div class="variable-symbol">σ</div>
+                <div class="variable-name">σ (sigma) - Standard Deviation</div>
+
+                <div class="eli5-explanation">
+                    Imagine you measure how tall kids in a class are. If all kids are about the same height, sigma is SMALL (everyone's close together). If some kids are super tall and others super short, sigma is BIG (lots of spread out).
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Standard deviation, measuring the amount of variation in a dataset. <span class="math-symbol">σ² = variance</span>. In Gaussian distributions: <span class="math-symbol">N(μ, σ²)</span> where <span class="math-symbol">μ</span> is mean.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Test scores with mean 75:<br>
+                    <span class="math-symbol">σ = 5</span>: Most scores between 70-80 (tight cluster)<br>
+                    <span class="math-symbol">σ = 15</span>: Scores spread from 60-90 (wide spread)
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="mu mean average expected value center">
+                <div class="variable-symbol">μ</div>
+                <div class="variable-name">μ (mu) - Mean / Expected Value</div>
+
+                <div class="eli5-explanation">
+                    This is just the AVERAGE! Add up all your numbers, divide by how many you have. The "middle" or "center" of your data. Like the average height of students in a class.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> The mean (average) of a distribution. For data: <span class="math-symbol">μ = (1/n) Σ x<sub>i</sub></span>. In probability distributions, represents the expected value.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> House prices: [200k, 300k, 250k, 350k, 300k]<br>
+                    <span class="math-symbol">μ = (200+300+250+350+300)/5 = $280k</span>
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="epsilon error small value residual noise">
+                <div class="variable-symbol">ε</div>
+                <div class="variable-name">ε (epsilon) - Error / Noise</div>
+
+                <div class="eli5-explanation">
+                    This represents the random, unpredictable stuff! Like how you might miss a basketball shot by a tiny bit even if you do everything right. It's the noise or error that just happens.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Random error term, often assumed to follow <span class="math-symbol">N(0, σ²)</span>. Represents noise or uncertainty in the model: <span class="math-symbol">y = w<sup>T</sup>x + ε</span>.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Even if your model is perfect, <span class="math-symbol">ε</span> represents small random variations - like a house selling for a bit more/less due to luck or timing.
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== OPTIMIZATION & REGULARIZATION ==================== -->
+        <div class="category-section" id="optimization-section">
+            <h2 class="category-header">🎯 Optimization & Regularization</h2>
+
+            <div class="variable-card" data-search="lambda regularization penalty shrinkage hyperparameter">
+                <div class="variable-symbol">λ</div>
+                <div class="variable-name">λ (lambda) - Regularization Parameter</div>
+
+                <div class="eli5-explanation">
+                    Imagine you're drawing a line through dots. You COULD make a super wiggly line that touches EVERY dot perfectly, but that's too complicated! <strong>λ</strong> is like saying "hey, keep it simple!" Big λ = simpler model. Small λ = more complex model.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Controls the trade-off between fitting the training data and keeping the model simple. Loss = Data Loss + <span class="math-symbol">λ × Complexity</span>. Common in Ridge (L2) and Lasso (L1) regularization.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Ridge Regression: <span class="math-symbol">minimize ||y - Xw||² + λ||w||²</span><br>
+                    <span class="math-symbol">λ = 0</span>: No penalty, might overfit<br>
+                    <span class="math-symbol">λ = 10</span>: Strong penalty, simpler model
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="alpha learning rate step size gradient descent">
+                <div class="variable-symbol">α</div>
+                <div class="variable-name">α (alpha) - Learning Rate</div>
+
+                <div class="eli5-explanation">
+                    When you're learning to improve, do you take TINY baby steps or BIG jumps? <strong>α</strong> controls step size. Too big = you overshoot and miss the target. Too small = it takes FOREVER to learn anything!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Step size in gradient descent optimization. Update rule: <span class="math-symbol">w<sub>new</sub> = w<sub>old</sub> - α∇L(w)</span> where <span class="math-symbol">∇L</span> is the gradient of the loss.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Gradient descent:<br>
+                    <span class="math-symbol">α = 0.001</span>: Slow but steady (safe)<br>
+                    <span class="math-symbol">α = 0.1</span>: Faster but might oscillate<br>
+                    Typical range: 0.001 to 0.1
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="argmax maximum argument maximization optimization best choice">
+                <div class="variable-symbol">argmax</div>
+                <div class="variable-name">argmax - Argument of the Maximum</div>
+
+                <div class="eli5-explanation">
+                    You have a bunch of options, each with a score. <strong>argmax</strong> doesn't tell you the SCORE of the winner - it tells you WHICH option won! Like asking "which ice cream flavor got the most votes?" not "how many votes did it get?"
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Returns the input that produces the maximum output. <span class="math-symbol">argmax<sub>x</sub> f(x)</span> = the value of <span class="math-symbol">x</span> that maximizes <span class="math-symbol">f(x)</span>. Different from <span class="math-symbol">max</span>, which returns the maximum value itself.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Class probabilities: {cat: 0.2, dog: 0.7, bird: 0.1}<br>
+                    <span class="math-symbol">max</span> = 0.7 (the highest score)<br>
+                    <span class="math-symbol">argmax</span> = "dog" (which class had the highest score)
+                </div>
+
+                <div class="notation-comparison">
+                    <div class="comparison-box">
+                        <strong>max:</strong> What's the highest value?<br>
+                        Answer: A number
+                    </div>
+                    <div class="comparison-box">
+                        <strong>argmax:</strong> Which option gives the highest value?<br>
+                        Answer: The option/choice/index
+                    </div>
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="argmin minimum argument minimization optimization best choice lowest">
+                <div class="variable-symbol">argmin</div>
+                <div class="variable-name">argmin - Argument of the Minimum</div>
+
+                <div class="eli5-explanation">
+                    Same as argmax, but for finding the LOWEST! Like "which route to school is fastest?" You want the route (argmin), not the time itself (min).
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Returns the input that produces the minimum output. <span class="math-symbol">argmin<sub>w</sub> L(w)</span> finds the weights <span class="math-symbol">w</span> that minimize the loss function <span class="math-symbol">L</span>.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Training a model:<br>
+                    <span class="math-symbol">w* = argmin<sub>w</sub> ||y - Xw||²</span><br>
+                    Finds the weights <span class="math-symbol">w*</span> that give the smallest prediction error.
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== MATRIX OPERATIONS & DIMENSIONS ==================== -->
+        <div class="category-section" id="matrix-section">
+            <h2 class="category-header">📐 Matrix Operations & Dimensions</h2>
+
+            <div class="variable-card" data-search="transpose flip matrix transpose rows columns switch">
+                <div class="variable-symbol">X<sup>T</sup></div>
+                <div class="variable-name">X<sup>T</sup> - Transpose</div>
+
+                <div class="eli5-explanation">
+                    Imagine you have a spreadsheet. The transpose is like rotating it 90 degrees! All the rows become columns, and all the columns become rows. It's like flipping the table on its side.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Flips a matrix over its diagonal. If <span class="math-symbol">X</span> is <span class="math-symbol">n × d</span>, then <span class="math-symbol">X<sup>T</sup></span> is <span class="math-symbol">d × n</span>. Element-wise: <span class="math-symbol">(X<sup>T</sup>)<sub>i,j</sub> = X<sub>j,i</sub></span>.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong><br>
+                    <span class="math-symbol">X = [[1, 2, 3],<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[4, 5, 6]]</span> (2×3 matrix)<br><br>
+                    <span class="math-symbol">X<sup>T</sup> = [[1, 4],<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[2, 5],<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[3, 6]]</span> (3×2 matrix)
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="n samples examples size rows instances">
+                <div class="variable-symbol">n</div>
+                <div class="variable-name">n - Number of Examples/Samples</div>
+
+                <div class="eli5-explanation">
+                    This is just "how many things do we have?" If you're studying 100 houses, <strong>n = 100</strong>. If you have 1000 emails, <strong>n = 1000</strong>. It's the number of rows in your data!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Number of training examples (rows in <span class="math-symbol">X</span>). Sometimes written as <span class="math-symbol">m</span> or <span class="math-symbol">N</span>. Critical for understanding data size and computational complexity.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Dataset of 500 houses with 10 features each:<br>
+                    <span class="math-symbol">n = 500</span> (examples)<br>
+                    <span class="math-symbol">X</span> is 500 × 10 matrix
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="d features dimensions attributes columns variables">
+                <div class="variable-symbol">d</div>
+                <div class="variable-name">d - Number of Features/Dimensions</div>
+
+                <div class="eli5-explanation">
+                    This is "how many facts do we know about each thing?" For a person, you might know: age, height, weight (d=3). For a house: size, bedrooms, bathrooms, age, location (d=5). It's the number of columns!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Number of features/dimensions (columns in <span class="math-symbol">X</span>). Also written as <span class="math-symbol">p</span>, <span class="math-symbol">D</span>, or <span class="math-symbol">k</span>. Each feature represents a measured attribute.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Images of 28×28 pixels:<br>
+                    <span class="math-symbol">d = 28 × 28 = 784</span> features<br>
+                    (Each pixel is one feature!)
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="k classes categories clusters groups number of classes">
+                <div class="variable-symbol">k</div>
+                <div class="variable-name">k - Number of Classes/Clusters</div>
+
+                <div class="eli5-explanation">
+                    How many different groups or categories can things belong to? Like sorting candy by color - if you have red, blue, and green candy, <strong>k = 3</strong> colors. For emails: spam or not spam means <strong>k = 2</strong> classes.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Number of distinct classes in classification or number of clusters in clustering. In multi-class classification, predictions are often <span class="math-symbol">k</span>-dimensional probability vectors.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Digit recognition (0-9):<br>
+                    <span class="math-symbol">k = 10</span> classes<br>
+                    Model outputs 10 probabilities, one for each digit
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="dot product inner product matrix multiplication">
+                <div class="variable-symbol">w<sup>T</sup>x</div>
+                <div class="variable-name">w<sup>T</sup>x - Dot Product / Inner Product</div>
+
+                <div class="eli5-explanation">
+                    Imagine you have a recipe (weights) and ingredients (features). You multiply how much of each ingredient by how important it is, then ADD everything up. That's your final cake quality score! It's: (w₁×x₁) + (w₂×x₂) + (w₃×x₃) + ...
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Dot product of weight vector and feature vector. If both are <span class="math-symbol">d</span>-dimensional: <span class="math-symbol">w<sup>T</sup>x = Σ<sub>j=1</sub><sup>d</sup> w<sub>j</sub>x<sub>j</sub></span>. Fundamental operation in linear models.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong><br>
+                    <span class="math-symbol">w = [2, 3, -1]</span> (weights)<br>
+                    <span class="math-symbol">x = [5, 4, 2]</span> (features)<br>
+                    <span class="math-symbol">w<sup>T</sup>x = (2×5) + (3×4) + (-1×2) = 10 + 12 - 2 = 20</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SUMMATIONS & PRODUCTS ==================== -->
+        <div class="category-section" id="summation-section">
+            <h2 class="category-header">➕ Summations & Products</h2>
+
+            <div class="variable-card" data-search="sigma summation sum add loop total">
+                <div class="variable-symbol">Σ</div>
+                <div class="variable-name">Σ (Sigma) - Summation</div>
+
+                <div class="eli5-explanation">
+                    This is a fancy "add everything up" symbol! It's like a for-loop that adds. <strong>Σ<sub>i=1</sub><sup>n</sup> x<sub>i</sub></strong> means: "start at i=1, go to i=n, and add up all the x values!"
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Summation operator. <span class="math-symbol">Σ<sub>i=a</sub><sup>b</sup> f(i)</span> means sum <span class="math-symbol">f(i)</span> for all integers <span class="math-symbol">i</span> from <span class="math-symbol">a</span> to <span class="math-symbol">b</span> inclusive.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> <span class="math-symbol">Σ<sub>i=1</sub><sup>5</sup> i² = 1² + 2² + 3² + 4² + 5² = 1+4+9+16+25 = 55</span><br><br>
+                    Mean: <span class="math-symbol">μ = (1/n) Σ<sub>i=1</sub><sup>n</sup> x<sub>i</sub></span> (add all values, divide by count)
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="pi product multiply times loop">
+                <div class="variable-symbol">Π</div>
+                <div class="variable-name">Π (Pi) - Product</div>
+
+                <div class="eli5-explanation">
+                    Just like Σ adds everything, <strong>Π</strong> MULTIPLIES everything! <strong>Π<sub>i=1</sub><sup>n</sup> x<sub>i</sub></strong> means: "multiply x₁ × x₂ × x₃ × ... × x<sub>n</sub>"
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Product operator. <span class="math-symbol">Π<sub>i=a</sub><sup>b</sup> f(i)</span> means multiply <span class="math-symbol">f(i)</span> for all integers <span class="math-symbol">i</span> from <span class="math-symbol">a</span> to <span class="math-symbol">b</span>.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> <span class="math-symbol">Π<sub>i=1</sub><sup>4</sup> i = 1 × 2 × 3 × 4 = 24</span> (factorial!)<br><br>
+                    Naive Bayes: <span class="math-symbol">p(x|y) = Π<sub>j=1</sub><sup>d</sup> p(x<sub>j</sub>|y)</span> (multiply feature probabilities)
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== LOSS FUNCTIONS ==================== -->
+        <div class="category-section" id="loss-section">
+            <h2 class="category-header">📉 Loss & Error</h2>
+
+            <div class="variable-card" data-search="L loss cost objective function error">
+                <div class="variable-symbol">L or J</div>
+                <div class="variable-name">L(w) or J(w) - Loss/Cost Function</div>
+
+                <div class="eli5-explanation">
+                    This measures "how bad are we doing?" Lower is better! Imagine getting points taken off for each mistake. The loss tells you your total penalty. The goal is to make this number as SMALL as possible!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Quantifies the error between predictions and true values. Goal is to minimize: <span class="math-symbol">w* = argmin<sub>w</sub> L(w)</span>. Common losses: MSE, cross-entropy, hinge loss.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example (MSE):</strong><br>
+                    <span class="math-symbol">L(w) = (1/n) Σ<sub>i=1</sub><sup>n</sup> (y<sub>i</sub> - ŷ<sub>i</sub>)²</span><br>
+                    Averages squared errors across all examples
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="gradient nabla derivative slope direction">
+                <div class="variable-symbol">∇</div>
+                <div class="variable-name">∇ (nabla) - Gradient</div>
+
+                <div class="eli5-explanation">
+                    Imagine you're on a hill and want to go DOWN to the valley. The gradient is like arrows pointing "which way is downhill from here?" It tells you the direction to step to decrease the loss most quickly!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Vector of partial derivatives. <span class="math-symbol">∇L(w) = [∂L/∂w₁, ∂L/∂w₂, ..., ∂L/∂w<sub>d</sub>]</span>. Points in direction of steepest ascent; we go opposite direction to minimize.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Gradient descent update:<br>
+                    <span class="math-symbol">w<sub>new</sub> = w<sub>old</sub> - α∇L(w<sub>old</sub>)</span><br>
+                    Move in the opposite direction of the gradient (downhill) with step size <span class="math-symbol">α</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SPECIAL FUNCTIONS ==================== -->
+        <div class="category-section" id="functions-section">
+            <h2 class="category-header">🔢 Special Functions</h2>
+
+            <div class="variable-card" data-search="exp exponential e euler natural exponential">
+                <div class="variable-symbol">exp(x) or e<sup>x</sup></div>
+                <div class="variable-name">exp(x) - Exponential Function</div>
+
+                <div class="eli5-explanation">
+                    This is like "super fast growth!" When x gets bigger, <strong>e<sup>x</sup></strong> EXPLODES upward. It's the opposite of logarithm (log). Used everywhere in ML because it's smooth and has nice math properties.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Exponential function with base <span class="math-symbol">e ≈ 2.718</span>. Key property: derivative of <span class="math-symbol">e<sup>x</sup></span> is itself. Used in softmax, sigmoid, and many probability distributions.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong><br>
+                    <span class="math-symbol">e⁰ = 1</span><br>
+                    <span class="math-symbol">e¹ ≈ 2.718</span><br>
+                    <span class="math-symbol">e² ≈ 7.389</span><br>
+                    <span class="math-symbol">e⁻¹ ≈ 0.368</span>
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="log logarithm natural log ln">
+                <div class="variable-symbol">log(x)</div>
+                <div class="variable-name">log(x) - Logarithm</div>
+
+                <div class="eli5-explanation">
+                    This answers: "How many times do I multiply to get x?" In ML, usually means natural log (ln). It's like taking HUGE numbers and squishing them down to manageable size. Opposite of <strong>exp</strong>!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Usually means natural logarithm (base <span class="math-symbol">e</span>): <span class="math-symbol">log(x) = ln(x)</span>. Inverse of exponential: <span class="math-symbol">log(e<sup>x</sup>) = x</span>. Key properties: <span class="math-symbol">log(ab) = log(a) + log(b)</span>.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong><br>
+                    <span class="math-symbol">log(1) = 0</span> (e⁰ = 1)<br>
+                    <span class="math-symbol">log(e) = 1</span> (e¹ = e)<br>
+                    <span class="math-symbol">log(e²) = 2</span><br>
+                    Used in cross-entropy loss: <span class="math-symbol">-Σ y<sub>i</sub> log(ŷ<sub>i</sub>)</span>
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="sigmoid logistic function activation">
+                <div class="variable-symbol">σ(x)</div>
+                <div class="variable-name">σ(x) - Sigmoid Function</div>
+
+                <div class="eli5-explanation">
+                    This is a magic squisher! No matter what number you put in (huge or tiny, positive or negative), it squishes the output between 0 and 1. Perfect for making probabilities! It's S-shaped.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> <span class="math-symbol">σ(x) = 1/(1 + e<sup>-x</sup>)</span>. Maps real numbers to (0,1). Used in logistic regression and as activation function. Output can be interpreted as probability.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong><br>
+                    <span class="math-symbol">σ(0) = 0.5</span> (right in middle)<br>
+                    <span class="math-symbol">σ(5) ≈ 0.993</span> (almost 1)<br>
+                    <span class="math-symbol">σ(-5) ≈ 0.007</span> (almost 0)<br>
+                    Logistic regression: <span class="math-symbol">p(y=1|x) = σ(w<sup>T</sup>x)</span>
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="logit log-odds inverse sigmoid link function">
+                <div class="variable-symbol">logit(p)</div>
+                <div class="variable-name">logit(p) - Logit Function (Log-Odds)</div>
+
+                <div class="eli5-explanation">
+                    The opposite of sigmoid! Sigmoid takes any number and squishes it to [0,1]. Logit takes a probability (0 to 1) and stretches it back out to the whole number line. It's like asking "what input would sigmoid need to give me THIS probability?" Also called "log-odds" because it measures how much more likely "yes" is than "no".
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Inverse of the sigmoid function:<br>
+                    <span class="math-symbol">logit(p) = log(p / (1-p))</span><br>
+                    Maps probabilities (0,1) to real numbers (-∞, ∞).<br>
+                    • If <span class="math-symbol">p = σ(x)</span>, then <span class="math-symbol">logit(p) = x</span><br>
+                    • Called "log-odds" because <span class="math-symbol">p/(1-p)</span> is the odds ratio<br>
+                    • Used as the "link function" in logistic regression
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong><br>
+                    <span class="math-symbol">logit(0.5) = log(0.5/0.5) = log(1) = 0</span> (neutral)<br>
+                    <span class="math-symbol">logit(0.9) = log(0.9/0.1) = log(9) ≈ 2.2</span> (strongly yes)<br>
+                    <span class="math-symbol">logit(0.1) = log(0.1/0.9) = log(0.11) ≈ -2.2</span> (strongly no)<br><br>
+                    <strong>Logistic Regression:</strong><br>
+                    <span class="math-symbol">logit(p(y=1|x)) = w<sup>T</sup>x + b</span><br>
+                    We model the log-odds as a linear function!
+                </div>
+
+                <div class="notation-comparison">
+                    <div class="comparison-box">
+                        <strong>Sigmoid:</strong><br>
+                        <span class="math-symbol">σ: ℝ → (0,1)</span><br>
+                        Any number → probability<br>
+                        <em>σ(0) = 0.5, σ(∞) = 1</em>
+                    </div>
+                    <div class="comparison-box">
+                        <strong>Logit:</strong><br>
+                        <span class="math-symbol">logit: (0,1) → ℝ</span><br>
+                        Probability → any number<br>
+                        <em>logit(0.5) = 0, logit(1) = ∞</em>
+                    </div>
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="softmax normalization multinomial probability">
+                <div class="variable-symbol">softmax</div>
+                <div class="variable-name">softmax(z) - Softmax Function</div>
+
+                <div class="eli5-explanation">
+                    You have scores for different options, but they don't add up to 100%. Softmax turns them into percentages that DO add to 100%! It makes bigger scores even BIGGER (relatively) and turns everything into nice probabilities.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> <span class="math-symbol">softmax(z)<sub>i</sub> = e<sup>z<sub>i</sub></sup> / Σ<sub>j</sub> e<sup>z<sub>j</sub></sup></span>. Converts vector of scores to probability distribution (sums to 1). Used in multi-class classification.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Raw scores: <span class="math-symbol">z = [2, 1, 0.1]</span><br>
+                    Softmax: <span class="math-symbol">[0.659, 0.242, 0.099]</span><br>
+                    Now they're probabilities! (sum = 1.0)<br>
+                    The class with score 2 gets highest probability.
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== MISCELLANEOUS ==================== -->
+        <div class="category-section" id="misc-section">
+            <h2 class="category-header">🎨 Other Important Notation</h2>
+
+            <div class="variable-card" data-search="norm magnitude length distance L2">
+                <div class="variable-symbol">||x||</div>
+                <div class="variable-name">||x|| - Norm (usually L2 norm)</div>
+
+                <div class="eli5-explanation">
+                    This measures "how long is this vector?" Like measuring the distance from the starting point to where you are. If x = [3, 4], the length is 5 (like a triangle: 3² + 4² = 5²). It's the "size" of x.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Vector norm, usually L2 (Euclidean): <span class="math-symbol">||x||₂ = √(Σ x<sub>i</sub>²)</span>. Also L1 norm: <span class="math-symbol">||x||₁ = Σ |x<sub>i</sub>|</span>. Measures magnitude of vector.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong><br>
+                    <span class="math-symbol">x = [3, 4]</span><br>
+                    <span class="math-symbol">||x||₂ = √(3² + 4²) = √25 = 5</span><br>
+                    <span class="math-symbol">||x||₁ = |3| + |4| = 7</span>
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="beta coefficient hyperparameter distribution">
+                <div class="variable-symbol">β</div>
+                <div class="variable-name">β (beta) - Coefficients / Hyperparameters</div>
+
+                <div class="eli5-explanation">
+                    Often used the same way as <strong>w</strong> or <strong>θ</strong> - just another letter for "weights" or "parameters". Also used for momentum in optimization or as parameters in Beta distribution. Context matters!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Can represent regression coefficients (like <span class="math-symbol">w</span>), hyperparameters in optimization (e.g., momentum term), or parameters in probability distributions (Beta, Dirichlet).
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example (Momentum):</strong><br>
+                    <span class="math-symbol">v<sub>t</sub> = βv<sub>t-1</sub> + ∇L(w<sub>t</sub>)</span><br>
+                    <span class="math-symbol">β</span> controls how much previous gradients matter (typically 0.9)
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="delta change difference error residual">
+                <div class="variable-symbol">δ</div>
+                <div class="variable-name">δ (delta) - Change / Error Term</div>
+
+                <div class="eli5-explanation">
+                    Usually means "the change" or "the difference". Like "how much did it change from yesterday to today?" In neural networks, it's often the error flowing backwards during learning.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Represents change or error term. In backpropagation: <span class="math-symbol">δ<sub>i</sub></span> is the error gradient at layer <span class="math-symbol">i</span>. Can also denote small perturbation or margin.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Backprop error:<br>
+                    <span class="math-symbol">δ<sup>L</sup> = ∇<sub>a</sub>L ⊙ σ'(z<sup>L</sup>)</span><br>
+                    Error at output layer used to update weights
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="eta learning rate step size">
+                <div class="variable-symbol">η</div>
+                <div class="variable-name">η (eta) - Learning Rate</div>
+
+                <div class="eli5-explanation">
+                    Same as <strong>α</strong>! Just a different Greek letter for learning rate. How big of steps to take when learning. Different papers use different letters, but it means the same thing.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Alternative notation for learning rate (same as <span class="math-symbol">α</span>). Controls step size in gradient-based optimization.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> SGD update:<br>
+                    <span class="math-symbol">w<sub>t+1</sub> = w<sub>t</sub> - η∇L(w<sub>t</sub>)</span><br>
+                    Identical to using <span class="math-symbol">α</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== KEY ML CONCEPTS ==================== -->
+        <div class="category-section" id="concepts-section">
+            <h2 class="category-header">🧠 Key Machine Learning Concepts</h2>
+
+            <div class="variable-card" data-search="regularization overfitting complexity penalty ridge lasso l1 l2">
+                <div class="variable-symbol">🎛️</div>
+                <div class="variable-name">Regularization</div>
+
+                <div class="eli5-explanation">
+                    Imagine drawing a line through dots on paper. You COULD draw a super wiggly line that touches every single dot perfectly, but that's silly - it won't work for NEW dots! Regularization is like saying "keep it simple, smooth lines only!" It prevents memorizing and encourages learning patterns.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Technique to prevent overfitting by adding a penalty term to the loss function. Makes the model prefer simpler solutions.<br>
+                    • <strong>L2 Regularization (Ridge):</strong> Penalty = <span class="math-symbol">λ||w||²</span> (shrinks all weights)<br>
+                    • <strong>L1 Regularization (Lasso):</strong> Penalty = <span class="math-symbol">λ||w||₁</span> (can make weights exactly zero)
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Without regularization, your model might have weights like [1000, -523, 892, -1234]. With regularization, it prefers smaller weights like [2, -1, 3, -2] - simpler and more generalizable!
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="fundamental tradeoff bias variance underfitting overfitting approximation estimation">
+                <div class="variable-symbol">⚖️</div>
+                <div class="variable-name">Fundamental Tradeoff (Bias-Variance Tradeoff)</div>
+
+                <div class="eli5-explanation">
+                    You're trying to hit a bullseye, but you have two problems: Either your aim is consistently OFF in one direction (bias - like always shooting left), OR your shots are scattered all over the place (variance - sometimes left, sometimes right, no pattern). You can't fix both perfectly! Simple models = high bias (always a bit wrong). Complex models = high variance (too sensitive to training data).
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> The tradeoff between a model's ability to fit training data vs. generalize to new data.<br>
+                    • <strong>Bias:</strong> Error from wrong assumptions (underfitting)<br>
+                    • <strong>Variance:</strong> Error from sensitivity to training data (overfitting)<br>
+                    • Total Error = Bias² + Variance + Irreducible Error
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong><br>
+                    • Linear model on nonlinear data: High bias (too simple, consistently wrong)<br>
+                    • 100-degree polynomial on 20 points: High variance (too complex, fits noise)<br>
+                    • Sweet spot in middle: Moderate both!
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="training error empirical error training set performance">
+                <div class="variable-symbol">📊</div>
+                <div class="variable-name">Training Error</div>
+
+                <div class="eli5-explanation">
+                    This is how well you do on homework you've already studied! It's your score on the practice problems. But just because you memorized the practice test doesn't mean you'll do well on the REAL test with NEW questions!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Average loss on the training dataset: <span class="math-symbol">E<sub>train</sub> = (1/n) Σ L(y<sub>i</sub>, f(x<sub>i</sub>))</span>. Always decreases as model complexity increases (can memorize training data).
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> You train a model on 1000 house prices. Training error = average prediction error on those same 1000 houses. Can be made arbitrarily small with complex enough model!
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="generalization error test error validation error true error">
+                <div class="variable-symbol">🎯</div>
+                <div class="variable-name">Generalization Error</div>
+
+                <div class="eli5-explanation">
+                    This is how well you do on the REAL test with questions you've never seen! It's what we ACTUALLY care about. A model that just memorized training data will have BAD generalization error - it can't handle new situations.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Expected loss on new, unseen data from the same distribution: <span class="math-symbol">E<sub>test</sub> = E<sub>(x,y)~p</sub>[L(y, f(x))]</span>. This is what we truly want to minimize. Estimated using validation/test sets.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> You train on houses from 2020-2023, then test on houses from 2024 (never seen before). Generalization error = how well it predicts those 2024 prices. This measures true usefulness!
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="linear model tabular data structured data">
+                <div class="variable-symbol">📏</div>
+                <div class="variable-name">Linear vs Tabular Data</div>
+
+                <div class="eli5-explanation">
+                    <strong>Linear</strong> means your prediction is a straight-line combination: multiply each feature by a weight, add them up. Like a recipe: 2 cups flour + 3 eggs + 1 cup sugar.<br><br>
+                    <strong>Tabular</strong> just means your data is in a table/spreadsheet format (rows and columns) - could use linear OR nonlinear models on it!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong><br>
+                    • <strong>Linear Model:</strong> <span class="math-symbol">f(x) = w<sup>T</sup>x + b</span> (prediction is linear combination of features)<br>
+                    • <strong>Tabular Data:</strong> Structured data in table format (rows = samples, columns = features). Contrasts with images, text, graphs.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Predicting house price from [sq_ft, bedrooms, age]:<br>
+                    • Data format: Tabular (each row = house, columns = features)<br>
+                    • Model: Could be linear (<span class="math-symbol">price = 200×sq_ft + 50000×bedrooms - 1000×age</span>) or nonlinear
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="nonlinear feature transforms polynomial features basis functions feature engineering">
+                <div class="variable-symbol">🔄</div>
+                <div class="variable-name">Nonlinear Feature Transforms</div>
+
+                <div class="eli5-explanation">
+                    You have simple features (like x = age), but you make NEW features by transforming them! Like taking x² (age squared), or sin(x), or combinations like x₁×x₂. Now your LINEAR model can learn curves and complex patterns! It's still a linear model, but with fancier ingredients.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Transform input features <span class="math-symbol">x</span> to new features <span class="math-symbol">φ(x)</span>, then fit linear model: <span class="math-symbol">f(x) = w<sup>T</sup>φ(x)</span>. The transform <span class="math-symbol">φ</span> is nonlinear, but model is still linear in the transformed features.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Original: <span class="math-symbol">x = 5</span><br>
+                    Transform: <span class="math-symbol">φ(x) = [x, x², x³] = [5, 25, 125]</span><br>
+                    Model: <span class="math-symbol">f(x) = w₁×5 + w₂×25 + w₃×125</span><br>
+                    Result: Can fit curves even though weights multiply features linearly!
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="polynomial features quadratic cubic degree interaction terms">
+                <div class="variable-symbol">x²</div>
+                <div class="variable-name">Polynomial Features</div>
+
+                <div class="eli5-explanation">
+                    Instead of just using x (like age), you ALSO use x² (age squared), x³ (age cubed), etc. This lets you fit curves! Also include combinations like x₁×x₂ (interaction between features). Higher degree = curvier fits possible.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Expand features to include polynomial terms up to degree <span class="math-symbol">p</span>.<br>
+                    Degree 2: <span class="math-symbol">φ(x) = [1, x₁, x₂, x₁², x₁x₂, x₂²]</span><br>
+                    Degree 3: Adds <span class="math-symbol">x₁³, x₁²x₂, x₁x₂², x₂³</span>, etc.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Features: [temp, humidity]<br>
+                    Polynomial degree 2:<br>
+                    <span class="math-symbol">[1, temp, humidity, temp², temp×humidity, humidity²]</span><br>
+                    Can now fit parabolas and interaction effects!
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="radial basis functions rbf gaussian basis local features bump functions">
+                <div class="variable-symbol">🎯</div>
+                <div class="variable-name">Radial Basis Functions (RBF)</div>
+
+                <div class="eli5-explanation">
+                    Imagine placing "bump" functions at different locations. Each bump is tall at its center and fades away as you move farther. Your prediction is a weighted sum of these bumps! Good for modeling LOCAL patterns - things that matter more when you're close to certain points.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Features based on distance to centers <span class="math-symbol">c<sub>k</sub></span>:<br>
+                    <span class="math-symbol">φ<sub>k</sub>(x) = exp(-γ||x - c<sub>k</sub>||²)</span><br>
+                    Gaussian "bumps" centered at different locations. <span class="math-symbol">γ</span> controls width. Prediction: <span class="math-symbol">f(x) = Σ w<sub>k</sub>φ<sub>k</sub>(x)</span>
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Predicting temperature based on location. Place RBF centers at cities. Each RBF is strong near its city, weak far away. Model learns: "Near NYC, temperature behaves like..., near LA, temperature behaves like..."
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="periodic basis functions fourier features trigonometric seasonal">
+                <div class="variable-symbol">∿</div>
+                <div class="variable-name">Periodic Basis Functions</div>
+
+                <div class="eli5-explanation">
+                    For things that repeat in cycles (like seasons, days of the week, tide patterns), use wave functions! Sin and cos waves at different frequencies let you capture REPEATING patterns. Like using music notes (different frequencies) to recreate a song.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Use trigonometric functions to capture periodic patterns:<br>
+                    <span class="math-symbol">φ(x) = [sin(2πx/T), cos(2πx/T), sin(4πx/T), cos(4πx/T), ...]</span><br>
+                    <span class="math-symbol">T</span> is the period. Multiple frequencies capture different scales of periodicity (Fourier features).
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Ice cream sales over time (yearly pattern):<br>
+                    <span class="math-symbol">φ(day) = [sin(2πday/365), cos(2πday/365)]</span><br>
+                    Captures yearly seasonality (high in summer, low in winter)!
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="kernel method kernel trick implicit feature space dual form">
+                <div class="variable-symbol">🔮</div>
+                <div class="variable-name">Kernel Method (Kernel Trick)</div>
+
+                <div class="eli5-explanation">
+                    Imagine you have a magic shortcut! Instead of computing billions of fancy features, then doing math on them, the kernel lets you skip straight to the answer. It's like having a calculator that can multiply two huge numbers WITHOUT writing them down first - it just gives you the result!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Compute inner products in high-dimensional feature space WITHOUT explicitly computing the features:<br>
+                    <span class="math-symbol">K(x, x') = ⟨φ(x), φ(x')⟩</span><br>
+                    The kernel <span class="math-symbol">K</span> computes what the dot product WOULD BE in the transformed space, without actually computing <span class="math-symbol">φ(x)</span>. Enables infinite-dimensional features!
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Polynomial kernel degree 2:<br>
+                    <span class="math-symbol">K(x, x') = (x<sup>T</sup>x' + 1)²</span><br>
+                    This is equivalent to transforming to polynomial features AND taking dot product, but much faster!
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="gaussian kernel rbf kernel radial basis function kernel">
+                <div class="variable-symbol">e^(-γ||x-x'||²)</div>
+                <div class="variable-name">Gaussian Kernel (RBF Kernel)</div>
+
+                <div class="eli5-explanation">
+                    Measures "how similar are these two points?" If points are close together, the kernel gives a number close to 1 (very similar!). If far apart, close to 0 (different!). It's like asking "are these two things neighbors?"
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Most popular kernel function:<br>
+                    <span class="math-symbol">K(x, x') = exp(-γ||x - x'||²)</span><br>
+                    <span class="math-symbol">γ = 1/(2σ²)</span> controls width (larger γ = more local, smaller γ = smoother). Corresponds to INFINITE-dimensional feature space!
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> With <span class="math-symbol">γ = 1</span>:<br>
+                    • Same point: <span class="math-symbol">K(x, x) = e⁰ = 1</span> (identical!)<br>
+                    • Distance 1: <span class="math-symbol">K(x, x') = e⁻¹ ≈ 0.37</span> (somewhat similar)<br>
+                    • Distance 3: <span class="math-symbol">K(x, x') = e⁻⁹ ≈ 0.0001</span> (very different)
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="k-fold cross validation cv model selection hyperparameter tuning">
+                <div class="variable-symbol">🔀</div>
+                <div class="variable-name">K-Fold Cross-Validation</div>
+
+                <div class="eli5-explanation">
+                    You want to know how good your model REALLY is, but you only have one dataset. Solution: Split it into K pieces. Train on K-1 pieces, test on the last one. Repeat K times, each time using a different piece as the test set. Then average the K scores - this is more reliable than one single test!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Split data into <span class="math-symbol">K</span> folds (usually 5 or 10). For each fold <span class="math-symbol">k</span>:<br>
+                    1. Train on all folds except <span class="math-symbol">k</span><br>
+                    2. Test on fold <span class="math-symbol">k</span><br>
+                    3. Record error <span class="math-symbol">E<sub>k</sub></span><br>
+                    Final estimate: <span class="math-symbol">E<sub>CV</sub> = (1/K) Σ E<sub>k</sub></span>
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> 1000 examples, 5-fold CV:<br>
+                    • Fold 1: Train on examples 201-1000, test on 1-200<br>
+                    • Fold 2: Train on 1-200 & 401-1000, test on 201-400<br>
+                    • ... repeat ...<br>
+                    • Average the 5 test errors → more reliable estimate!
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="kmeans clustering unsupervised centroid prototype">
+                <div class="variable-symbol">📍</div>
+                <div class="variable-name">K-Means Clustering</div>
+
+                <div class="eli5-explanation">
+                    You have a bunch of points and want to group them into K clusters (like sorting candy into K piles by color). K-means finds K "center points" and assigns each data point to its nearest center. It keeps moving the centers to better positions until everything settles. No labels needed - it just finds natural groups!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Unsupervised clustering algorithm. Find <span class="math-symbol">K</span> cluster centers <span class="math-symbol">μ<sub>k</sub></span> that minimize:<br>
+                    <span class="math-symbol">Σ<sub>i</sub> min<sub>k</sub> ||x<sub>i</sub> - μ<sub>k</sub>||²</span><br>
+                    Algorithm: (1) Assign points to nearest center, (2) Update centers to mean of assigned points, (3) Repeat until convergence.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Customer segmentation (K=3):<br>
+                    • Start with 3 random centers<br>
+                    • Assign each customer to nearest center<br>
+                    • Move each center to the average of its customers<br>
+                    • Repeat → discovers 3 customer groups (e.g., budget, mid, luxury)
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="regression predict continuous supervised learning">
+                <div class="variable-symbol">📈</div>
+                <div class="variable-name">Regression</div>
+
+                <div class="eli5-explanation">
+                    Predicting a NUMBER! How much will this house cost? What temperature will it be tomorrow? How many ice creams will we sell? If the answer is a continuous value (not a category), that's regression. Like drawing a line (or curve) through points and using it to predict.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Supervised learning task where the target <span class="math-symbol">y</span> is continuous (real-valued). Goal: learn function <span class="math-symbol">f: X → ℝ</span>.<br>
+                    Common types: Linear regression, polynomial regression, ridge, lasso, kernel regression, neural networks.
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong><br>
+                    • <strong>Input:</strong> [house size, bedrooms, age] → <strong>Output:</strong> $327,500<br>
+                    • <strong>Input:</strong> [hours studied] → <strong>Output:</strong> test score 87.3<br>
+                    • <strong>Input:</strong> [yesterday's temperature] → <strong>Output:</strong> today's temp 72.5°F
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="classification predict category class label supervised learning">
+                <div class="variable-symbol">🏷️</div>
+                <div class="variable-name">Classification</div>
+
+                <div class="eli5-explanation">
+                    Predicting a CATEGORY or LABEL! Is this email spam or not? What animal is in this photo? Which digit is this (0-9)? The answer is one of a fixed set of options, not a number. Like sorting things into buckets.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Supervised learning task where target <span class="math-symbol">y</span> is discrete (from finite set of classes). Goal: learn <span class="math-symbol">f: X → {1, 2, ..., K}</span>.<br>
+                    • <strong>Binary:</strong> K=2 (spam/not spam)<br>
+                    • <strong>Multi-class:</strong> K>2 (digit recognition, animal species)
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong><br>
+                    • <strong>Input:</strong> email text → <strong>Output:</strong> {spam, not spam}<br>
+                    • <strong>Input:</strong> image → <strong>Output:</strong> {cat, dog, bird}<br>
+                    • <strong>Input:</strong> patient symptoms → <strong>Output:</strong> {healthy, disease A, disease B}
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="multi-class classification multiclass multinomial softmax categorical">
+                <div class="variable-symbol">🏷️🏷️🏷️</div>
+                <div class="variable-name">Multi-Class Classification</div>
+
+                <div class="eli5-explanation">
+                    Instead of choosing between just TWO options (yes/no, spam/not spam), you're choosing from MANY options! Like recognizing digits 0-9 (10 choices), identifying animals (cat/dog/bird/fish/horse), or classifying types of flowers. Each example belongs to exactly ONE class out of K possible classes.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Classification with <span class="math-symbol">K > 2</span> classes where each example belongs to exactly one class.<br>
+                    • <strong>Output:</strong> Probability distribution over <span class="math-symbol">K</span> classes: <span class="math-symbol">p(y=k|x)</span> for <span class="math-symbol">k = 1, ..., K</span><br>
+                    • <strong>Common approach:</strong> Use softmax function to convert scores to probabilities<br>
+                    • <strong>Loss:</strong> Cross-entropy loss: <span class="math-symbol">-log p(y=y<sub>true</sub>|x)</span><br>
+                    • <strong>Prediction:</strong> <span class="math-symbol">ŷ = argmax<sub>k</sub> p(y=k|x)</span>
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Digit recognition (MNIST):<br>
+                    • <strong>Classes:</strong> K=10 (digits 0-9)<br>
+                    • <strong>Input:</strong> 28×28 image<br>
+                    • <strong>Output probabilities:</strong> [0.01, 0.02, 0.05, 0.85, 0.01, 0.02, 0.01, 0.01, 0.01, 0.01]<br>
+                    • <strong>Prediction:</strong> argmax = 3 (highest probability at index 3)<br><br>
+                    <strong>Methods:</strong><br>
+                    • Softmax regression (multinomial logistic regression)<br>
+                    • Multi-class SVM<br>
+                    • Neural networks with softmax output<br>
+                    • One-vs-Rest (train K binary classifiers)<br>
+                    • One-vs-One (train K(K-1)/2 binary classifiers)
+                </div>
+
+                <div class="notation-comparison">
+                    <div class="comparison-box">
+                        <strong>Binary Classification:</strong><br>
+                        2 classes (K=2)<br>
+                        Output: single probability p(y=1|x)<br>
+                        <em>Use: Sigmoid, logistic regression</em>
+                    </div>
+                    <div class="comparison-box">
+                        <strong>Multi-Class Classification:</strong><br>
+                        K>2 classes<br>
+                        Output: K probabilities that sum to 1<br>
+                        <em>Use: Softmax, one-hot encoding</em>
+                    </div>
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="one hot encoding one of k categorical dummy variables indicator variables">
+                <div class="variable-symbol">🔢→📊</div>
+                <div class="variable-name">One-Hot Encoding (One-of-K Encoding)</div>
+
+                <div class="eli5-explanation">
+                    Imagine you have colors: red, blue, green. Computers can't understand "red"! So we turn each color into a list of yes/no switches. Red = [1, 0, 0] (first switch ON, others OFF). Blue = [0, 1, 0]. Green = [0, 0, 1]. Only ONE switch is "hot" (on) at a time, the rest are "cold" (off)!
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Encoding categorical variables as binary vectors. For <span class="math-symbol">K</span> categories, create <span class="math-symbol">K</span> binary features where exactly one is 1 and others are 0.<br>
+                    • Category <span class="math-symbol">j</span> → vector with 1 in position <span class="math-symbol">j</span>, 0s elsewhere<br>
+                    • Also called "dummy variables" or "indicator variables"<br>
+                    • Alternative to label encoding (1, 2, 3...) which implies false ordering
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> Days of the week (K=3 subset):<br>
+                    • Monday → <span class="math-symbol">[1, 0, 0]</span><br>
+                    • Wednesday → <span class="math-symbol">[0, 1, 0]</span><br>
+                    • Friday → <span class="math-symbol">[0, 0, 1]</span><br><br>
+                    <strong>Why not just use 1, 2, 3?</strong> That would make the model think Friday (3) is "bigger" than Monday (1), which doesn't make sense! One-hot treats all categories equally.
+                </div>
+
+                <div class="notation-comparison">
+                    <div class="comparison-box">
+                        <strong>❌ Label Encoding:</strong><br>
+                        Cat=1, Dog=2, Bird=3<br>
+                        <em>Problem: Implies Dog > Cat!</em>
+                    </div>
+                    <div class="comparison-box">
+                        <strong>✅ One-Hot Encoding:</strong><br>
+                        Cat=[1,0,0], Dog=[0,1,0], Bird=[0,0,1]<br>
+                        <em>All categories treated equally!</em>
+                    </div>
+                </div>
+            </div>
+
+            <div class="variable-card" data-search="standardization normalization feature scaling z-score standard score preprocessing">
+                <div class="variable-symbol">📏⚖️</div>
+                <div class="variable-name">Standardizing Features (Feature Normalization/Scaling)</div>
+
+                <div class="eli5-explanation">
+                    Imagine comparing apples to watermelons! One apple weighs 200 grams, one watermelon weighs 5000 grams. If you don't fix this, the computer thinks watermelon weight is WAY more important just because the numbers are bigger! <strong>Standardizing</strong> puts everything on the same scale - it's like measuring both in "how many standard deviations from average" instead of grams.
+                </div>
+
+                <div class="technical-note">
+                    <strong>Technical:</strong> Transform features to have mean 0 and standard deviation 1. For each feature <span class="math-symbol">j</span>:<br>
+                    <span class="math-symbol">z<sub>j</sub> = (x<sub>j</sub> - μ<sub>j</sub>) / σ<sub>j</sub></span><br>
+                    Where <span class="math-symbol">μ<sub>j</sub></span> = mean of feature <span class="math-symbol">j</span>, <span class="math-symbol">σ<sub>j</sub></span> = standard deviation.<br><br>
+                    <strong>Why?</strong><br>
+                    • Makes gradient descent converge faster<br>
+                    • Prevents features with large ranges from dominating<br>
+                    • Required for some algorithms (SVM, neural networks, k-NN)<br>
+                    • Makes regularization fair across all features
+                </div>
+
+                <div class="example-usage">
+                    <strong>Example:</strong> House features:<br>
+                    • <strong>Before:</strong> Size = 2000 sq ft (range: 500-5000), Bedrooms = 3 (range: 1-5)<br>
+                    • Size varies by 4500, bedrooms by 4 → model thinks size is 1000x more important!<br><br>
+                    • <strong>After standardizing:</strong> Size = 0.5, Bedrooms = 0.3 (both roughly -2 to +2)<br>
+                    • Now both features on equal footing!<br><br>
+                    <strong>Alternative: Min-Max Scaling</strong> (scale to [0,1]):<br>
+                    <span class="math-symbol">x'<sub>j</sub> = (x<sub>j</sub> - min<sub>j</sub>) / (max<sub>j</sub> - min<sub>j</sub>)</span>
+                </div>
+
+                <div class="notation-comparison">
+                    <div class="comparison-box">
+                        <strong>Standardization (Z-score):</strong><br>
+                        Mean = 0, Std = 1<br>
+                        <em>Good for: Most ML algorithms</em>
+                    </div>
+                    <div class="comparison-box">
+                        <strong>Min-Max Normalization:</strong><br>
+                        Range = [0, 1]<br>
+                        <em>Good for: Neural networks, images</em>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== QUICK REFERENCE TABLE ==================== -->
+        <div style="margin-top: 3rem; padding: 2rem; background-color: #f8fafc; border-radius: 8px;">
+            <h3>📋 Quick Reference Summary</h3>
+            <table class="dimension-table">
+                <tr>
+                    <th>Symbol</th>
+                    <th>Name</th>
+                    <th>Quick Meaning</th>
+                    <th>Example Context</th>
+                </tr>
+                <tr>
+                    <td><span class="math-symbol">X</span></td>
+                    <td>Feature Matrix</td>
+                    <td>All your data (rows = examples, cols = features)</td>
+                    <td>100 houses × 5 features</td>
+                </tr>
+                <tr>
+                    <td><span class="math-symbol">y</span></td>
+                    <td>Labels/Targets</td>
+                    <td>The correct answers</td>
+                    <td>House prices, spam/not spam</td>
+                </tr>
+                <tr>
+                    <td><span class="math-symbol">w</span></td>
+                    <td>Weights</td>
+                    <td>How important each feature is</td>
+                    <td>Coefficients in linear model</td>
+                </tr>
+                <tr>
+                    <td><span class="math-symbol">θ</span></td>
+                    <td>Parameters</td>
+                    <td>Model settings (often same as w)</td>
+                    <td>All learnable values</td>
+                </tr>
+                <tr>
+                    <td><span class="math-symbol">α, η</span></td>
+                    <td>Learning Rate</td>
+                    <td>Step size when learning</td>
+                    <td>0.001 to 0.1 typically</td>
+                </tr>
+                <tr>
+                    <td><span class="math-symbol">λ</span></td>
+                    <td>Regularization</td>
+                    <td>Penalty for complexity</td>
+                    <td>Ridge/Lasso parameter</td>
+                </tr>
+                <tr>
+                    <td><span class="math-symbol">n</span></td>
+                    <td># Examples</td>
+                    <td>How many data points</td>
+                    <td>1000 training examples</td>
+                </tr>
+                <tr>
+                    <td><span class="math-symbol">d</span></td>
+                    <td># Features</td>
+                    <td>How many columns/dimensions</td>
+                    <td>784 pixels in image</td>
+                </tr>
+                <tr>
+                    <td><span class="math-symbol">argmax</span></td>
+                    <td>Which maximizes</td>
+                    <td>The input that gives max output</td>
+                    <td>Which class has highest prob</td>
+                </tr>
+                <tr>
+                    <td><span class="math-symbol">σ(·)</span></td>
+                    <td>Sigmoid</td>
+                    <td>Squash to [0,1]</td>
+                    <td>Probability in logistic reg</td>
+                </tr>
+            </table>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc440" class="back-link">← Back to CPSC 440</a>
+        </footer>
+    </div>
+
+    <script>
+        // Search/Filter functionality
+        function filterVariables() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            const cards = document.querySelectorAll('.variable-card');
+
+            cards.forEach(card => {
+                const searchContent = card.getAttribute('data-search') || '';
+                const textContent = card.textContent.toLowerCase();
+
+                if (searchContent.includes(searchTerm) || textContent.includes(searchTerm)) {
+                    card.style.display = 'block';
+
+                    // Highlight matching cards
+                    if (searchTerm.length > 0) {
+                        card.style.borderColor = '#667eea';
+                        card.style.backgroundColor = '#f0f9ff';
+                    } else {
+                        card.style.borderColor = '#e2e8f0';
+                        card.style.backgroundColor = 'white';
+                    }
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('ML Notation Guide loaded! 🎓');
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

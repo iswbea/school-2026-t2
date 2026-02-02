@@ -1,0 +1,27 @@
+Suppose users make the following nearly simultaneous requests for pages from these cylinders, and suppose the head assembly is currently on cyl. 165, have just come from cyl. 164.
+    Order of arrivals = 1400, 2500, 170, 160, 161, 3500, 162, 170
+
+Here is the service order for the following disk scheduling algorithms:
+    FCFC: First come, First Served: 1400,2500,170,160,161,3500,162,170
+    SSTF: Shortest seek time first: 162,161,160,170,170,1400,2500,3500
+Which is more efficient and how would we measure efficiency?
+    - Minimize the sum of seek distances
+    - |165 - 162| + |162 - 161| + |160 + 170|
+    - Minimize inefficiency for requests that have to wait.
+    - Balance amount of data per user request (x cylinders vs one page)
+    - Maximize throughput ()
+    - Minimize elapsed time
+Is there unfairness?
+    - Long waits are possible.
+
+The popular elevator algorithm sweeps back and forth across cylinders, servicing requests as they are encountered in both directions.
+Assume we're on cyl. 165 having just come from cyl. 164, and all of a sudden we get this sequence:
+    1400, 2500,170,160,161,3500,162,170.
+What is the service order?
+What is the updated service order if: While servicing cyl.1400 we suddenly get these new requests: 1250,170,1400,1500
+
+Another variant: 
+C-SCAN (Circular Scan)
+
+    Here, we don't service new requests on the return trip; instead we zoom back to the beginning, and then service requests in one direction only. Why might this be advantageous?
+        -

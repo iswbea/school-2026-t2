@@ -1,0 +1,830 @@
+Discriminative models and deep learning
+CPSC 440/550: Advanced Machine Learning
+cs.ubc.ca/~dsuth/440/25w2
+University of British Columbia, on unceded Musqueam land
+2025-26 Winter Term 2 (Jan–Apr 2026)
+1 / 38
+Discriminative classifiers
+Generative classifiers model p(x, y), then use that to get p(y | x)
+Often model p(y) (usually simple) and then p(x | y) (harder)
+“When solving a problem of interest, do not solve a
+more general problem as an intermediate step.”
+— Vladimir Vapnik
+An alternative philosophy: just directly model p(y | x)
+Or even further: just directly learn a classification function
+Modeling p(x) can be hard
+Discriminative: “which pixels show me this picture is a dog?”
+Generative: “what do pictures of dogs look like?”
+2 / 38
+Hierarchy of predictor types
+Different types of models can answer different types of questions:
+type example p(x, y) p(y | x) f(x) ≈ y
+Generative na¨ıve Bayes ✓ ✓ ✓
+Discriminative (prob.) logistic regression ✗ ✓ ✓
+Discriminative (non-prob.) SVM ✗ ✗ ✓
+Problem usually gets “easier” as you model less (more or less)
+But you can’t do as much with it
+Discriminative models can’t sample, do outlier detection, . . .
+“Pure classifiers” can’t easily combine into broader inference (e.g. decision theory)
+3 / 38
+Discriminative models, binary data
+Discriminative model with a full categorical parameterization:
+Pr(spam | aardvark = 0, . . . , lotto = 0, . . . , zyzzyva = 0) = θ0···0···0
+.
+.
+.
+Pr(spam | aardvark = 1, . . . , lotto = 1, . . . , zyzzyva = 1) = θ1···1···1
+Can represent any conditional distribution on binary data
+Needs 2
+d parameters (versus 2(2d − 1) for “galaxy brain Bayes”)
+(Why not 2
+d − 1?)
+Fitting: y | x is a separate Bernoulli for each x; can just MLE/MAP for each one
+But probably don’t see very many emails per x (and many have nx = 0)
+Will probably overfit for almost every x
+Want to share information across similar xs!
+4 / 38
+Linear parameterization of conditionals
+Generally: would like to use a “parsimonious” parameterization
+Full categorical distribution: can model anything, very many parameters
+Making stronger assumptions: can’t model everything, much less complex model
+Standard basic choice: assume a linear model, i.e. one of the form
+p(y = 1 | x1, . . . , xd, w) = f(w1x1 + · · · + wdxd) = f(w
+Tx)
+where w is our vector of d parameters and f is some function from R to [0, 1]
+Standard basic choice for f: sigmoid function, giving logistic regression
+f(z) = 1
+1 + exp(−z)
+−6 −4 −2 0 2 4 6
+0.2
+0.4
+0.6
+0.8
+z
+σ(z)
+5 / 38
+Logistic regression inference
+For a given w and x, logistic regression gives us a Bernoulli distribution over y:
+Pr(Y = 1 | X = x, w) = 1
+1 + exp(−wTx)
+Usually just take the mode to predict most likely y
+But can also:
+Set a different confidence threshold, e.g. based on “decision theory”
+Sample conditional ys given this x
+Compute probability of seeing 5 positives out of 10 examples with this x
+Compute the expected number of samples with this x to see a single positive
+Ask how likely both an x and an independent x
+′
+are to be positive
+. . .
+6 / 38
+Maximum conditional likelihood
+MLE for generative models: arg maxw p(X, y | w)
+Can’t do that for discriminative models!
+When we say MLE for discriminative models, we mean arg maxw p(y | X, w)
+Treat X as fixed, maximize conditional likelihood
+Logistic regression also makes sense for continuous x
+Even though it’s only using binary probabilities!
+Different than na¨ıve Bayes:
+Models X | Y , so continuous X needs to use a continuous distribution
+7 / 38
+Logistic (negative log-)likelihood
+Logistic regression uses
+p(y | X, w) = Yn
+i=1
+p
+
+y
+(i)
+| X, w
+=
+Yn
+i=1
+p
+
+y
+(i)
+| x
+(i)
+, w
+so − log p(y | X, w) = Pn
+i=1 − log p(y
+(i)
+| x(i), w)
+Each − log p(y
+(i)
+| x(i), w) term is log
+1 + exp
+−y˜
+(i)w
+Tx
+(i)
+, for y˜ ∈ {−1, 1}:
+
+
+
+− log 1
+1+exp(−wTx(i))
+if y
+(i) = 1
+− log 
+1 −
+1
+1+exp(−wTx(i))
+
+if y
+(i) = 0
+=
+(
+log
+1 + exp
+−w
+Tx
+(i)
+ if y
+(i) = 1
+log
+1 + exp
+w
+Tx
+(i)
+ if y
+(i) = 0
+Usually convenient to use y ∈ {−1, 1} instead of {0, 1} for binary linear classifiers
+8 / 38
+MLE for logistic regression
+MLE is equivalent to minimizing f(w) = Pn
+i=1 log(1 + exp(−y
+(i)w
+Tx
+(i)
+))
+Using y
+(i) ∈ {−1, 1} here
+Equivalent to “binary cross-entropy”
+Computational cost: need to compute the w
+Tx
+(i)
+, aka Xw, in time O(nd)
+∇f(w) = −XT y
+1+exp(y⊙Xw)
+, with elementwise operations for the y; also O(nd)
+Convex function: no bad local minima
+No closed-form solution in general from setting ∇f(w) = 0
+But can solve with gradient descent or other iterative optimization algorithms
+Best choice depends on n, d, desired accuracy, computational setup, . . .
+9 / 38
+MAP for logistic regression ≈ regularization
+MAP with a Gaussian prior, wj ∼ N
+0,
+1
+λ
+
+, adds 1
+2
+λ∥w∥
+2
+to the objective
+Now “strongly convex”: optimization is usually faster
+Typically gives better test error when λ is appropriate
+MAP here is arg maxw p(w | X, y) = arg maxw p(y | X, w)p(w)
+As opposed to generative MAP, arg maxw p(w | X, y) = arg maxw p(X, y | w)p(w)
+10 / 38
+Binary na¨ıve Bayes is a linear model
+Pr(Y = 1 | X = x) = p(x | y = 1)p(y = 1)
+p(x | y = 1)p(y = 1) + p(x | y = 0)p(y = 0)
+=
+1
+1 + p(x|y=0)p(y=0)
+p(x|y=1)p(y=1)
+=
+1
+1 + exp 
+− log p(x|y=1)p(y=1)
+p(x|y=0)p(y=0)
+= σ
+ Xd
+j=1
+log p(xj | y = 1)
+p(xj | y = 0) + log p(y = 1)
+p(y = 0) !
+= σ
+ Xd
+j=1
+log
+θ
+xj
+j|1
+(1 − θj|1)
+1−xj
+θ
+xj
+j|0
+(1 − θj|0)
+1−xj
++ log p(y = 1)
+p(y = 0) !
+= σ
+ Xd
+j=1
+
+xj log
+θj|1
+θj|0
++ (1 − xj ) log 1 − θj|1
+1 − θj|0
+
++ log p(y = 1)
+p(y = 0) !
+= σ
+ Xd
+j=1
+xj log
+θj|1
+θj|0
+1 − θj|0
+1 − θj|1
+| {z }
+wj
++
+Xd
+j=1
+log
+1 − θj|1
+1 − θj|0
++ log p(y = 1)
+p(y = 0)
+| {z }
+b
+!
+= σ(w
+T
+x + b)
+Not generally the parameters that logistic regression would pick (so, lower likelihoods in logreg model)
+11 / 38
+Adding intercepts to linear models
+Often we only talk about homogeneous linear models, f(w
+Tx)
+More generally inhomogeneous models, f(w
+Tx + b), are very useful in practice
+Two usual ways to do this:
+Treat b as another parameter to fit and put it in all the equations
+Add a “dummy feature” X0 = 1; then corresponding weight w0 acts like b
+Both of these ways make sense in probabilistic framing, too!
+Just be careful about if you want to use the same prior on b/w0 or not
+Often makes sense to “not care about y location,” i.e. use improper prior p(w0) ∝ 1
+Another generally-reasonable scheme:
+First centre the ys so 1
+n
+Pn
+i=1 y
+(i) = 0, then put some prior on w0 not being too big
+12 / 38
+Recap: tabular versus logistic regression
+Tabular parameterization of a categorical:
+Each θy|x is totally separate
+2
+d parameters when everything is binary
+Can model any binary conditional parameter
+Tends to overfit unless 2
+d ≪ n
+Logistic regression parameterization of a categorical:
+Each θy|x is given by σ(w
+Tx + b)
+d or d + 1 parameters (depending on offset)
+Can only model linear conditionals
+Tends to underfit unless d is big or truth is linear
+Simple versus complex model: subject of learning theory
+13 / 38
+“Fundamental trade-off”
+Tabular and logistic models on different sides of the “fundamental trade-off”:
+generalization error = train error+generalization error - train error
+| {z }
+generalization gap (overfitting)
+≥ irreducible error
+If irreducible error > 0, small train error implies some overfitting / vice versa
+Simple models, like logistic regression with few features:
+Tend to have small generalization gaps: don’t overfit much
+Tend to have larger training error (can’t fit data very well)
+Complex models, like tabular conditionals with many features:
+Tend to have small training error (fit data very well)
+Tend to overfit more (bigger generalization gap)
+14 / 38
+Nonlinear feature transformations
+Can go between linear and tabular with non-linear feature transforms:
+Transform each x
+(i)
+into some new z
+(i)
+Train a logistic regression model on z
+(i)
+At test time, do the same transformation for the test features
+Examples: polynomial features, radial basis functions, periodic basis functions, . . .
+Can also frame kernel methods in this way
+More complex features tend to decrease training error, increase overfitting
+Performance is better if the features match the “true” conditionals better!
+Gaussian RBF features/Gaussian kernels, with appropriate regularization (λ and
+lengthscale σ chosen on a validation set), is often an excellent baseline
+15 / 38
+Learning nonlinear feature transformations with deep networks
+Not always clear which feature transformations are “right”
+Generally, deep learning tries to learn good features
+Use “parameterized” features, optimize those parameters too
+Use a flexible-enough class of features
+One-hidden-layer version is
+yˆ(x) = v
+Th(W x)
+where W is an m × d matrix (the “first layer” of feature transformation)
+h is an element-wise activation function, e.g. ReLU(z) = max{0, z} or sigmoid,
+v is a linear function of “activations”
+Without h (e.g. h(z) = z), becomes a linear model: v
+T(W x) = v
+|
+T
+{zW}
+1×m
+x
+Need to fit parameters W and v
+16 / 38
+Fitting neural networks
+yˆ(x) = v
+Th(W x): with fixed W, this is a linear model in the transformed features
+For binary classification, often use logistic likelihood (for y ∈ ±1)
+p(y | x, W, v) = σ (y yˆ(x))
+Can then compute logistic negative log-likelihood
+Minimize it with some variant of gradient descent
+Deep networks do the same thing; a fully-connected L-layer network looks like
+yˆ(x) = WLhL−1(WL−1hL−2(WL−2 · · · h1(W1x)· · ·))
+or more often, add bias terms
+yˆ(x) = bL + WLhL−1(bL−1 + WL−1hL−2(bL−2 + · · · h1(b1 + W1x)· · ·))
+where each b is a vector with the same dimension as the activations at that layer
+If Wj is dj × dj−1, jth layer activations are length dj , bj is also length dj
+Can still apply same logistic likelihood, optimize in same way
+17 / 38
+Generative classifiers, usual framework
+Can generalize our previous notion of Naive Bayes to categorical data:
+Y ∼ Cat(θy) e.g.
+Pr(Y = important) = 0.1
+Pr(Y = promo) = 0.3
+Pr(Y = spam) = 0.4
+Pr(Y = other) = 0.2
+Xj | (Y = y) ∼ Bern(θj|y
+) e.g. Pr(“ASAP” ∈ email | Y = important) = 0.05
+p(important | x) = p(x | important)p(important)/
+P
+y
+p(x | y)p(y)
+Can fit all the parameters Θ = {θy, θ1|1
+, . . . } with MLE: arg maxΘ p(X, y | Θ)
+Or put prior p(Θ), use MAP: arg maxΘ p(Θ | X, y) = arg maxΘ p(X, y | Θ)p(Θ)
+e.g. Dirichlet prior for θy, Beta for all the θj|y
+Can use any other distributions for Y and X | Y = y in the same way
+18 / 38
+Multi-class na¨ıve Bayes on MNIST
+Binarized MNIST: label is categorical, but images are still product of Bernoullis
+Parameter of the Bernoulli for each class:
+One sample from each class:
+19 / 38
+Multi-class “Galaxy Brain Bayes” on MNIST
+Y ∼ Cat(θy); X | (Y = c) ∼ Cat(θ|c
+)
+p(Y = c | X = x) = θx|cθy/(
+Pk
+c
+′=1 θx|c
+′θc
+′)
+This doesn’t have the strong independence assumption – can model anything!
+Samples from the MLE look great!
+Test likelihood: zero
+20 / 38
+Discriminative, probabilistic, binary classifiers
+Model Y | (X = x) ∼ Bern(θx)
+Can do “discriminative” MLE/MAP/. . . for θx: arg maxΘ p(y | X, Θ)p(Θ)
+One extreme (like “galaxy brain Bayes”): each θx is a totally separate parameter
+Can model absolutely anything, with enough data
+You probably don’t have enough data
+Other extreme: each θx is the same
+You probably have enough data to fit this well!
+But it totally ignores x and makes the same decision for everything
+Almost always want an in-between: “similar x should have similar θx”
+. . . but what does “similar” mean?
+Common choice: θx = Pr(Y = 1 | X = x) given by some function ˆθ(x)
+Can choose ˆθ(x) by MLE or MAP: arg max
+θˆ
+p(y | X,
+ˆθ)p(
+ˆθ)
+21 / 38
+Logistic regression
+Linear models: θx = Pr(Y = 1 | X = x) = σ(w · x)
+Defined by parameters w ∈ R
+d
+Common choice for σ: sigmoid function, giving logistic regression
+σ(z) = 1
+1 + exp(−z)
+−6 −4 −2 0 2 4 6
+0.2
+0.4
+0.6
+0.8
+z
+σ(z)
+22 / 38
+Logistic (negative log-)likelihood
+Logistic regression uses
+p(y | X, w) = Yn
+i=1
+p
+
+y
+(i)
+| X, w
+=
+Yn
+i=1
+p
+
+y
+(i)
+| x
+(i)
+, w
+arg max
+w
+p(y | X, w) = arg min
+w
+− log p(y | X, w)
+= arg min
+w
+Xn
+i=1
+− log p(y
+(i)
+| x
+(i)
+, w)
+Each − log p(y
+(i)
+| x(i), w) term is log
+1 + exp
+−y˜
+(i)w
+Tx
+(i)
+, for y˜ ∈ {−1, 1}:
+
+
+
+− log 1
+1+exp(−wTx(i))
+if y
+(i) = 1
+− log 
+1 −
+1
+1+exp(−wTx(i))
+
+if y
+(i) = 0
+=
+(
+log
+1 + exp
+−w
+Tx
+(i)
+ if y
+(i) = 1
+log
+1 + exp
+w
+Tx
+(i)
+ if y
+(i) = 0
+Usually convenient to use y ∈ {−1, 1} instead of {0, 1} for binary linear classifiers
+23 / 38
+MLE for logistic regression
+MLE is equivalent to minimizing f(w) = Pn
+i=1 log(1 + exp(−y
+(i)w
+Tx
+(i)
+))
+Using y
+(i) ∈ {−1, 1} here
+Equivalent to “binary cross-entropy”
+Computational cost: need to compute the w
+Tx
+(i)
+, aka Xw, in time O(nd)
+∇f(w) = −XT y
+1+exp(y⊙Xw)
+, with elementwise operations for the y; also O(nd)
+Convex function: no bad local minima
+No closed-form solution in general from setting ∇f(w) = 0
+But can solve with gradient descent or other iterative optimization algorithms
+Best choice depends on n, d, desired accuracy, computational setup, . . .
+24 / 38
+MAP for logistic regression ≈ regularization
+MAP with a Gaussian prior, wj ∼ N
+0,
+1
+λ
+
+, adds 1
+2
+λ∥w∥
+2
+to the objective
+Now “strongly convex”: optimization is usually faster
+Typically gives better test error when λ is appropriate
+MAP here is arg maxw p(w | X, y) = arg maxw p(y | X, w)p(w)
+As opposed to generative MAP, arg maxw p(w | X, y) = arg maxw p(X, y | w)p(w)
+25 / 38
+Binary na¨ıve Bayes is a linear model
+Pr(Y = 1 | X = x) = p(x | y = 1)p(y = 1)
+p(x | y = 1)p(y = 1) + p(x | y = 0)p(y = 0)
+=
+1
+1 + p(x|y=0)p(y=0)
+p(x|y=1)p(y=1)
+=
+1
+1 + exp 
+− log p(x|y=1)p(y=1)
+p(x|y=0)p(y=0)
+= σ
+ Xd
+j=1
+log p(xj | y = 1)
+p(xj | y = 0) + log p(y = 1)
+p(y = 0) !
+= σ
+ Xd
+j=1
+log
+θ
+xj
+j|1
+(1 − θj|1)
+1−xj
+θ
+xj
+j|0
+(1 − θj|0)
+1−xj
++ log p(y = 1)
+p(y = 0) !
+= σ
+ Xd
+j=1
+
+xj log
+θj|1
+θj|0
++ (1 − xj ) log 1 − θj|1
+1 − θj|0
+
++ log p(y = 1)
+p(y = 0) !
+= σ
+ Xd
+j=1
+xj log
+θj|1
+θj|0
+1 − θj|0
+1 − θj|1
+| {z }
+wj
++
+Xd
+j=1
+log
+1 − θj|1
+1 − θj|0
++ log p(y = 1)
+p(y = 0)
+| {z }
+b
+!
+= σ(w
+T
+x + b)
+Not generally the parameters that logistic regression would pick (so, lower likelihoods in logreg model)
+26 / 38
+Adding intercepts to linear models
+Often we only talk about homogeneous linear models, σ(w
+Tx)
+More generally inhomogeneous models, σ(w
+Tx + b), are very useful in practice
+Two usual ways to do this:
+Treat b as another parameter to fit and put it in all the equations
+Add a “dummy feature” X0 = 1; then corresponding weight w0 acts like b
+Both of these ways make sense in probabilistic framing, too!
+Just be careful about if you want to use the same prior on b/w0 or not
+Often makes sense to “not care about y location,” i.e. use improper prior p(w0) ∝ 1
+Another generally-reasonable scheme:
+First centre the ys so 1
+n
+Pn
+i=1 y
+(i) = 0, then put some prior on w0 not being too big
+27 / 38
+Feature engineering
+If we’re using a linear model, we want features that will make sense
+For example, how do we use categorical features x?
+Usually convert to set of binary features (“one-hot”/“one of k” encoding)
+Age City Income
+23 Van 26,000
+25 Sur 67,000
+19 Bur 16,500
+43 Sur 183,000
+→
+Age Van Bur Sur Income
+23 1 0 0 26,000
+25 0 0 1 67,000
+19 0 1 0 16,500
+43 0 0 1 183,000
+If you see a new category in test data: usually, just set all of them to zero
+Also often want to standardize features: subtract mean, divide by variance
+May or may not want to do this for one-hots
+28 / 38
+Recap: tabular versus logistic regression
+Tabular parameterization:
+Each θx is totally separate
+2
+d parameters when everything is binary
+Can model any binary conditional parameter
+Tends to overfit unless 2
+d ≪ n
+Logistic regression parameterization of a categorical:
+Each θx is given by σ(w
+Tx + b)
+d or d + 1 parameters (depending on offset)
+Can only model linear conditionals
+Tends to underfit unless d is big or truth is linear
+Totally naive parameterization of a categorical:
+Each θx is equal to a single shared θ
+One parameter
+Can’t model any non-constant effect
+Underfits really awfully unless there’s really just no signal
+29 / 38
+“Fundamental trade-off”
+Tabular and logistic models on different sides of the “fundamental trade-off”:
+generalization error = train error+generalization error - train error
+| {z }
+generalization gap (overfitting)
+≥ irreducible error
+If irreducible error > 0, small train error implies some overfitting / vice versa
+Simple models:
+Tend to have small generalization gaps: don’t overfit much
+Tend to have larger training error (can’t fit data very well)
+Complex models:
+Tend to have small training error (fit data very well)
+Tend to overfit more
+30 / 38
+Nonlinear feature transformations
+Linear models can have different complexities with non-linear feature transforms:
+Transform each x
+(i)
+into some new z
+(i)
+Train a logistic regression model on z
+(i)
+At test time, do the same transformation for the test features
+Examples: polynomial features, radial basis functions, periodic basis functions, . . .
+Can also frame kernel methods in this way
+More complex features tend to decrease training error, increase overfitting
+Performance is better if the features match the “true” conditionals better!
+Gaussian RBF features/Gaussian kernels, with appropriate regularization (λ and
+lengthscale σ chosen on a validation set), is often an excellent baseline
+31 / 38
+Learning nonlinear feature transformations with deep networks
+Not always clear which feature transformations are “right”
+Generally, deep learning tries to learn good features
+Use “parameterized” features, optimize those parameters too
+Use a flexible-enough class of features
+Fully-connected networks: one-hidden-layer, 1d output version is
+f(x) = v
+Th(W x)
+where W is an m × d matrix (the “first layer” of feature transformation)
+h is an element-wise activation function, e.g. ReLU(z) = max{0, z} or sigmoid,
+v is a linear function of “activations”
+Without h (e.g. h(z) = z), becomes a linear model: v
+T(W x) = v
+|
+T
+{zW}
+1×m
+x
+Need to fit parameters W and v
+32 / 38
+Fitting neural networks
+f(x) = v
+Th(W x): with fixed W, this is a linear model in the transformed features
+Can then plug this in to ˆθ(x) = σ(f(x)) for binary classification
+Can then compute logistic negative log-likelihood
+Minimize it with some variant of gradient descent
+Deep networks do the same thing; a fully-connected L-layer network looks like
+f(x) = hL(WLhL−1(WL−1hL−2(WL−2 · · · h1(W1x)· · ·)))
+or more often, add bias terms
+f(x) = hL(bL + WLhL−1(bL−1 + WL−1hL−2(bL−2 + · · · h1(b1 + W1x)· · ·)))
+where each b is a vector with the same dimension as the activations at that layer
+If Wj is dj × dj−1, jth layer activations are length dj , bj is also length dj
+Can still apply same logistic likelihood, optimize in same way
+33 / 38
+Convolutional networks
+Different architectures make different implicit assumptions about the structure of
+how θx changes with x
+Convolutional layers: restrict form of W to act like a bank of convolutions
+34 / 38
+Convolutional networks
+Different architectures make different implicit assumptions about the structure of
+how θx changes with x
+Convolutional layers: restrict form of W to act like a bank of convolutions
+Pooling layers: no-parameter ways to decrease hidden dim / enforce invariances
+Max pooling: “there’s an edge around here, I don’t care exactly where”
+Average pooling: “most of these patches look like they’re part of an airplane”
+34 / 38
+Convolutional networks
+Different architectures make different implicit assumptions about the structure of
+how θx changes with x
+Convolutional layers: restrict form of W to act like a bank of convolutions
+Pooling layers: no-parameter ways to decrease hidden dim / enforce invariances
+Traditional architectures end by flattening and feeding into fully-connected layers
+Usual convolutions are 2-dimensional on images
+But they make sense whenever there’s a notion of neighbourhood
+1d convolution on sequences (time series, sentences, . . . )
+Graph convolutional networks (will explore on A2)
+34 / 38
+Skip connections
+Standard fully-connected layer:
+fj (x) = hj (bj + Wjfj−1(x))
+One form of skip connection:
+fj (x) = hj (bj + Wjfj−1(x) + Wj−2 ✮jfj−2(x))
+Residual connections (building blocks of ResNets) use a special form:
+f2j (x) = h2j (b2j + W2j−1 ✮2jh2j−1(W2j−1f2j−2(x)) + f2j−2(x))
+DenseNets look at everything before:
+fj (x) = hj
+
+bj +
+X
+j−1
+ℓ=0
+Wℓ ✮jfℓ(x)
+!
+35 / 38
+Multi-class classification
+All of this gives different ways to parameterize ˆθ in Y | (X = x) ∼ Bern(ˆθ(x))
+Multiclass classification: Y takes one of k possible values
+Is this image of a gorilla, or a drill, or a Burmese mountain dog, or. . .
+Swap Bern(ˆθ(x)) for Cat(θˆ(x)) and everything is the same!
+How to parameterize θˆ(x)? Needs to be nonnegative and sum to one
+First, make the last layer of the network output k values instead of 1
+Softmax function first makes nonnegative by taking exp, then normalizes:
+θc = [softmax(z)]c =
+exp(zc)
+Pk
+c
+′=1 exp(zc
+′)
+∝ exp(zc)
+Don’t have to use softmax, lots of other options exist, but this is the default
+36 / 38
+Beyond multi-class
+This framework now allows for other data types, too!
+One common way to deal with “count” types is Poisson regression:
+Y | (X = x) ∼ Poisson(λx) Pr(Y = y | X = x) = λ
+y
+xe
+−λx
+y!
+1(y ∈ N≥0)
+using λx = exp(w
+Tx)
+Could just as easily use a deep network instead of w
+Tx
+Linear regression uses Y | (X = x) ∼ N (w
+Tx, σ2
+) for some fixed σ
+2
+Could just as easily use a deep network instead of w
+Tx
+Could also parameterize σ
+2
+as a function of w
+Tx
+Very powerful framework to mix-and-match pieces together with!
+37 / 38
+Summary
+Discriminative classifiers model p(y | x) instead of p(x, y)
+Most of modern ML uses discriminative classifiers
+Tabular parameterization models all possible conditionals
+Parameterized conditionals add some structure
+Linear models, like logistic regression, or deep models
+“Fundamental trade-off” between fitting and overfitting
+Next time: handling continuous x
+38 / 38

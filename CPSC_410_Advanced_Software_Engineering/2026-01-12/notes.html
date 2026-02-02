@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_410 - Lecture 2026-01-12</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc410">CPSC_410</a> /
+            <span>2026-01-12</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Software Engineering</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-12</span>
+                <span class="instructor">👤 Caroline Lemieux</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <h3>Lecture 4: Modular Design, Development, and Testing</h3>
+                    <p><strong>Code Repository:</strong> <a href="https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests">modularTests</a></p>
+                    <p><strong>Setup:</strong> Java SDK 21+, JUnit 5+</p>
+
+                    <h4>Key Concepts</h4>
+                    <ul>
+                        <li>Modules: subsets of software with specific purpose, (relatively) independent</li>
+                        <li>Deep vs. Shallow modules (Ousterhout)</li>
+                        <li>Interface complexity factors</li>
+                        <li>Modular design reduces interaction points between modules</li>
+                        <li>Data interchange formats enable parallel work</li>
+                        <li>AST as standard representation between parser and evaluator</li>
+                    </ul>
+
+                    <h4>TinyVars Interpreter Example</h4>
+                    <ul>
+                        <li>3 statement types: declaration (<code>new x;</code>), assignment (<code>set x, 3;</code>), printing (<code>print x;</code>)</li>
+                        <li>Split work: Alex on parser, Caroline on evaluator</li>
+                        <li>Data interchange format: Abstract Syntax Tree (AST)</li>
+                        <li>Modular testing allows parallel development</li>
+                    </ul>
+
+                    <h4>Exercises</h4>
+                    <ol>
+                        <li>Write additional parser tests</li>
+                        <li>Write additional evaluator tests</li>
+                        <li>Analyze impact of design changes</li>
+                    </ol>
+
+                    <h4>Exit Ticket Questions</h4>
+                    <ol>
+                        <li>What does the depth of a module refer to?</li>
+                        <li>Why does Ousterhout favour deep modules?</li>
+                        <li>How can evaluator be developed without parser being done?</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+                    <!-- ============================================ -->
+                    <!-- COURSE OVERVIEW & LEARNING OBJECTIVES -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Course Context: What is CPSC 410 About?</h3>
+
+                        <p>CPSC 410 (Advanced Software Engineering) focuses on <strong>collaboratively engineering large-scale software projects</strong> that require modular design, development, and testing. The course emphasizes practical skills for building sophisticated software engineering tools.</p>
+
+                        <h4>Core Learning Objectives</h4>
+                        <p>By the end of this half of the course, you will be able to:</p>
+
+                        <ol>
+                            <li><strong>Identify distinct modules</strong> in a software system and its design</li>
+                            <li><strong>Reason about modular design decisions</strong> and how they affect complexity in development and maintenance</li>
+                            <li><strong>Decompose DSL implementation tasks</strong> into distinct modules, explaining typical stages common to DSLs</li>
+                            <li><strong>Evaluate motivations and designs</strong> for Domain-Specific Languages (DSLs) versus general-purpose programming languages</li>
+                            <li><strong>Design and implement DSLs</strong> tailored to specific users and tasks, including robust error-handling</li>
+                            <li><strong>Evaluate language design effectiveness</strong> through user studies and incorporate feedback</li>
+                        </ol>
+
+                        <h4>Course Projects</h4>
+                        <p>The course includes two major projects, both <mark>intentionally designed to be too large for one person</mark>:</p>
+
+                        <ul>
+                            <li><strong>Project 1:</strong> Design and implement a Domain-Specific Language (DSL) with its evaluator (a mini compiler/interpreter)</li>
+                            <li><strong>Project 2:</strong> Design and implement a Program Analysis technique (advanced developer tooling)</li>
+                        </ul>
+
+                        <p><strong>Key Question:</strong> How can you be an effective team member working collaboratively on these large projects? <em>This lecture provides fundamental principles for that collaboration.</em></p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- WHAT IS A MODULE? -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Understanding Modules</h3>
+
+                        <h4>Module Definition</h4>
+                        <p>A <strong>module</strong> is a subset of a software system that has a <strong>specific purpose</strong> and is <strong>(relatively) independent</strong> of other modules in the system.</p>
+
+                        <blockquote>
+                            <p><strong>In other words:</strong> A module is a self-contained piece of code that does one thing well and can be understood, developed, and tested without needing to understand the entire system.</p>
+                        </blockquote>
+
+                        <h4>Modules in Practice</h4>
+                        <ul>
+                            <li>A <strong>Java class</strong> is a natural abstraction for a module</li>
+                            <li>However, <mark>not all Java classes are good modules</mark></li>
+                            <li>The "specific purpose" concept aligns with the <strong>Single Responsibility Principle</strong> (a class should have one reason to change)</li>
+                        </ul>
+
+                        <h4>Module Components</h4>
+                        <p>Every module encompasses two key parts:</p>
+
+                        <dl>
+                            <dt><strong>Interface</strong></dt>
+                            <dd>Describes <em>what</em> functionality the module provides to the outside world. This is the externally visible contract.</dd>
+
+                            <dt><strong>Implementation</strong></dt>
+                            <dd>The actual code that implements the functionality. This is the internal detail that should be hidden when possible.</dd>
+                        </dl>
+
+                        <p><strong>Design Goal:</strong> The interface should hide unnecessary implementation complexity from users of the module.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- DEEP VS SHALLOW MODULES -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Deep vs. Shallow Modules (Ousterhout's Framework)</h3>
+
+                        <p><em>This concept is inspired by Chapter 4 of John Ousterhout's book "A Philosophy of Software Design"</em></p>
+
+                        <h4>Visualizing Module Depth</h4>
+                        <p>Think of a module as having two dimensions:</p>
+
+                        <ul>
+                            <li><strong>Interface (Height):</strong> The "cost" of using the module - complexity exposed to users. <mark>Less is better.</mark></li>
+                            <li><strong>Functionality (Depth):</strong> The "benefit" provided by the module - what it accomplishes. <mark>More is better.</mark></li>
+                        </ul>
+
+                        <div style="background: #1a1a2e; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h5 style="margin-top: 0;">Deep Module</h5>
+                            <pre style="background: #16213e; padding: 15px; margin: 10px 0;">
+┌─────────────────────────┐  ← Small interface (simple API)
+│   Simple Interface      │
+├─────────────────────────┤
+│                         │
+│                         │
+│   Large Implementation  │  ← Lots of functionality hidden
+│   (Hidden Complexity)   │
+│                         │
+│                         │
+└─────────────────────────┘</pre>
+
+                            <h5>Shallow Module</h5>
+                            <pre style="background: #16213e; padding: 15px; margin: 10px 0;">
+┌─────────────────────────┐
+│   Complex Interface     │  ← Large interface (complex API)
+├─────────────────────────┤
+│  Small Implementation   │  ← Little functionality provided
+└─────────────────────────┘</pre>
+                        </div>
+
+                        <h4>Design Principle</h4>
+                        <p><strong>Strive to design deep modules</strong> where the interface hides complexity, but with important caveats:</p>
+
+                        <ul>
+                            <li><strong>Not at the expense of Single Responsibility Principle</strong> - don't cram unrelated functionality into one module just to make it "deep"</li>
+                            <li><strong>Some shallow modules are necessary</strong> - for example, Java data classes with only getters/setters may necessarily be "shallow"</li>
+                            <li><strong>Even shallow modules can hide details</strong> - a data class can still hide whether it uses <code>List</code> or <code>ArrayList</code> internally</li>
+                        </ul>
+
+                        <h4>Real-World Example: Java's BufferedReader</h4>
+                        <p>Consider Java's <code>BufferedReader</code> class:</p>
+                        <ul>
+                            <li><strong>Simple interface:</strong> <code>readLine()</code>, <code>read()</code>, <code>close()</code></li>
+                            <li><strong>Complex implementation:</strong> Manages internal buffers, handles character encoding, optimizes I/O operations, manages file descriptors</li>
+                            <li><strong>Result:</strong> A deep module - users get powerful functionality through a simple API</li>
+                        </ul>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- INTERFACE COMPLEXITY -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Understanding Interface Complexity</h3>
+
+                        <p>What makes an interface complex? Understanding this helps us design better, simpler interfaces.</p>
+
+                        <h4>Factors Contributing to Interface Complexity</h4>
+
+                        <ol>
+                            <li>
+                                <strong>Size (number of methods/parameters)</strong>
+                                <p>Larger interfaces are generally more complex, though sometimes size is necessary for functionality. The key is avoiding <em>unnecessary</em> size.</p>
+                            </li>
+
+                            <li>
+                                <strong>Exposing internal design decisions</strong>
+                                <p>When implementation details leak into the interface, users must understand internal workings. For example, exposing whether you use an array vs. linked list internally forces users to care about implementation choices.</p>
+                            </li>
+
+                            <li>
+                                <strong>Exposing too many options</strong>
+                                <p>When there's no clear default case and users must make many decisions to perform simple tasks. Configuration complexity should match task complexity.</p>
+                            </li>
+
+                            <li>
+                                <strong>Undocumented or complex dependencies between interface elements</strong>
+                                <p>When methods must be called in a specific order, or certain parameters are only valid with certain other parameters. For example: "You must call <code>initialize()</code> before <code>process()</code>, but only if you previously called <code>configure()</code> with mode='advanced'".</p>
+                            </li>
+
+                            <li>
+                                <strong>Too many ways to do the same thing</strong>
+                                <p>Multiple methods that accomplish essentially the same task create confusion. Users must understand the subtle differences between similar operations.</p>
+                            </li>
+                        </ol>
+
+                        <blockquote>
+                            <p><strong>Design Goal:</strong> Make common cases simple and obvious. Hide complexity that users don't need to think about.</p>
+                        </blockquote>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- MODULAR DESIGN PRINCIPLES -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Principles of Good Modular Design</h3>
+
+                        <p>A modular software design attempts to split system functionality into modules as much as possible. But what makes modular design "good"?</p>
+
+                        <h4>Characteristics of Good Modular Design</h4>
+
+                        <div style="background: #0f3460; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e94560;">
+                            <h5 style="margin-top: 0;">1. Reduces Interaction Points Between Modules</h5>
+                            <ul>
+                                <li>It's <strong>impossible to fully eliminate</strong> interactions/dependencies between modules</li>
+                                <li>However, dependencies <mark>should be clearly defined</mark> and minimal</li>
+                                <li>Abstract away internal design decisions as much as possible</li>
+                                <li><strong>Why this matters:</strong> Fewer dependencies mean changes in one module are less likely to break other modules</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e94560;">
+                            <h5 style="margin-top: 0;">2. Favours Deep Modules</h5>
+                            <ul>
+                                <li>Maximizes functionality while minimizing interface complexity</li>
+                                <li>Hides implementation details effectively</li>
+                                <li><strong>Why this matters:</strong> Developers can use modules without understanding their internals</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e94560;">
+                            <h5 style="margin-top: 0;">3. Reduces Cognitive Load</h5>
+                            <ul>
+                                <li>Developers can work on one module without understanding how all other modules are implemented</li>
+                                <li>Only need to understand module interfaces, not implementations</li>
+                                <li><strong>Why this matters:</strong> This is what enables team collaboration on large codebases</li>
+                            </ul>
+                        </div>
+
+                        <h4>Realistic Expectations</h4>
+                        <blockquote>
+                            <p><strong>Important:</strong> You will not achieve "perfect" modular design on the first try. <mark>That's okay!</mark></p>
+                            <p>Modularize components where complexity naturally arises. Refactor as you learn more about the problem domain. Good design is iterative.</p>
+                        </blockquote>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- LEARNING MODULAR DESIGN -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>How to Learn Modular Design</h3>
+
+                        <p>Modular design is a <strong>skill that requires practice</strong> through experiential learning.</p>
+
+                        <h4>The Learning Process</h4>
+                        <ul>
+                            <li><strong>Not solely through reading and lectures</strong> - you must actively design, build, and iterate</li>
+                            <li><strong>Learn by doing</strong> - Project 1 and Project 2 provide hands-on practice</li>
+                            <li><strong>Learn from mistakes</strong> - your first design won't be perfect, and that's part of learning</li>
+                        </ul>
+
+                        <h4>Course Structure for Learning</h4>
+                        <ol>
+                            <li><strong>This lecture:</strong> Illustrates high-level principles with similarities to Project 1 workflow</li>
+                            <li><strong>Upcoming lectures:</strong> Provide detailed design roadmap for Project 1</li>
+                            <li><strong>Throughout the course:</strong> Continuous reinforcement of modular design concepts</li>
+                            <li><strong>Your projects:</strong> Individual teams develop and test their specific implementations</li>
+                        </ol>
+
+                        <p><em>Think of this lecture as a practical case study showing modular principles in action.</em></p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- CASE STUDY: TINYV ARS INTERPRETER -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Case Study: Building a TinyVars Interpreter</h3>
+
+                        <p>Let's follow Alex and Caroline as they build a small interpreter to understand modular design in practice.</p>
+
+                        <h4>Scenario Setup</h4>
+                        <p>Alex and Caroline are implementing an interpreter for <strong>TinyVars</strong>, a minimal programming language. They face four key questions:</p>
+
+                        <ol>
+                            <li>What exactly do they want the interpreter to do?</li>
+                            <li>How will they split up work on the interpreter?</li>
+                            <li>How can they design the codebase to work in parallel?</li>
+                            <li>How can they minimize the impact of changes on each other's tasks?</li>
+                        </ol>
+
+                        <p><em>Let's explore each question systematically.</em></p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- QUESTION 1: WHAT DOES IT DO? -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Question 1: What Does the Interpreter Do?</h3>
+
+                        <h4>The TinyVars Language</h4>
+                        <p>To start, the language supports three kinds of statements:</p>
+
+                        <dl style="background: #1a1a2e; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <dt><code>new x;</code></dt>
+                            <dd><strong>Declaration</strong> - Creates a new variable named x</dd>
+
+                            <dt><code>set x, 3;</code></dt>
+                            <dd><strong>Assignment</strong> - Sets variable x to value 3</dd>
+
+                            <dt><code>print x;</code></dt>
+                            <dd><strong>Printing</strong> - Outputs the value of variable x</dd>
+                        </dl>
+
+                        <h4>Defining Behavior with End-to-End Examples</h4>
+                        <p>Rather than writing an abstract specification, Alex and Caroline create concrete examples of the form:</p>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code>input → interpret → result</code></pre>
+
+                        <p>These are called <strong>end-to-end tests</strong> or <strong>user stories</strong>.</p>
+
+                        <h4>Example Behaviors</h4>
+
+                        <div style="background: #0a4d2e; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #10b981;">
+                            <h5 style="margin-top: 0; color: #10b981;">✓ Success Case</h5>
+                            <pre style="background: #052e1c; padding: 10px;"><code>Input:
+new x;
+set x, 3;
+print x;
+
+Result: 3 is printed</code></pre>
+                        </div>
+
+                        <div style="background: #4d0a0a; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ef4444;">
+                            <h5 style="margin-top: 0; color: #ef4444;">✗ Error Case 1: Undefined Variable</h5>
+                            <pre style="background: #2e0505; padding: 10px;"><code>Input:
+set x, 3;
+print x;
+
+Result: ERROR - cannot set undefined variable</code></pre>
+                            <p style="margin-bottom: 0;"><strong>Why this fails:</strong> Variable x was never declared with <code>new x;</code></p>
+                        </div>
+
+                        <div style="background: #4d0a0a; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ef4444;">
+                            <h5 style="margin-top: 0; color: #ef4444;">✗ Error Case 2: Uninitialized Variable</h5>
+                            <pre style="background: #2e0505; padding: 10px;"><code>Input:
+new x;
+print x;
+
+Result: ERROR - cannot read uninitialized variable</code></pre>
+                            <p style="margin-bottom: 0;"><strong>Why this fails:</strong> Variable x exists but hasn't been assigned a value yet</p>
+                        </div>
+
+                        <div style="background: #0a4d2e; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #10b981;">
+                            <h5 style="margin-top: 0; color: #10b981;">✓ Whitespace Doesn't Matter</h5>
+                            <pre style="background: #052e1c; padding: 10px;"><code>Input:
+new x;
+set x,3;
+print x ;
+
+Result: 3 is printed (same as first example)</code></pre>
+                            <p style="margin-bottom: 0;"><strong>Insight:</strong> The programs are "the same" except for whitespace, suggesting some parsing work can be reused</p>
+                        </div>
+
+                        <blockquote>
+                            <p><strong>Key Insight:</strong> By defining concrete examples, Alex and Caroline have established clear expected behaviors without writing formal specifications. This makes requirements concrete and testable.</p>
+                        </blockquote>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- QUESTION 2: SPLITTING WORK -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Question 2: How Will They Split Up Work?</h3>
+
+                        <h4>Identifying a Natural Split</h4>
+                        <p>The examples above suggest a natural modular design. Notice that:</p>
+
+                        <ul>
+                            <li>These two programs have identical behavior:</li>
+                        </ul>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code>new x; set x, 3; print x;    ← different whitespace
+new x;set x,3;print x ;      ← but same meaning!</code></pre>
+
+                        <p><strong>This observation suggests:</strong> Some work in interpreting can be reused. Specifically, we can separate the concern of <em>understanding the text</em> from the concern of <em>executing the program</em>.</p>
+
+                        <h4>Modular Design v1: Two-Phase Architecture</h4>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code>┌────────┐     ┌───────┐     ┌──────────┐     ┌────────┐
+│ Input  │ ──→ │ Parse │ ──→ │ Standard │ ──→ │ Result │
+│ String │     │       │     │   Rep    │     │        │
+└────────┘     └───────┘     └──────────┘     └────────┘
+                                    ↓
+                            ┌──────────────┐
+                            │  Evaluate    │
+                            └──────────────┘</code></pre>
+
+                        <p>The interpreter is split into <strong>two phases</strong> (modules):</p>
+
+                        <div style="background: #0f3460; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h5 style="margin-top: 0;">Parser Module</h5>
+                            <ul>
+                                <li><strong>Responsibility:</strong> Turns textual program into a standard representation</li>
+                                <li><strong>Interface:</strong> <code>ProgramRep parse(String input)</code></li>
+                                <li><strong>Hides:</strong> Tokenization, whitespace handling, syntax rules</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h5 style="margin-top: 0;">Evaluator Module</h5>
+                            <ul>
+                                <li><strong>Responsibility:</strong> Takes standard representation and computes the result</li>
+                                <li><strong>Interface:</strong> <code>Result evaluate(ProgramRep input)</code></li>
+                                <li><strong>Hides:</strong> Variable storage, execution logic, error handling</li>
+                            </ul>
+                        </div>
+
+                        <h4>Work Distribution</h4>
+                        <p>One natural option: <strong>one person per module</strong></p>
+                        <ul>
+                            <li><strong>Alex:</strong> Implements the parser</li>
+                            <li><strong>Caroline:</strong> Implements the evaluator</li>
+                        </ul>
+
+                        <p><em>Note: This isn't the only way to split work, but it's a clean division based on module boundaries.</em></p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- QUESTION 3: PARALLEL WORK -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Question 3: How Can They Work in Parallel?</h3>
+
+                        <h4>The Dependency Problem</h4>
+                        <p>Looking at the design, we see a dependency:</p>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code>Input → [Parser] → ProgramRep → [Evaluator] → Result
+         (Alex)                      (Caroline)</code></pre>
+
+                        <p><strong>Question:</strong> Does Caroline need to wait for Alex to finish the parser before she can start work? 😟</p>
+
+                        <h4>Recall: Module Independence</h4>
+                        <blockquote>
+                            <p>A module is a subset of a software system that has a specific purpose, <mark>(relatively) independent</mark> of the other modules in the system.</p>
+                        </blockquote>
+
+                        <p>The key word is "<em>relatively</em>" independent. Modules will have dependencies, but we can manage them strategically.</p>
+
+                        <h4>The Solution: Data Interchange Format</h4>
+                        <p>The modules are dependent on the <strong>standard intermediate program representation</strong> (<code>ProgramRep</code>). This is a <strong>data interchange format</strong> for the interpreter.</p>
+
+                        <div style="background: #0a4d2e; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+                            <h5 style="margin-top: 0; color: #10b981;">✓ Key Insight</h5>
+                            <p><mark>If Alex and Caroline agree on the data interchange format first, they can start implementation at multiple stages in parallel!</mark></p>
+
+                            <p>Caroline doesn't need Alex's <em>implementation</em> of parse(). She only needs agreement on:</p>
+                            <ul style="margin-bottom: 0;">
+                                <li>What type <code>ProgramRep</code> is</li>
+                                <li>What structure it has</li>
+                                <li>What it represents</li>
+                            </ul>
+                        </div>
+
+                        <p><strong>First job:</strong> Agree on the data interchange format. Then both can work simultaneously.</p>
+
+                        <p><em>(It's hard to get this perfect on the first try, but even an approximate agreement enables parallel work!)</em></p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- DATA INTERCHANGE FORMAT: AST -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>The Data Interchange Format: Abstract Syntax Tree (AST)</h3>
+
+                        <p>The data interchange format Alex and Caroline design is close to an <strong>Abstract Syntax Tree (AST)</strong>. We'll discuss ASTs extensively in the next lecture, but let's see the concept here.</p>
+
+                        <h4>From Text to Tree: An Example</h4>
+                        <p>Consider this TinyVars program:</p>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code class="language-plaintext">new x;
+set x, 3;
+print x;</code></pre>
+
+                        <p>This gets transformed through the pipeline:</p>
+
+                        <div style="background: #1a1a2e; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h5>Step 1: Parse (Alex's job)</h5>
+                            <pre style="background: #16213e; padding: 10px;"><code>Input text:
+new x;
+set x, 3;
+print x;
+
+↓ Parser processes this</code></pre>
+
+                            <h5>Step 2: AST Representation (agreed format)</h5>
+                            <pre style="background: #16213e; padding: 10px;"><code>Program
+├── Decl
+│   └── Name: "x"
+├── Set
+│   ├── Name: "x"
+│   └── Number: 3
+└── Print
+    └── Name: "x"</code></pre>
+
+                            <h5>Step 3: Evaluate (Caroline's job)</h5>
+                            <pre style="background: #16213e; padding: 10px;"><code>AST → evaluate() → Result: "3\n"</code></pre>
+                        </div>
+
+                        <h4>Breaking Down the AST Structure</h4>
+                        <p>Let's understand each part of the tree:</p>
+
+                        <dl style="background: #0f3460; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <dt><strong>Program</strong> node</dt>
+                            <dd>Root node containing a list of statements</dd>
+
+                            <dt><strong>Decl</strong> (Declaration) node</dt>
+                            <dd>Represents <code>new x;</code><br>
+                            Contains: Name node with value "x"</dd>
+
+                            <dt><strong>Set</strong> (Assignment) node</dt>
+                            <dd>Represents <code>set x, 3;</code><br>
+                            Contains: Name node ("x") and Number node (3)</dd>
+
+                            <dt><strong>Print</strong> node</dt>
+                            <dd>Represents <code>print x;</code><br>
+                            Contains: Name node ("x")</dd>
+                        </dl>
+
+                        <h4>Why This Structure Works</h4>
+                        <ul>
+                            <li><strong>Whitespace gone:</strong> The tree doesn't care about spaces or formatting</li>
+                            <li><strong>Structure explicit:</strong> The relationships between elements are clear</li>
+                            <li><strong>Easy to process:</strong> Caroline can traverse the tree to execute the program</li>
+                            <li><strong>Type-safe:</strong> Each node type has clear semantics</li>
+                        </ul>
+
+                        <blockquote>
+                            <p><strong>Key Concept:</strong> The AST is an intermediate representation that captures program <em>meaning</em> without textual details. It's the perfect interface between parsing and evaluation.</p>
+                        </blockquote>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- IMPLEMENTATION & TESTING -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Implementation and Testing in Parallel</h3>
+
+                        <h4>The First Implementation</h4>
+                        <p>With the AST format agreed upon, Alex and Caroline implement their modules. The main program ties them together:</p>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code class="language-java">// Main interpreter pipeline
+Node n = parser.parse(args[0]);        // Alex's module
+EvaluateResult result = evaluator.evaluate(n);  // Caroline's module</code></pre>
+
+                        <p><strong>Code repository:</strong> <a href="https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests">github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests</a></p>
+
+                        <h4>But There's Still a Problem...</h4>
+                        <p>Even with this implementation, Caroline's work is still dependent on Alex's parser being done! She can't run her evaluator without a working parser to create the AST. 😞</p>
+
+                        <p><strong>The solution:</strong> Modular testing!</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- MODULAR TESTING -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Modular Testing: Enabling True Parallel Development</h3>
+
+                        <p>The key insight: <mark>Write tests that capture the responsibilities of each module independently</mark>.</p>
+
+                        <h4>Benefits of Modular Testing</h4>
+                        <ul>
+                            <li>Tests can be written <strong>before</strong>, during, and after code implementation</li>
+                            <li>Each module can be tested without the other being complete</li>
+                            <li>Tests serve as concrete examples of the data interchange format</li>
+                            <li>Tests verify each module's contract independently</li>
+                        </ul>
+
+                        <h4>Deriving Tests from Examples</h4>
+                        <p>Remember our end-to-end example?</p>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code>new x;
+set x, 3;
+print x;    →  [parse]  →  AST  →  [evaluate]  →  "3\n"</code></pre>
+
+                        <p>We can split this into two independent tests:</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- PARSER TESTS -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Parser Tests: Testing Alex's Module</h3>
+
+                        <h4>Conceptual Structure</h4>
+                        <p>Parser tests follow a simple pattern:</p>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code class="language-java">// Conceptual test structure
+String input = "new x; set x, 3; print x;";
+AST expected_tree = /* build the expected AST */;
+assertEquals(parse(input), expected_tree);</code></pre>
+
+                        <h4>Important Implementation Detail</h4>
+                        <p><strong>Quiz:</strong> What is required to make sure this assert behaves as intended in Java?</p>
+
+                        <p><strong>Answer:</strong> A correct implementation of <code>equals()</code> on the AST node classes!</p>
+
+                        <p>Without proper <code>equals()</code>, the test would compare object references rather than structural equality, causing false failures even when the AST is correct.</p>
+
+                        <h4>Concrete Parser Test Example</h4>
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code class="language-java">@Test
+void basicParseTest() {
+    // Input string
+    String input = "new x; set x, 3; print x;";
+
+    // Build expected AST manually
+    Decl new_stmt = new Decl(new Name("x"));
+    Set set_stmt = new Set(new Name("x"), new Number(3));
+    Print print_stmt = new Print(new Name("x"));
+    List&lt;Statement&gt; statements = Arrays.asList(new_stmt, set_stmt, print_stmt);
+    Program expected_tree = new Program(statements);
+
+    // Create parser and test
+    Parser parser = new Parser();
+    Program result = parser.parse(input);
+
+    assertEquals(expected_tree, result);
+}</code></pre>
+
+                        <h4>What This Test Validates</h4>
+                        <ul>
+                            <li>✓ Parser correctly tokenizes the input</li>
+                            <li>✓ Parser creates appropriate AST nodes</li>
+                            <li>✓ Parser handles whitespace properly</li>
+                            <li>✓ Parser builds correct tree structure</li>
+                        </ul>
+
+                        <h4>How This Enables Parallel Work</h4>
+                        <p><mark>Caroline doesn't need to wait for Alex!</mark> She can:</p>
+                        <ol>
+                            <li>Manually construct AST objects (like in the test above)</li>
+                            <li>Pass them to her evaluator</li>
+                            <li>Verify her evaluator works correctly</li>
+                        </ol>
+
+                        <p>Meanwhile, Alex uses these same tests to verify his parser produces the correct AST structure.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- EVALUATOR TESTS -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Evaluator Tests: Testing Caroline's Module</h3>
+
+                        <h4>Conceptual Structure</h4>
+                        <p>Evaluator tests have similar structure but work in the opposite direction:</p>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code class="language-java">// Conceptual test structure
+AST input_tree = /* manually build the AST */;
+Result expected_res = /* expected output or error */;
+assertEquals(evaluate(input_tree), expected_res);</code></pre>
+
+                        <h4>Handling Errors</h4>
+                        <p><strong>Question:</strong> What is the type of <code>expected_res</code>?</p>
+
+                        <p><strong>Answer:</strong> It needs to handle both success and error cases! Recall that evaluation can produce errors:</p>
+                        <ul>
+                            <li>"cannot set undefined variable"</li>
+                            <li>"cannot read uninitialized variable"</li>
+                        </ul>
+
+                        <p>The <code>EvaluateResult</code> type must capture both possibilities.</p>
+
+                        <p><strong>Aside: Critique the design of the EvaluateResult interface</strong> - Is it a deep or shallow module? Does it handle errors well? This is worth thinking about!</p>
+
+                        <h4>Concrete Evaluator Test Example</h4>
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code class="language-java">@Test
+void basicPrintTest() {
+    // Create the input AST manually (no parser needed!)
+    Decl new_stmt = new Decl(new Name("x"));
+    Set set_stmt = new Set(new Name("x"), new Number(3));
+    Print print_stmt = new Print(new Name("x"));
+    List&lt;Statement&gt; statements = Arrays.asList(new_stmt, set_stmt, print_stmt);
+    Program prog = new Program(statements);
+
+    // Create expected result
+    String res = "3\n";
+    EvaluateResult expected_result = new EvaluateResult(res);
+
+    // Create evaluator and test
+    Evaluator evaluator = new Evaluator();
+    EvaluateResult result = evaluator.evaluate(prog);
+
+    assertEquals(expected_result, result);
+}</code></pre>
+
+                        <h4>Critical Analysis: How Does This Enable Parallel Work?</h4>
+
+                        <p><strong>Key Question:</strong> How does this test rely on <code>parse()</code>? Does it rely on the implementation? The concept?</p>
+
+                        <div style="background: #0a4d2e; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+                            <p><strong>Answer:</strong></p>
+                            <ul style="margin-bottom: 0;">
+                                <li>✓ Test <strong>does not call parse()</strong> → Caroline can get this test passing before Alex's parser is done</li>
+                                <li>✓ Test is only relevant if the parser eventually produces this AST structure</li>
+                                <li>✓ Test validates Caroline's module against the <em>contract</em> (AST format), not against Alex's <em>implementation</em></li>
+                            </ul>
+                        </div>
+
+                        <p><mark>This is the essence of modular testing: testing the contract, not the implementation of dependencies.</mark></p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- QUESTION 4: MINIMIZING IMPACT -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Question 4: How to Minimize Impact of Changes?</h3>
+
+                        <p>Let's analyze how well this modular design handles various types of changes.</p>
+
+                        <h4>Change Scenario 1: Parser Returns JSON Instead of AST</h4>
+                        <p><strong>Scenario:</strong> Alex decides to make <code>parse()</code> return a JSON representation of the code instead of an AST.</p>
+
+                        <div style="background: #4d0a0a; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #ef4444;">
+                            <p><strong>Impact: SUBSTANTIAL CHANGES REQUIRED 😞</strong></p>
+                            <ul style="margin-bottom: 0;">
+                                <li>Caroline's implementation based on AST traversal can't plug in anymore</li>
+                                <li>Option 1: Rewrite evaluator to work on JSON</li>
+                                <li>Option 2: Add a new module to convert JSON into AST representation</li>
+                            </ul>
+                        </div>
+
+                        <p><strong>Lesson:</strong> Changing the data interchange format breaks the module contract. This affects both modules significantly.</p>
+
+                        <h4>Change Scenario 2: Parser Needs to Return Errors</h4>
+                        <p><strong>Scenario:</strong> Alex decides that <code>parse()</code> needs to be able to return errors (e.g., syntax errors).</p>
+
+                        <div style="background: #4d3d0a; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #f59e0b;">
+                            <p><strong>Impact: IT DEPENDS! 🤔</strong></p>
+                            <ul style="margin-bottom: 0;">
+                                <li><strong>If</strong> parse errors should interrupt the program before <code>evaluate()</code> is called: No changes required in evaluator</li>
+                                <li><strong>If</strong> <code>evaluate()</code> needs to check for parse errors before continuing: Interface-level changes may be needed</li>
+                            </ul>
+                        </div>
+
+                        <p><strong>Lesson:</strong> The impact depends on where the responsibility lies. Clear module boundaries help minimize changes.</p>
+
+                        <h4>Change Scenario 3: Adding If Statements to the Language</h4>
+                        <p><strong>Scenario:</strong> Alex and Caroline decide to add if statements to their language.</p>
+
+                        <div style="background: #0a4d3d; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #14b8a6;">
+                            <p><strong>Impact: MANAGEABLE ADDITION ✓</strong></p>
+                            <ul style="margin-bottom: 0;">
+                                <li>Both modules need to add functionality (inevitable for new features)</li>
+                                <li>But: Should not break all existing tests/implementation</li>
+                                <li>Visitor pattern helpful here (discussed in future lectures)</li>
+                                <li>Existing code continues to work while new code is added</li>
+                            </ul>
+                        </div>
+
+                        <p><strong>Lesson:</strong> Good modular design allows extending functionality without breaking existing code. This is the <strong>Open/Closed Principle</strong> in action.</p>
+
+                        <h4>Summary: Impact of Changes</h4>
+                        <table style="width: 100%; background: #1a1a2e; border-collapse: collapse; margin: 20px 0;">
+                            <thead>
+                                <tr style="background: #0f3460;">
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #16213e;">Change Type</th>
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #16213e;">Impact Level</th>
+                                    <th style="padding: 12px; text-align: left; border: 1px solid #16213e;">Why</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding: 12px; border: 1px solid #16213e;">Change data format</td>
+                                    <td style="padding: 12px; border: 1px solid #16213e; color: #ef4444;">High</td>
+                                    <td style="padding: 12px; border: 1px solid #16213e;">Breaks module contract</td>
+                                </tr>
+                                <tr style="background: #0f1419;">
+                                    <td style="padding: 12px; border: 1px solid #16213e;">Add error handling</td>
+                                    <td style="padding: 12px; border: 1px solid #16213e; color: #f59e0b;">Medium</td>
+                                    <td style="padding: 12px; border: 1px solid #16213e;">Depends on responsibility boundary</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 12px; border: 1px solid #16213e;">Add new language features</td>
+                                    <td style="padding: 12px; border: 1px solid #16213e; color: #10b981;">Low-Medium</td>
+                                    <td style="padding: 12px; border: 1px solid #16213e;">Extends without breaking existing</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <blockquote>
+                            <p><strong>Important:</strong> Some changes have inevitable impact (like adding new functionality). The goal isn't to eliminate all coupling, but to make dependencies explicit and changes predictable. <mark>Communication remains important!</mark></p>
+                        </blockquote>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- KEY TAKEAWAYS -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Modular Design: Key Takeaways</h3>
+
+                        <div style="background: #0f3460; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e94560;">
+                            <h4 style="margin-top: 0;">1. Modules Have Two Parts</h4>
+                            <p><strong>Interface</strong> (externally visible) and <strong>Implementation</strong> (internal details).</p>
+                            <p><mark>Deep modules</mark> help reduce implementation complexity - not everyone needs to understand the implementation of everything, as long as interfaces are clear and respected.</p>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e94560;">
+                            <h4 style="margin-top: 0;">2. Modular Design Enables Collaboration</h4>
+                            <p>Modular design provides <strong>natural splitting points</strong> for work with others.</p>
+                            <p>Teams can work on different modules simultaneously without stepping on each other's toes.</p>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e94560;">
+                            <h4 style="margin-top: 0;">3. Data Interchange Formats are Critical</h4>
+                            <p>Agreeing on the <strong>structure of data exchanged by modules</strong> enables modular development and testing in parallel.</p>
+                            <p>The AST serves as the "contract" between parser and evaluator in our example.</p>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e94560;">
+                            <h4 style="margin-top: 0;">4. Modular Testing Enables Parallel Work</h4>
+                            <p>Write tests that validate <strong>module contracts</strong> rather than end-to-end integration.</p>
+                            <p>This allows development and testing without waiting for dependencies to be complete.</p>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e94560;">
+                            <h4 style="margin-top: 0;">5. Design Reduces (But Doesn't Eliminate) Change Impact</h4>
+                            <p>Modular design may reduce the impact of <strong>some</strong> code changes.</p>
+                            <p>However, some changes have inevitable impact (e.g., interface changes, new functionality).</p>
+                            <p><mark>Communication remains important!</mark> Even with good design, teams must coordinate.</p>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 25px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #e94560;">
+                            <h4 style="margin-top: 0;">6. Design is Iterative</h4>
+                            <p>You won't achieve perfect modular design on the first try - <strong>and that's okay!</strong></p>
+                            <p>Start with a reasonable design, implement, learn from experience, and refactor as needed.</p>
+                        </div>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- EXERCISES & PRACTICE -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Exercises from Lecture</h3>
+
+                        <p>The lecture included hands-on exercises with the <a href="https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests">modularTests repository</a> (Java SDK 21+, JUnit 5+).</p>
+
+                        <h4>Exercise 1: Additional Parser Tests (~10 minutes)</h4>
+                        <p>Write parser tests for these two additional examples:</p>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code>Example 1 (whitespace variant):
+new x;
+set x,3;
+print x ;
+→ Should produce the same AST as the basic example
+
+Example 2 (error case):
+set x, 3;
+print x;
+→ Should handle undefined variable error (how does parser represent this?)</code></pre>
+
+                        <h4>Exercise 2: Additional Evaluator Tests (~10 minutes)</h4>
+                        <p>Write evaluator tests for these error cases:</p>
+
+                        <pre style="background: #16213e; padding: 15px; margin: 10px 0;"><code>Test 1: Undefined variable error
+Input AST: Set("x", 3), Print("x")  // No Decl!
+Expected: Error result "cannot set undefined variable"
+
+Test 2: Uninitialized variable error
+Input AST: Decl("x"), Print("x")  // Declared but never set!
+Expected: Error result "cannot read uninitialized variable"</code></pre>
+
+                        <h4>Exercise 3: Analyzing Change Impact</h4>
+                        <p>This was discussed in the lecture. Review the three scenarios above and think about:</p>
+                        <ul>
+                            <li>Which changes require modifying both modules?</li>
+                            <li>Which changes can be isolated to one module?</li>
+                            <li>How would you communicate these changes to your team?</li>
+                        </ul>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- EXIT TICKET ANSWERS -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Exit Ticket Questions (Answers)</h3>
+
+                        <div style="background: #0f3460; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h4 style="margin-top: 0;">Q1: What does the depth of a module refer to?</h4>
+                            <p><strong>Answer:</strong> The depth of a module refers to the <strong>ratio of functionality provided (benefit) to interface complexity (cost)</strong>.</p>
+                            <ul style="margin-bottom: 0;">
+                                <li>A <strong>deep module</strong> has a simple interface but provides substantial functionality</li>
+                                <li>A <strong>shallow module</strong> has a complex interface but provides minimal functionality</li>
+                                <li>Deep modules are preferable because they hide complexity effectively</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h4 style="margin-top: 0;">Q2: Why does Ousterhout favour deep modules in "good" software design?</h4>
+                            <p><strong>Answer:</strong> Deep modules are favored because:</p>
+                            <ul style="margin-bottom: 0;">
+                                <li><strong>They hide complexity</strong> - Users don't need to understand implementation details</li>
+                                <li><strong>They reduce cognitive load</strong> - Developers can use powerful functionality through simple interfaces</li>
+                                <li><strong>They enable modular development</strong> - Teams can work on implementations without affecting users of the module</li>
+                                <li><strong>They minimize coupling</strong> - Simple interfaces mean fewer dependencies between modules</li>
+                            </ul>
+                        </div>
+
+                        <div style="background: #0f3460; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <h4 style="margin-top: 0;">Q3: What tasks can be done to develop the evaluator without the parser being fully implemented?</h4>
+                            <p><strong>Answer:</strong> Caroline can develop the evaluator in parallel by:</p>
+                            <ol style="margin-bottom: 0;">
+                                <li><strong>Manually constructing AST objects</strong> - Build the input data structures by hand in test code</li>
+                                <li><strong>Writing modular tests</strong> - Test the evaluator with hand-crafted ASTs, verifying correct behavior</li>
+                                <li><strong>Implementing evaluation logic</strong> - Write the actual evaluation code using the agreed-upon AST format</li>
+                                <li><strong>Running and debugging tests</strong> - Get all evaluator tests passing without needing a working parser</li>
+                            </ol>
+                            <p style="margin-bottom: 0;"><mark>The key insight: As long as the data interchange format (AST) is agreed upon, the evaluator can be developed, tested, and debugged completely independently of the parser implementation.</mark></p>
+                        </div>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- LOOKING AHEAD -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Looking Ahead</h3>
+
+                        <h4>Next Lecture: Abstract Syntax Trees</h4>
+                        <p>We'll dive deeper into ASTs, which were mentioned throughout this lecture as the data interchange format. You'll learn:</p>
+                        <ul>
+                            <li>Formal definition of ASTs</li>
+                            <li>How to design ASTs for different languages</li>
+                            <li>Techniques for traversing and manipulating ASTs</li>
+                            <li>The visitor pattern for extensible AST processing</li>
+                        </ul>
+
+                        <h4>Applying to Project 1</h4>
+                        <p>The principles from this lecture directly apply to Project 1:</p>
+                        <ul>
+                            <li>You'll design your DSL's AST as a data interchange format</li>
+                            <li>You'll split work between parsing and evaluation</li>
+                            <li>You'll write modular tests for each component</li>
+                            <li>You'll need to coordinate with teammates using clear module interfaces</li>
+                        </ul>
+
+                        <p><strong>Start thinking about:</strong> What modules will your DSL project need? How will you split the work? What data formats will your modules exchange?</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Understanding modules: interface vs. implementation, deep vs. shallow modules</li>
+                    <li>Principles of good modular design and reducing interface complexity</li>
+                    <li>Building a TinyVars interpreter with modular architecture (parser and evaluator)</li>
+                    <li>Using Abstract Syntax Trees (AST) as data interchange formats</li>
+                    <li>Enabling parallel development through modular testing and agreed contracts</li>
+                    <li>Analyzing the impact of design changes on modular systems</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li><strong>Complete Exercise 1:</strong> Write additional parser tests for whitespace variant and error cases (<a href="https://github.students.cs.ubc.ca/CPSC410-2025W-T2/modularTests">modularTests repo</a>)</li>
+                    <li><strong>Complete Exercise 2:</strong> Write evaluator tests for undefined and uninitialized variable errors</li>
+                    <li><strong>Reflection:</strong> Think about how you would apply modular design principles to your upcoming Project 1</li>
+                    <li><strong>Reading (Optional):</strong> Chapter 4 of John Ousterhout's "A Philosophy of Software Design" - Deep vs. Shallow Modules</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc410" class="back-link">← Back to CPSC_410</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>

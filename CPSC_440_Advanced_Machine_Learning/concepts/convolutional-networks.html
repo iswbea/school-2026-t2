@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convolutional Neural Networks - CPSC 440</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        .concept-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .concept-header {
+            background: linear-gradient(135deg, var(--cpsc440-primary), var(--cpsc440-secondary));
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .concept-header h1 {
+            margin: 0 0 0.5rem 0;
+        }
+
+        .concept-header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+
+        .section {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: var(--cpsc440-primary);
+            border-bottom: 2px solid var(--cpsc440-primary);
+            padding-bottom: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section h3 {
+            color: var(--cpsc440-secondary);
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .key-insight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+
+        .important-formula {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            border: 1px solid #ddd;
+            padding: 0.75rem;
+            text-align: left;
+        }
+
+        .comparison-table th {
+            background: var(--cpsc440-primary);
+            color: white;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        /* Interactive Visualization Styles */
+        .visualization {
+            background: #f8f9fa;
+            border: 2px solid var(--cpsc440-primary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .viz-title {
+            font-weight: bold;
+            color: var(--cpsc440-primary);
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        #convolutionCanvas,
+        #poolingCanvas,
+        #architectureCanvas {
+            display: block;
+            margin: 1rem auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 1rem 0;
+        }
+
+        .controls button {
+            background: var(--cpsc440-primary);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.3s;
+        }
+
+        .controls button:hover {
+            background: var(--cpsc440-secondary);
+        }
+
+        .controls button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .param-display {
+            background: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        pre code {
+            display: block;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        .architecture-legend {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            border: 1px solid #333;
+            border-radius: 3px;
+        }
+
+        ul, ol {
+            line-height: 1.8;
+        }
+
+        strong {
+            color: var(--cpsc440-primary);
+        }
+
+        mark {
+            background: #fff59d;
+            padding: 0.1rem 0.3rem;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="concept-page">
+        <!-- Header -->
+        <div class="concept-header">
+            <h1>🧠 Convolutional Neural Networks (CNNs)</h1>
+            <p>Understanding convolution layers, pooling, and traditional CNN architectures</p>
+        </div>
+
+        <!-- Introduction -->
+        <section class="section">
+            <h2>📚 What Are Convolutional Neural Networks?</h2>
+
+            <p>
+                <strong>Convolutional Neural Networks (CNNs)</strong> are a specialized type of neural network designed to process data with a <mark>grid-like topology</mark>, such as images (which are grids of pixels). CNNs were inspired by the biological visual cortex and have revolutionized computer vision.
+            </p>
+
+            <div class="key-insight">
+                <strong>💡 Key Insight:</strong> Unlike fully-connected neural networks where each neuron connects to every neuron in the previous layer, CNNs exploit the <strong>spatial structure</strong> of images through three key ideas:
+                <ul>
+                    <li><strong>Local connectivity</strong> - Neurons only connect to a small region of the input</li>
+                    <li><strong>Parameter sharing</strong> - The same filter/kernel is applied across the entire input</li>
+                    <li><strong>Translation invariance</strong> - Features can be detected regardless of their position</li>
+                </ul>
+            </div>
+
+            <h3>Why Not Just Use Fully-Connected Networks?</h3>
+            <p>
+                Imagine a modest 224×224 color image (224 × 224 × 3 = 150,528 pixels). If the first hidden layer has 1,000 neurons, that's <strong>150 million parameters</strong> just in the first layer! This creates three major problems:
+            </p>
+            <ol>
+                <li><strong>Computational infeasibility</strong> - Too many parameters to train efficiently</li>
+                <li><strong>Overfitting</strong> - So many parameters will memorize training data rather than learn patterns</li>
+                <li><strong>Ignoring spatial structure</strong> - A pixel at position (10, 10) is treated completely independently from pixel (10, 11), even though they're neighbors</li>
+            </ol>
+
+            <p>
+                CNNs solve these problems by using <strong>convolutional layers</strong> that exploit spatial locality and share parameters across the image.
+            </p>
+        </section>
+
+        <!-- Convolution Layers -->
+        <section class="section">
+            <h2>🔍 Convolution Layers: The Core Building Block</h2>
+
+            <h3>What is a Convolution Operation?</h3>
+            <p>
+                A <strong>convolution</strong> is a mathematical operation that slides a small matrix called a <strong>filter</strong> (or <strong>kernel</strong>) across an input image, computing element-wise products and summing them at each position.
+            </p>
+
+            <div class="important-formula">
+                <strong>Convolution Formula (2D):</strong><br>
+                (I * K)[i, j] = ΣΣ I[i+m, j+n] · K[m, n]<br>
+                <br>
+                Where:<br>
+                • I = input image/feature map<br>
+                • K = kernel/filter<br>
+                • i, j = output position<br>
+                • m, n = kernel indices
+            </div>
+
+            <h3>How It Works: A Step-by-Step Example</h3>
+            <p>Let's say we have a 5×5 input image and a 3×3 kernel:</p>
+
+            <ol>
+                <li><strong>Position the kernel</strong> at the top-left corner of the image (or with padding)</li>
+                <li><strong>Element-wise multiply</strong> the kernel values with the overlapping image values</li>
+                <li><strong>Sum all products</strong> to get a single output value</li>
+                <li><strong>Slide the kernel</strong> by a stride (typically 1 pixel) and repeat</li>
+                <li>Continue until the entire image is covered</li>
+            </ol>
+
+            <!-- Interactive Convolution Visualization -->
+            <div class="visualization">
+                <div class="viz-title">📊 Interactive Convolution Visualization</div>
+                <p style="text-align: center; margin-bottom: 1rem; color: #666;">
+                    Watch how a kernel slides across an input to produce a feature map
+                </p>
+                <canvas id="convolutionCanvas" width="800" height="400"></canvas>
+                <div class="controls">
+                    <button id="convStepBtn">Step Forward</button>
+                    <button id="convPlayBtn">Play</button>
+                    <button id="convResetBtn">Reset</button>
+                    <div class="param-display">
+                        <span id="convParams">Stride: 1 | Padding: 0 | Output: 3×3</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Key Parameters of Convolution Layers</h3>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Description</th>
+                        <th>Impact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Kernel Size</strong></td>
+                        <td>The dimensions of the filter (e.g., 3×3, 5×5)</td>
+                        <td>Larger kernels capture more context but have more parameters. 3×3 is most common.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Stride</strong></td>
+                        <td>How many pixels to move the kernel at each step</td>
+                        <td>Larger stride = smaller output size, more downsampling. Stride of 1 or 2 is common.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Padding</strong></td>
+                        <td>Adding zeros around the input border</td>
+                        <td>"Same" padding preserves spatial size; "valid" (no padding) shrinks it.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Number of Filters</strong></td>
+                        <td>How many different kernels to apply</td>
+                        <td>Each filter detects different features. Common: 32, 64, 128, 256...</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="key-insight">
+                <strong>💡 Output Size Formula:</strong><br>
+                Output Size = ⌊(Input Size - Kernel Size + 2 × Padding) / Stride⌋ + 1
+                <br><br>
+                <strong>Example:</strong> Input = 32×32, Kernel = 5×5, Stride = 1, Padding = 2<br>
+                Output = ⌊(32 - 5 + 2×2) / 1⌋ + 1 = ⌊31/1⌋ + 1 = 32×32 (preserves size!)
+            </div>
+
+            <h3>What Do Convolutional Filters Learn?</h3>
+            <p>
+                The magic of CNNs is that <mark>the kernel values are learned during training</mark>. Different filters learn to detect different features:
+            </p>
+            <ul>
+                <li><strong>Early layers</strong> learn low-level features: edges, corners, colors, textures</li>
+                <li><strong>Middle layers</strong> learn mid-level features: shapes, object parts, patterns</li>
+                <li><strong>Deep layers</strong> learn high-level features: faces, objects, complex compositions</li>
+            </ul>
+
+            <p>
+                This <strong>hierarchical feature learning</strong> mirrors how the human visual system works, building from simple to complex representations.
+            </p>
+        </section>
+
+        <!-- Pooling Layers -->
+        <section class="section">
+            <h2>📉 Pooling Layers: Downsampling and Robustness</h2>
+
+            <h3>What is Pooling?</h3>
+            <p>
+                <strong>Pooling</strong> (also called <strong>subsampling</strong>) is a downsampling operation that reduces the spatial dimensions of feature maps while retaining the most important information. It makes the network <mark>more robust to small translations</mark> and reduces computational cost.
+            </p>
+
+            <h3>Types of Pooling</h3>
+
+            <h4>1. Max Pooling (Most Common)</h4>
+            <p>
+                Takes the <strong>maximum value</strong> in each pooling region. This keeps the strongest activation, making the network robust to small shifts.
+            </p>
+            <pre><code>Input (4×4):          Max Pool 2×2:
+[1  2  3  4]
+[5  6  7  8]    →    [6  8]
+[9  10 11 12]        [14 16]
+[13 14 15 16]
+</code></pre>
+
+            <h4>2. Average Pooling</h4>
+            <p>
+                Takes the <strong>average value</strong> in each region. Smoother than max pooling but less commonly used in hidden layers. Often used in the final layers.
+            </p>
+
+            <h4>3. Global Average Pooling (GAP)</h4>
+            <p>
+                Takes the average over the <strong>entire feature map</strong> (one value per channel). Commonly used to replace fully-connected layers in modern architectures.
+            </p>
+
+            <!-- Interactive Pooling Visualization -->
+            <div class="visualization">
+                <div class="viz-title">📊 Interactive Pooling Visualization</div>
+                <p style="text-align: center; margin-bottom: 1rem; color: #666;">
+                    Compare Max Pooling vs Average Pooling
+                </p>
+                <canvas id="poolingCanvas" width="800" height="350"></canvas>
+                <div class="controls">
+                    <button id="poolMaxBtn">Show Max Pooling</button>
+                    <button id="poolAvgBtn">Show Average Pooling</button>
+                    <button id="poolResetBtn">Reset</button>
+                </div>
+            </div>
+
+            <h3>Why Use Pooling?</h3>
+            <ol>
+                <li>
+                    <strong>Spatial invariance:</strong> Makes the network robust to small translations. Whether an edge is at pixel 10 or 11 doesn't matter.
+                </li>
+                <li>
+                    <strong>Reduces dimensions:</strong> A 2×2 max pool reduces spatial size by 75%, dramatically reducing parameters in subsequent layers.
+                </li>
+                <li>
+                    <strong>Expands receptive field:</strong> Each neuron in deeper layers "sees" a larger area of the original input.
+                </li>
+                <li>
+                    <strong>Provides regularization:</strong> Reduces overfitting by reducing model complexity.
+                </li>
+            </ol>
+
+            <div class="key-insight">
+                <strong>💡 Modern Trend:</strong> Recent architectures (e.g., ResNet, VGG) often <strong>replace pooling with strided convolutions</strong> (convolutions with stride > 1) to learn the downsampling rather than using a fixed pooling operation.
+            </div>
+
+            <h3>Common Pooling Parameters</h3>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Typical Value</th>
+                        <th>Effect</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Pool Size</strong></td>
+                        <td>2×2</td>
+                        <td>Size of the pooling window</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Stride</strong></td>
+                        <td>2 (same as pool size)</td>
+                        <td>Non-overlapping pooling regions</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Padding</strong></td>
+                        <td>0 (valid)</td>
+                        <td>Usually no padding for pooling</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Traditional Architecture -->
+        <section class="section">
+            <h2>🏗️ Traditional CNN Architecture</h2>
+
+            <h3>The Classic Pattern</h3>
+            <p>
+                Traditional CNNs follow a <mark>repeating pattern</mark> that has become the standard blueprint:
+            </p>
+
+            <div class="important-formula">
+                <strong>Traditional CNN Architecture Pattern:</strong><br>
+                <br>
+                INPUT → [CONV → RELU → POOL] × N → FLATTEN → [FC → RELU] × M → FC → OUTPUT
+                <br><br>
+                Where:<br>
+                • CONV = Convolutional layer<br>
+                • RELU = Activation function (rectified linear unit)<br>
+                • POOL = Pooling layer<br>
+                • FC = Fully-connected layer<br>
+                • N, M = number of repetitions
+            </div>
+
+            <h3>Why This Architecture?</h3>
+
+            <h4>Phase 1: Feature Extraction (Conv + Pool Blocks)</h4>
+            <p>
+                The early <code>[CONV → RELU → POOL]</code> blocks progressively:
+            </p>
+            <ul>
+                <li><strong>Extract hierarchical features</strong> - Low-level → Mid-level → High-level</li>
+                <li><strong>Reduce spatial dimensions</strong> - From large images (224×224) to small feature maps (7×7)</li>
+                <li><strong>Increase depth</strong> - More feature channels (3 → 64 → 128 → 256 → 512)</li>
+            </ul>
+
+            <h4>Phase 2: Flattening</h4>
+            <p>
+                The <strong>flatten operation</strong> converts the 3D feature maps (height × width × channels) into a 1D vector.
+            </p>
+            <p>
+                <strong>Example:</strong> If the last pooling layer outputs a 7×7×512 feature map, flattening produces a vector of length 7 × 7 × 512 = <strong>25,088</strong>.
+            </p>
+
+            <div class="key-insight">
+                <strong>💡 Why Flatten?</strong> Fully-connected layers expect 1D input vectors, not 3D spatial maps. Flattening bridges the gap between convolutional feature extraction and classification.
+            </div>
+
+            <h4>Phase 3: Classification (Fully-Connected Layers)</h4>
+            <p>
+                After flattening, traditional CNNs use <strong>fully-connected (FC) layers</strong> to:
+            </p>
+            <ul>
+                <li><strong>Combine features globally</strong> - FC layers can learn complex relationships across all learned features</li>
+                <li><strong>Reduce dimensionality</strong> - From 25,088 → 4,096 → 1,000 → num_classes</li>
+                <li><strong>Make final predictions</strong> - Last layer outputs class probabilities (with softmax)</li>
+            </ul>
+
+            <!-- Interactive Architecture Visualization -->
+            <div class="visualization">
+                <div class="viz-title">📊 Traditional CNN Architecture Flow</div>
+                <p style="text-align: center; margin-bottom: 1rem; color: #666;">
+                    Watch data transform through the network
+                </p>
+                <canvas id="architectureCanvas" width="900" height="400"></canvas>
+                <div class="architecture-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #4CAF50;"></div>
+                        <span>Input/Convolution</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #2196F3;"></div>
+                        <span>Pooling</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF9800;"></div>
+                        <span>Flatten</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #9C27B0;"></div>
+                        <span>Fully-Connected</span>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button id="archPlayBtn">Animate Data Flow</button>
+                    <button id="archResetBtn">Reset</button>
+                </div>
+            </div>
+
+            <h3>Classic Example: LeNet-5 (1998)</h3>
+            <p>
+                One of the first successful CNNs, designed by Yann LeCun for handwritten digit recognition:
+            </p>
+            <pre><code>INPUT (32×32×1)
+    → CONV1 (5×5, 6 filters) → RELU → POOL (2×2)     [14×14×6]
+    → CONV2 (5×5, 16 filters) → RELU → POOL (2×2)    [5×5×16]
+    → FLATTEN                                         [400]
+    → FC1 (120 neurons) → RELU                        [120]
+    → FC2 (84 neurons) → RELU                         [84]
+    → FC3 (10 neurons) → SOFTMAX                      [10]
+OUTPUT (10 classes for digits 0-9)
+</code></pre>
+
+            <h3>Another Classic: AlexNet (2012)</h3>
+            <p>
+                The CNN that sparked the deep learning revolution by winning ImageNet 2012:
+            </p>
+            <pre><code>INPUT (224×224×3)
+    → CONV1 (11×11, stride=4, 96 filters) → RELU → POOL (3×3, stride=2)
+    → CONV2 (5×5, 256 filters) → RELU → POOL (3×3, stride=2)
+    → CONV3 (3×3, 384 filters) → RELU
+    → CONV4 (3×3, 384 filters) → RELU
+    → CONV5 (3×3, 256 filters) → RELU → POOL (3×3, stride=2)
+    → FLATTEN → FC1 (4096) → RELU → DROPOUT
+    → FC2 (4096) → RELU → DROPOUT
+    → FC3 (1000) → SOFTMAX
+OUTPUT (1000 ImageNet classes)
+</code></pre>
+        </section>
+
+        <!-- Parameter Calculation -->
+        <section class="section">
+            <h2>🧮 Parameter Calculation in CNNs</h2>
+
+            <h3>Why Count Parameters?</h3>
+            <p>
+                Understanding parameter count helps you:
+            </p>
+            <ul>
+                <li>Estimate model size and memory requirements</li>
+                <li>Identify computational bottlenecks</li>
+                <li>Compare architectural efficiency</li>
+                <li>Avoid overfitting (more parameters = more risk)</li>
+            </ul>
+
+            <h3>Convolutional Layer Parameters</h3>
+            <div class="important-formula">
+                <strong>Parameters in CONV Layer:</strong><br>
+                Params = (Kernel_Height × Kernel_Width × Input_Channels + 1) × Num_Filters
+                <br><br>
+                The "+1" is for the bias term per filter
+            </div>
+
+            <p><strong>Example:</strong> A conv layer with 3×3 kernel, 64 input channels, 128 output filters:</p>
+            <pre><code>Params = (3 × 3 × 64 + 1) × 128
+       = (576 + 1) × 128
+       = 577 × 128
+       = 73,856 parameters
+</code></pre>
+
+            <h3>Fully-Connected Layer Parameters</h3>
+            <div class="important-formula">
+                <strong>Parameters in FC Layer:</strong><br>
+                Params = (Input_Size × Output_Size) + Output_Size
+                <br><br>
+                One weight per connection, plus one bias per output neuron
+            </div>
+
+            <p><strong>Example:</strong> FC layer from 25,088 inputs to 4,096 outputs:</p>
+            <pre><code>Params = (25,088 × 4,096) + 4,096
+       = 102,760,448 + 4,096
+       = 102,764,544 parameters (!!)
+</code></pre>
+
+            <div class="key-insight">
+                <strong>💡 The FC Bottleneck:</strong> Notice how the FC layer has <mark>102 million parameters</mark> while the conv layer has only 74 thousand? This is why <strong>FC layers dominate the parameter count</strong> in traditional CNNs (often 90%+ of all parameters). Modern architectures minimize or eliminate FC layers.
+            </div>
+
+            <h3>Pooling Layer Parameters</h3>
+            <p>
+                Pooling layers have <strong>zero learnable parameters</strong> - they just apply a fixed operation (max or average).
+            </p>
+        </section>
+
+        <!-- Modern Improvements -->
+        <section class="section">
+            <h2>🚀 From Traditional to Modern CNNs</h2>
+
+            <h3>Limitations of Traditional Architecture</h3>
+            <ol>
+                <li>
+                    <strong>FC layers are parameter-heavy:</strong> The flattened FC layers contain most parameters, making models large and prone to overfitting.
+                </li>
+                <li>
+                    <strong>Fixed input size:</strong> Because of the flatten operation, the network requires fixed-size inputs (e.g., exactly 224×224).
+                </li>
+                <li>
+                    <strong>Spatial information loss:</strong> Flattening destroys spatial relationships that might still be useful.
+                </li>
+                <li>
+                    <strong>Vanishing gradients:</strong> Very deep traditional CNNs struggled to train due to gradient problems.
+                </li>
+            </ol>
+
+            <h3>Modern Improvements</h3>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Technique</th>
+                        <th>What It Does</th>
+                        <th>Example Architecture</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Global Average Pooling</strong></td>
+                        <td>Replace FC layers with averaging over spatial dimensions</td>
+                        <td>GoogLeNet, ResNet</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Residual Connections</strong></td>
+                        <td>Skip connections that add input to output, enabling very deep networks</td>
+                        <td>ResNet, ResNeXt</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Batch Normalization</strong></td>
+                        <td>Normalize activations to stabilize training</td>
+                        <td>Most modern CNNs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>1×1 Convolutions</strong></td>
+                        <td>Change channel depth without affecting spatial dimensions</td>
+                        <td>GoogLeNet, MobileNet</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Depthwise Separable Convs</strong></td>
+                        <td>Factorize convolutions to reduce parameters</td>
+                        <td>MobileNet, EfficientNet</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Evolution Timeline</h3>
+            <ul>
+                <li><strong>1998 - LeNet-5:</strong> First successful CNN (small, simple)</li>
+                <li><strong>2012 - AlexNet:</strong> Deep learning breakthrough (8 layers, ReLU, dropout)</li>
+                <li><strong>2014 - VGG:</strong> Deeper with small 3×3 kernels (19 layers)</li>
+                <li><strong>2014 - GoogLeNet:</strong> Inception modules, 22 layers, efficient</li>
+                <li><strong>2015 - ResNet:</strong> Residual connections enable 152+ layers</li>
+                <li><strong>2017 - MobileNet:</strong> Efficient for mobile devices</li>
+                <li><strong>2019 - EfficientNet:</strong> Systematic scaling of depth, width, resolution</li>
+            </ul>
+        </section>
+
+        <!-- Key Takeaways -->
+        <section class="section">
+            <h2>📝 Key Takeaways</h2>
+
+            <div class="key-insight">
+                <h3>Core Concepts to Remember:</h3>
+                <ol>
+                    <li>
+                        <strong>CNNs exploit spatial structure</strong> through local connectivity and parameter sharing, making them perfect for images.
+                    </li>
+                    <li>
+                        <strong>Convolution layers</strong> apply learnable filters that detect features hierarchically (edges → shapes → objects).
+                    </li>
+                    <li>
+                        <strong>Pooling layers</strong> downsample feature maps, providing translation invariance and reducing computation.
+                    </li>
+                    <li>
+                        <strong>Traditional architecture:</strong> [CONV → RELU → POOL]×N → FLATTEN → FC layers for classification.
+                    </li>
+                    <li>
+                        <strong>Flattening</strong> converts 3D spatial feature maps into 1D vectors for fully-connected layers.
+                    </li>
+                    <li>
+                        <strong>FC layers dominate parameters</strong> in traditional CNNs (often 90%+), leading to overfitting concerns.
+                    </li>
+                    <li>
+                        <strong>Modern CNNs</strong> replace FC layers with global pooling and use skip connections (ResNet) to go deeper.
+                    </li>
+                    <li>
+                        <strong>Output size formula:</strong> ⌊(Input - Kernel + 2×Padding) / Stride⌋ + 1
+                    </li>
+                </ol>
+            </div>
+
+            <h3>Common Pitfalls to Avoid:</h3>
+            <ul>
+                <li>❌ Forgetting that kernels are <strong>learned</strong>, not hand-designed</li>
+                <li>❌ Confusing kernel size with number of filters</li>
+                <li>❌ Thinking pooling has learnable parameters (it doesn't)</li>
+                <li>❌ Not understanding that flattening loses spatial structure</li>
+                <li>❌ Underestimating how many parameters FC layers add</li>
+            </ul>
+        </section>
+
+        <div style="text-align: center; padding: 2rem;">
+            <a href="../../index.html" style="color: var(--cpsc440-primary); text-decoration: none; font-weight: bold;">
+                ← Back to Course Hub
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // Interactive Convolution Visualization
+        // ============================================
+        const convCanvas = document.getElementById('convolutionCanvas');
+        const convCtx = convCanvas.getContext('2d');
+
+        let convStep = 0;
+        let convPlaying = false;
+        let convInterval = null;
+
+        // 5x5 input with random values
+        const inputMatrix = [
+            [1, 2, 3, 4, 5],
+            [2, 3, 4, 5, 6],
+            [3, 4, 5, 6, 7],
+            [4, 5, 6, 7, 8],
+            [5, 6, 7, 8, 9]
+        ];
+
+        // 3x3 kernel (edge detection)
+        const kernel = [
+            [1, 0, -1],
+            [2, 0, -2],
+            [1, 0, -1]
+        ];
+
+        // Output will be 3x3
+        const outputMatrix = Array(3).fill(null).map(() => Array(3).fill(null));
+
+        function drawConvolution() {
+            convCtx.clearRect(0, 0, convCanvas.width, convCanvas.height);
+
+            const cellSize = 40;
+            const startX = 50;
+            const startY = 50;
+
+            // Draw input matrix
+            convCtx.font = 'bold 14px Arial';
+            convCtx.fillStyle = '#333';
+            convCtx.fillText('Input (5×5)', startX, startY - 10);
+
+            for (let i = 0; i < 5; i++) {
+                for (let j = 0; j < 5; j++) {
+                    convCtx.fillStyle = '#E8F5E9';
+                    convCtx.fillRect(startX + j * cellSize, startY + i * cellSize, cellSize, cellSize);
+                    convCtx.strokeStyle = '#333';
+                    convCtx.strokeRect(startX + j * cellSize, startY + i * cellSize, cellSize, cellSize);
+                    convCtx.fillStyle = '#333';
+                    convCtx.font = '12px Arial';
+                    convCtx.textAlign = 'center';
+                    convCtx.fillText(inputMatrix[i][j], startX + j * cellSize + cellSize/2, startY + i * cellSize + cellSize/2 + 4);
+                }
+            }
+
+            // Draw kernel
+            const kernelX = startX + 280;
+            convCtx.font = 'bold 14px Arial';
+            convCtx.fillStyle = '#333';
+            convCtx.fillText('Kernel (3×3)', kernelX, startY - 10);
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    convCtx.fillStyle = '#FFF3E0';
+                    convCtx.fillRect(kernelX + j * cellSize, startY + i * cellSize, cellSize, cellSize);
+                    convCtx.strokeStyle = '#333';
+                    convCtx.strokeRect(kernelX + j * cellSize, startY + i * cellSize, cellSize, cellSize);
+                    convCtx.fillStyle = '#333';
+                    convCtx.fillText(kernel[i][j], kernelX + j * cellSize + cellSize/2, startY + i * cellSize + cellSize/2 + 4);
+                }
+            }
+
+            // Draw output matrix
+            const outX = startX + 520;
+            convCtx.font = 'bold 14px Arial';
+            convCtx.fillText('Output (3×3)', outX, startY - 10);
+
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    convCtx.fillStyle = outputMatrix[i][j] !== null ? '#E1F5FE' : '#f5f5f5';
+                    convCtx.fillRect(outX + j * cellSize, startY + i * cellSize, cellSize, cellSize);
+                    convCtx.strokeStyle = '#333';
+                    convCtx.strokeRect(outX + j * cellSize, startY + i * cellSize, cellSize, cellSize);
+                    if (outputMatrix[i][j] !== null) {
+                        convCtx.fillStyle = '#333';
+                        convCtx.fillText(outputMatrix[i][j], outX + j * cellSize + cellSize/2, startY + i * cellSize + cellSize/2 + 4);
+                    }
+                }
+            }
+
+            // Highlight current convolution position
+            if (convStep < 9) {
+                const row = Math.floor(convStep / 3);
+                const col = convStep % 3;
+
+                // Highlight kernel position on input
+                convCtx.strokeStyle = '#FF5722';
+                convCtx.lineWidth = 3;
+                convCtx.strokeRect(startX + col * cellSize, startY + row * cellSize, cellSize * 3, cellSize * 3);
+
+                // Highlight output cell
+                convCtx.fillStyle = 'rgba(255, 87, 34, 0.3)';
+                convCtx.fillRect(outX + col * cellSize, startY + row * cellSize, cellSize, cellSize);
+
+                // Draw computation
+                convCtx.font = '12px Arial';
+                convCtx.fillStyle = '#333';
+                convCtx.textAlign = 'left';
+                let computation = '';
+                let sum = 0;
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        const val = inputMatrix[row + i][col + j] * kernel[i][j];
+                        sum += val;
+                        if (computation) computation += ' + ';
+                        computation += val;
+                    }
+                }
+                convCtx.fillText(`Computation: ${computation} = ${sum}`, startX, startY + 240);
+
+                convCtx.lineWidth = 1;
+            }
+        }
+
+        function stepConvolution() {
+            if (convStep < 9) {
+                const row = Math.floor(convStep / 3);
+                const col = convStep % 3;
+
+                let sum = 0;
+                for (let i = 0; i < 3; i++) {
+                    for (let j = 0; j < 3; j++) {
+                        sum += inputMatrix[row + i][col + j] * kernel[i][j];
+                    }
+                }
+                outputMatrix[row][col] = sum;
+                convStep++;
+                drawConvolution();
+            } else {
+                stopConvolution();
+            }
+        }
+
+        function playConvolution() {
+            if (!convPlaying) {
+                convPlaying = true;
+                document.getElementById('convPlayBtn').textContent = 'Pause';
+                convInterval = setInterval(stepConvolution, 800);
+            } else {
+                stopConvolution();
+            }
+        }
+
+        function stopConvolution() {
+            convPlaying = false;
+            document.getElementById('convPlayBtn').textContent = 'Play';
+            if (convInterval) {
+                clearInterval(convInterval);
+                convInterval = null;
+            }
+        }
+
+        function resetConvolution() {
+            stopConvolution();
+            convStep = 0;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    outputMatrix[i][j] = null;
+                }
+            }
+            drawConvolution();
+        }
+
+        document.getElementById('convStepBtn').addEventListener('click', stepConvolution);
+        document.getElementById('convPlayBtn').addEventListener('click', playConvolution);
+        document.getElementById('convResetBtn').addEventListener('click', resetConvolution);
+
+        drawConvolution();
+
+        // ============================================
+        // Interactive Pooling Visualization
+        // ============================================
+        const poolCanvas = document.getElementById('poolingCanvas');
+        const poolCtx = poolCanvas.getContext('2d');
+
+        const poolInput = [
+            [1, 3, 2, 4],
+            [5, 6, 1, 2],
+            [2, 8, 3, 7],
+            [4, 1, 9, 6]
+        ];
+
+        let poolType = null;
+        const maxPoolOutput = [[6, 4], [8, 9]];
+        const avgPoolOutput = [[3.75, 2.25], [3.75, 6.25]];
+
+        function drawPooling() {
+            poolCtx.clearRect(0, 0, poolCanvas.width, poolCanvas.height);
+
+            const cellSize = 50;
+            const startX = 100;
+            const startY = 50;
+
+            // Draw input
+            poolCtx.font = 'bold 14px Arial';
+            poolCtx.fillStyle = '#333';
+            poolCtx.fillText('Input (4×4)', startX, startY - 10);
+
+            for (let i = 0; i < 4; i++) {
+                for (let j = 0; j < 4; j++) {
+                    poolCtx.fillStyle = '#E8F5E9';
+                    poolCtx.fillRect(startX + j * cellSize, startY + i * cellSize, cellSize, cellSize);
+                    poolCtx.strokeStyle = '#333';
+                    poolCtx.strokeRect(startX + j * cellSize, startY + i * cellSize, cellSize, cellSize);
+                    poolCtx.fillStyle = '#333';
+                    poolCtx.font = '16px Arial';
+                    poolCtx.textAlign = 'center';
+                    poolCtx.fillText(poolInput[i][j], startX + j * cellSize + cellSize/2, startY + i * cellSize + cellSize/2 + 6);
+                }
+            }
+
+            // Draw pooling regions
+            poolCtx.strokeStyle = '#FF5722';
+            poolCtx.lineWidth = 3;
+            poolCtx.strokeRect(startX, startY, cellSize * 2, cellSize * 2);
+            poolCtx.strokeRect(startX + cellSize * 2, startY, cellSize * 2, cellSize * 2);
+            poolCtx.strokeRect(startX, startY + cellSize * 2, cellSize * 2, cellSize * 2);
+            poolCtx.strokeRect(startX + cellSize * 2, startY + cellSize * 2, cellSize * 2, cellSize * 2);
+            poolCtx.lineWidth = 1;
+
+            if (poolType) {
+                // Draw output
+                const outX = startX + 350;
+                poolCtx.font = 'bold 14px Arial';
+                poolCtx.fillStyle = '#333';
+                poolCtx.fillText(`Output (2×2) - ${poolType} Pooling`, outX, startY - 10);
+
+                const output = poolType === 'Max' ? maxPoolOutput : avgPoolOutput;
+                for (let i = 0; i < 2; i++) {
+                    for (let j = 0; j < 2; j++) {
+                        poolCtx.fillStyle = '#E1F5FE';
+                        poolCtx.fillRect(outX + j * cellSize, startY + i * cellSize, cellSize, cellSize);
+                        poolCtx.strokeStyle = '#333';
+                        poolCtx.strokeRect(outX + j * cellSize, startY + i * cellSize, cellSize, cellSize);
+                        poolCtx.fillStyle = '#333';
+                        poolCtx.font = '16px Arial';
+                        poolCtx.fillText(output[i][j], outX + j * cellSize + cellSize/2, startY + i * cellSize + cellSize/2 + 6);
+                    }
+                }
+
+                // Draw arrows
+                poolCtx.strokeStyle = '#666';
+                poolCtx.lineWidth = 2;
+                poolCtx.beginPath();
+                poolCtx.moveTo(startX + 200, startY + 100);
+                poolCtx.lineTo(outX - 50, startY + 50);
+                poolCtx.stroke();
+
+                // Explanation
+                poolCtx.font = '12px Arial';
+                poolCtx.fillStyle = '#333';
+                poolCtx.textAlign = 'left';
+                if (poolType === 'Max') {
+                    poolCtx.fillText('Max pooling takes the maximum value from each 2×2 region', startX, startY + 240);
+                    poolCtx.fillText('Top-left: max(1,3,5,6) = 6', startX, startY + 260);
+                } else {
+                    poolCtx.fillText('Average pooling takes the mean value from each 2×2 region', startX, startY + 240);
+                    poolCtx.fillText('Top-left: avg(1,3,5,6) = 3.75', startX, startY + 260);
+                }
+            }
+        }
+
+        document.getElementById('poolMaxBtn').addEventListener('click', () => {
+            poolType = 'Max';
+            drawPooling();
+        });
+
+        document.getElementById('poolAvgBtn').addEventListener('click', () => {
+            poolType = 'Average';
+            drawPooling();
+        });
+
+        document.getElementById('poolResetBtn').addEventListener('click', () => {
+            poolType = null;
+            drawPooling();
+        });
+
+        drawPooling();
+
+        // ============================================
+        // Architecture Flow Visualization
+        // ============================================
+        const archCanvas = document.getElementById('architectureCanvas');
+        const archCtx = archCanvas.getContext('2d');
+
+        let archAnimating = false;
+        let archProgress = 0;
+
+        const layers = [
+            { name: 'Input', width: 80, height: 80, color: '#4CAF50', text: '32×32×3' },
+            { name: 'Conv1', width: 75, height: 75, color: '#4CAF50', text: '28×28×32' },
+            { name: 'Pool1', width: 60, height: 60, color: '#2196F3', text: '14×14×32' },
+            { name: 'Conv2', width: 55, height: 55, color: '#4CAF50', text: '10×10×64' },
+            { name: 'Pool2', width: 40, height: 40, color: '#2196F3', text: '5×5×64' },
+            { name: 'Flatten', width: 30, height: 80, color: '#FF9800', text: '1600' },
+            { name: 'FC1', width: 20, height: 60, color: '#9C27B0', text: '128' },
+            { name: 'FC2', width: 20, height: 40, color: '#9C27B0', text: '10' }
+        ];
+
+        function drawArchitecture() {
+            archCtx.clearRect(0, 0, archCanvas.width, archCanvas.height);
+
+            const spacing = 100;
+            let x = 50;
+            const baseY = 200;
+
+            layers.forEach((layer, idx) => {
+                const y = baseY - layer.height / 2;
+
+                // Draw layer
+                archCtx.fillStyle = layer.color;
+                archCtx.fillRect(x, y, layer.width, layer.height);
+                archCtx.strokeStyle = '#333';
+                archCtx.lineWidth = 2;
+                archCtx.strokeRect(x, y, layer.width, layer.height);
+
+                // Draw label
+                archCtx.fillStyle = '#333';
+                archCtx.font = 'bold 12px Arial';
+                archCtx.textAlign = 'center';
+                archCtx.fillText(layer.name, x + layer.width / 2, y - 10);
+
+                // Draw dimensions
+                archCtx.font = '10px Arial';
+                archCtx.fillText(layer.text, x + layer.width / 2, y + layer.height + 15);
+
+                // Draw arrow to next layer
+                if (idx < layers.length - 1) {
+                    archCtx.strokeStyle = '#666';
+                    archCtx.lineWidth = 2;
+                    archCtx.beginPath();
+                    archCtx.moveTo(x + layer.width, baseY);
+                    archCtx.lineTo(x + layer.width + spacing, baseY);
+                    archCtx.stroke();
+
+                    // Arrow head
+                    archCtx.beginPath();
+                    archCtx.moveTo(x + layer.width + spacing, baseY);
+                    archCtx.lineTo(x + layer.width + spacing - 10, baseY - 5);
+                    archCtx.lineTo(x + layer.width + spacing - 10, baseY + 5);
+                    archCtx.closePath();
+                    archCtx.fillStyle = '#666';
+                    archCtx.fill();
+                }
+
+                x += layer.width + spacing;
+            });
+
+            // Animate data flow
+            if (archAnimating && archProgress < layers.length) {
+                const currentLayer = Math.floor(archProgress);
+                let xPos = 50;
+                for (let i = 0; i < currentLayer; i++) {
+                    xPos += layers[i].width + spacing;
+                }
+
+                const progress = archProgress - currentLayer;
+                if (currentLayer < layers.length - 1) {
+                    xPos += progress * spacing;
+                } else {
+                    xPos = 50 + layers.slice(0, -1).reduce((sum, l) => sum + l.width + spacing, 0);
+                }
+
+                // Draw flowing data
+                archCtx.fillStyle = 'rgba(255, 193, 7, 0.8)';
+                archCtx.beginPath();
+                archCtx.arc(xPos, baseY, 8, 0, Math.PI * 2);
+                archCtx.fill();
+            }
+        }
+
+        function animateArchitecture() {
+            if (!archAnimating) {
+                archAnimating = true;
+                archProgress = 0;
+                document.getElementById('archPlayBtn').textContent = 'Reset';
+
+                const animate = () => {
+                    if (archProgress < layers.length + 0.5) {
+                        archProgress += 0.05;
+                        drawArchitecture();
+                        requestAnimationFrame(animate);
+                    } else {
+                        archAnimating = false;
+                        document.getElementById('archPlayBtn').textContent = 'Animate Data Flow';
+                    }
+                };
+                animate();
+            } else {
+                resetArchitecture();
+            }
+        }
+
+        function resetArchitecture() {
+            archAnimating = false;
+            archProgress = 0;
+            document.getElementById('archPlayBtn').textContent = 'Animate Data Flow';
+            drawArchitecture();
+        }
+
+        document.getElementById('archPlayBtn').addEventListener('click', animateArchitecture);
+        document.getElementById('archResetBtn').addEventListener('click', resetArchitecture);
+
+        drawArchitecture();
+    </script>
+</body>
+</html>

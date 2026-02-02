@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPSC_410 - Lecture 2026-01-14</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+</head>
+<body>
+    <div class="container">
+        <nav class="breadcrumb">
+            <a href="../../index.html">Home</a> /
+            <a href="../../index.html#cpsc410">CPSC_410</a> /
+            <span>2026-01-14</span>
+        </nav>
+
+        <header class="lecture-header">
+            <h1>Advanced Software Engineering</h1>
+            <div class="lecture-meta">
+                <span class="date">📅 2026-01-14</span>
+                <span class="instructor">👤 Caroline Lemieux</span>
+            </div>
+        </header>
+
+        <div class="lecture-content">
+            <section class="raw-notes">
+                <h2>Quick Notes</h2>
+                <div class="notes-box">
+                    <h3>Course Learning Objectives</h3>
+                    <ul>
+                        <li>Identify distinct modules in a software system / its design</li>
+                        <li>Reason about how modular design decisions affect complexity</li>
+                        <li>Decompose DSL implementation into distinct modules</li>
+                        <li>Evaluate motivations and designs for DSLs vs GPLs</li>
+                        <li>Design and implement DSLs with robust error-handling</li>
+                        <li>Evaluate language design effectiveness via user-studies</li>
+                    </ul>
+
+                    <h3>DSL Pipeline Review</h3>
+                    <p>Tokenization → Parsing → AST Conversion → Static Checks → Dynamic Checks → Evaluate → Result</p>
+
+                    <h3>What is an AST?</h3>
+                    <ul>
+                        <li>AST = Abstract Syntax Tree</li>
+                        <li>Natural way to represent nesting/recursion in programs</li>
+                        <li>Example: (x + 3) + (4 + (x + 5))</li>
+                        <li>Tree structure with Add, Var, Num nodes</li>
+                    </ul>
+
+                    <h3>Why Abstract?</h3>
+                    <ul>
+                        <li>Concrete syntax includes all tokens/characters</li>
+                        <li>Abstract syntax removes details that don't affect semantics</li>
+                        <li>No parens or whitespace in AST</li>
+                    </ul>
+
+                    <h3>Common Class Hierarchy</h3>
+                    <ul>
+                        <li>Node (root type)</li>
+                        <li>Expression (evaluate to value, don't modify state)</li>
+                        <li>Statement (don't evaluate to value, affect evaluation state)</li>
+                        <li>ExprStatement (wraps expression in statement)</li>
+                    </ul>
+
+                    <h3>Exit Tickets</h3>
+                    <ul>
+                        <li>Q1: False - Multiple AST designs possible for same concrete syntax</li>
+                        <li>Q2: False - AST abstracts away details (parens, whitespace)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="expanded-notes">
+                <h2>Detailed Notes</h2>
+                <div id="notes-content">
+                    <!-- ============================================ -->
+                    <!-- INTRODUCTION: COURSE LEARNING OBJECTIVES -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Course Overview: What You'll Learn</h3>
+                        <p>This course focuses on the design, implementation, and evaluation of <strong>Domain-Specific Languages (DSLs)</strong> through the lens of <strong>modular software design</strong>. By the end of this term, you will have developed five core competencies:</p>
+
+                        <h4>I. Module Identification</h4>
+                        <p>You'll learn to <strong>identify distinct modules</strong> within a software system and its design. This is a fundamental skill in software engineering—understanding how a complex system is broken down into manageable, independent pieces.</p>
+                        <p><em>In other words:</em> When you look at a codebase, you should be able to say "this part handles parsing, this part handles validation, this part handles execution" and understand the boundaries between them.</p>
+
+                        <h4>II. Reasoning About Modularity</h4>
+                        <p>You'll develop the ability to <strong>reason about how modular design decisions affect complexity</strong>. Every design choice has trade-offs—modularity can make code easier to maintain but might add indirection that makes it harder to trace execution flow.</p>
+                        <p><mark>Key insight:</mark> Good modularity reduces the <em>cognitive load</em> required to understand, develop, and maintain a system. Poor modularity increases coupling and makes changes ripple unpredictably through the codebase.</p>
+
+                        <h4>III. DSL Implementation Decomposition</h4>
+                        <p>You'll learn to <strong>decompose the task of implementing a Domain-Specific Language</strong> into distinct modules and explain the typical stages common to DSLs in general. Think of this as understanding the "anatomy" of a language implementation.</p>
+
+                        <h4>IV. DSL vs. GPL Evaluation</h4>
+                        <p>You'll <strong>evaluate motivations and designs for DSLs</strong> versus alternative approaches like general-purpose programming languages (GPLs). When should you create a DSL instead of using Python, JavaScript, or Java?</p>
+                        <p><em>Example consideration:</em> SQL is a DSL for database queries. Could we just use Python functions? Yes, but SQL's declarative syntax makes expressing queries much more natural for its domain.</p>
+
+                        <h4>V. DSL Design & Implementation</h4>
+                        <p>You'll <strong>design and implement DSLs tailored to assist a target kind of user</strong> with a specific task, including clear and suitably-robust error-handling. This is where theory meets practice.</p>
+
+                        <h4>VI. User-Centered Evaluation</h4>
+                        <p>You'll <strong>evaluate a language design's effectiveness via user-studies</strong> and incorporate user feedback by proposing revisions. Language design isn't just a technical exercise—it's about creating tools that real people can use effectively.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- DSL PIPELINE OVERVIEW -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>The DSL Processing Pipeline</h3>
+                        <p>Before diving into ASTs specifically, let's review the complete pipeline for processing a DSL. Understanding where ASTs fit in the big picture is crucial.</p>
+
+                        <h4>The Six Stages of Language Processing</h4>
+                        <p>When you write code in a DSL (or any language), it goes through several transformation stages before producing a result:</p>
+
+                        <ol>
+                            <li><strong>Tokenization:</strong> The input string is broken into a list of tokens (keywords, identifiers, operators, literals)</li>
+                            <li><strong>Parsing:</strong> The token list is organized into a parse tree according to the language's grammar rules</li>
+                            <li><strong>AST Conversion:</strong> The parse tree is simplified into an Abstract Syntax Tree</li>
+                            <li><strong>Static Checks:</strong> Validation that doesn't require running the code (type checking, scope validation, etc.)</li>
+                            <li><strong>Dynamic Checks:</strong> Runtime validation (bounds checking, null checks, etc.)</li>
+                            <li><strong>Evaluation:</strong> The validated AST is executed to produce the result</li>
+                        </ol>
+
+                        <blockquote>
+                            <strong>Syntax vs. Semantics:</strong> Stages 1-3 deal with <em>syntax</em> (what is written), while stages 4-6 deal with <em>semantics</em> (what it means and does).
+                        </blockquote>
+
+                        <h4>Error Handling at Each Stage</h4>
+                        <p>Notice that errors can occur at multiple points in the pipeline:</p>
+                        <ul>
+                            <li><strong>Tokenizer error:</strong> Invalid characters or token sequences</li>
+                            <li><strong>Parse error:</strong> Syntactically invalid structure</li>
+                            <li><strong>Static check failed:</strong> Type errors, undeclared variables, etc.</li>
+                            <li><strong>Dynamic check failed:</strong> Division by zero, null pointer, array out of bounds</li>
+                        </ul>
+
+                        <p><mark>Important:</mark> Each stage acts as a filter. If any stage fails, the pipeline stops and reports an error. This is why good error messages at each stage are crucial for usability.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- AST CENTRAL DATA STRUCTURE -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>The AST: Central Data Structure</h3>
+                        <p>The <strong>Abstract Syntax Tree (AST)</strong> is the heart of language processing. Notice in the pipeline diagram that the AST appears in three stages: after parsing, after static checks (validated AST), and during evaluation. This isn't a coincidence—the AST is the <em>central data structure</em> that connects all semantic processing.</p>
+
+                        <h4>Why is the AST so important?</h4>
+                        <ul>
+                            <li>It's the <strong>first semantic representation</strong> of your program (everything before it is just syntax)</li>
+                            <li>It's what <strong>static analysis tools</strong> operate on (type checkers, linters, optimizers)</li>
+                            <li>It's what the <strong>interpreter or compiler</strong> executes or translates</li>
+                            <li>It's the <strong>interface between stages</strong>—if you design your AST well, each stage can work independently</li>
+                        </ul>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- WHAT IS AN AST? -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Understanding Abstract Syntax Trees</h3>
+
+                        <h4>Definition and Motivation</h4>
+                        <p><strong>AST</strong> stands for <strong>Abstract Syntax Tree</strong>. Let's break down what each word means:</p>
+                        <ul>
+                            <li><strong>Abstract:</strong> Simplified, with unnecessary details removed</li>
+                            <li><strong>Syntax:</strong> The structure of the code (what was written)</li>
+                            <li><strong>Tree:</strong> A hierarchical data structure with nodes and children</li>
+                        </ul>
+
+                        <h4>Why Trees?</h4>
+                        <p>Most programming languages allow <strong>nesting and recursion</strong> in their expressions. Consider this simple arithmetic expression:</p>
+                        <pre><code class="language-javascript">(x + 3) + (4 + (x + 5))</code></pre>
+
+                        <p>This expression has a natural <em>hierarchical structure</em>:</p>
+                        <ul>
+                            <li>The outermost operation is an addition</li>
+                            <li>The left side of that addition is another addition: <code>(x + 3)</code></li>
+                            <li>The right side is another addition: <code>(4 + (x + 5))</code></li>
+                            <li>And that right side <em>itself</em> contains an addition: <code>(x + 5)</code></li>
+                        </ul>
+
+                        <p>A <strong>tree is the natural way to represent this nesting</strong>. Here's how we'd represent it:</p>
+
+                        <div id="ast-visualization"></div>
+                        <style>
+                            #ast-visualization {
+                                margin: 30px auto;
+                                padding: 20px;
+                                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                                border-radius: 12px;
+                                box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                            }
+                            .ast-node {
+                                position: absolute;
+                                padding: 12px 20px;
+                                border-radius: 8px;
+                                text-align: center;
+                                font-weight: 600;
+                                font-size: 14px;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                                transition: all 0.3s ease;
+                                cursor: pointer;
+                            }
+                            .ast-node:hover {
+                                transform: translateY(-2px);
+                                box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+                            }
+                            .ast-add {
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                color: white;
+                            }
+                            .ast-var {
+                                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                                color: white;
+                            }
+                            .ast-num {
+                                background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+                                color: white;
+                            }
+                            .ast-line {
+                                position: absolute;
+                                background: rgba(255,255,255,0.2);
+                                height: 2px;
+                                transform-origin: left center;
+                                pointer-events: none;
+                            }
+                            .ast-label {
+                                position: absolute;
+                                color: #a8b2d1;
+                                font-size: 11px;
+                                font-style: italic;
+                            }
+                            .ast-field {
+                                position: absolute;
+                                color: #64ffda;
+                                font-size: 10px;
+                                font-family: 'Courier New', monospace;
+                                font-weight: bold;
+                            }
+                            #ast-viz-controls {
+                                text-align: center;
+                                margin-top: 20px;
+                            }
+                            .ast-btn {
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                color: white;
+                                border: none;
+                                padding: 10px 24px;
+                                border-radius: 6px;
+                                cursor: pointer;
+                                font-size: 14px;
+                                font-weight: 600;
+                                margin: 0 8px;
+                                transition: all 0.3s ease;
+                            }
+                            .ast-btn:hover {
+                                transform: translateY(-2px);
+                                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+                            }
+                            #ast-code {
+                                text-align: center;
+                                color: #64ffda;
+                                font-family: 'Courier New', monospace;
+                                font-size: 18px;
+                                margin-bottom: 30px;
+                                font-weight: bold;
+                            }
+                        </style>
+
+                        <script>
+                        (function() {
+                            const container = document.getElementById('ast-visualization');
+                            let highlightedNode = null;
+
+                            // Tree structure definition
+                            const tree = {
+                                type: 'Add',
+                                label: 'Root Add',
+                                x: 400, y: 50,
+                                left: {
+                                    type: 'Add',
+                                    label: '(x + 3)',
+                                    x: 200, y: 150,
+                                    left: {
+                                        type: 'Var',
+                                        name: '"x"',
+                                        x: 100, y: 250
+                                    },
+                                    right: {
+                                        type: 'Num',
+                                        val: '3',
+                                        x: 300, y: 250
+                                    }
+                                },
+                                right: {
+                                    type: 'Add',
+                                    label: '(4 + (x + 5))',
+                                    x: 600, y: 150,
+                                    left: {
+                                        type: 'Num',
+                                        val: '4',
+                                        x: 500, y: 250
+                                    },
+                                    right: {
+                                        type: 'Add',
+                                        label: '(x + 5)',
+                                        x: 700, y: 250,
+                                        left: {
+                                            type: 'Var',
+                                            name: '"x"',
+                                            x: 650, y: 350
+                                        },
+                                        right: {
+                                            type: 'Num',
+                                            val: '5',
+                                            x: 750, y: 350
+                                        }
+                                    }
+                                }
+                            };
+
+                            function drawLine(x1, y1, x2, y2) {
+                                const line = document.createElement('div');
+                                line.className = 'ast-line';
+                                const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+                                const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+                                line.style.width = length + 'px';
+                                line.style.left = x1 + 'px';
+                                line.style.top = y1 + 'px';
+                                line.style.transform = `rotate(${angle}deg)`;
+                                container.appendChild(line);
+                            }
+
+                            function drawFieldLabel(x, y, text, isLeft) {
+                                const label = document.createElement('div');
+                                label.className = 'ast-field';
+                                label.textContent = text;
+                                label.style.left = (x + (isLeft ? -40 : 10)) + 'px';
+                                label.style.top = (y + 30) + 'px';
+                                container.appendChild(label);
+                            }
+
+                            function drawNode(node, parent = null, isLeft = false) {
+                                // Draw connection line to parent
+                                if (parent) {
+                                    drawLine(parent.x, parent.y + 20, node.x, node.y - 10);
+                                    drawFieldLabel(parent.x, parent.y, isLeft ? 'left' : 'right', isLeft);
+                                }
+
+                                // Create node element
+                                const nodeEl = document.createElement('div');
+                                nodeEl.className = `ast-node ast-${node.type.toLowerCase()}`;
+                                nodeEl.style.left = (node.x - 50) + 'px';
+                                nodeEl.style.top = node.y + 'px';
+
+                                // Node content
+                                let content = `<div style="font-size: 16px; margin-bottom: 4px;">${node.type}</div>`;
+                                if (node.name) content += `<div style="font-size: 12px; opacity: 0.9;">name: ${node.name}</div>`;
+                                if (node.val) content += `<div style="font-size: 12px; opacity: 0.9;">val: ${node.val}</div>`;
+                                nodeEl.innerHTML = content;
+
+                                // Hover effect
+                                nodeEl.addEventListener('mouseenter', function() {
+                                    if (highlightedNode) {
+                                        highlightedNode.style.opacity = '1';
+                                    }
+                                    this.style.opacity = '0.7';
+                                    highlightedNode = this;
+                                });
+
+                                container.appendChild(nodeEl);
+
+                                // Recursively draw children
+                                if (node.left) drawNode(node.left, node, true);
+                                if (node.right) drawNode(node.right, node, false);
+                            }
+
+                            function render() {
+                                // Clear container
+                                container.innerHTML = '<div id="ast-code">(x + 3) + (4 + (x + 5))</div>';
+                                container.style.position = 'relative';
+                                container.style.height = '450px';
+
+                                // Draw tree
+                                drawNode(tree);
+
+                                // Add controls
+                                const controls = document.createElement('div');
+                                controls.id = 'ast-viz-controls';
+                                controls.innerHTML = '<div style="color: #a8b2d1; margin-top: 20px; font-size: 13px;">💡 Hover over nodes to highlight them</div>';
+                                container.appendChild(controls);
+                            }
+
+                            render();
+                        })();
+                        </script>
+
+                        <h4>Reading the Tree Diagram</h4>
+                        <p>In the visualization above:</p>
+                        <ul>
+                            <li><strong>Purple nodes</strong> represent <code>Add</code> operations</li>
+                            <li><strong>Pink nodes</strong> represent <code>Var</code> (variable references)</li>
+                            <li><strong>Blue nodes</strong> represent <code>Num</code> (numeric literals)</li>
+                            <li><strong>Labels on lines</strong> show the field names (<code>left</code> and <code>right</code>)</li>
+                        </ul>
+
+                        <h4>Node Structure</h4>
+                        <p>Each node in the tree has:</p>
+                        <ul>
+                            <li>A <strong>type</strong> (Add, Var, Num in this example)</li>
+                            <li><strong>Fields</strong> that contain either child nodes or data:
+                                <ul>
+                                    <li><code>Add</code> nodes have <code>left</code> and <code>right</code> children</li>
+                                    <li><code>Var</code> nodes have a <code>name</code> field (string)</li>
+                                    <li><code>Num</code> nodes have a <code>val</code> field (number)</li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <blockquote>
+                            <strong>Design principle:</strong> "The structure of your computation should follow the structure of your data" (CPSC 110 wisdom). The tree structure naturally guides how we'll write code to process it.
+                        </blockquote>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- WHY "ABSTRACT" SYNTAX? -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Why "Abstract" Syntax?</h3>
+
+                        <h4>Concrete vs. Abstract</h4>
+                        <p>The word "abstract" in AST is important. It means we've <em>abstracted away</em> details that don't affect the meaning of the program.</p>
+
+                        <p><strong>Concrete syntax</strong> includes <em>everything</em> the programmer wrote:</p>
+                        <pre><code class="language-javascript">(x + 3)</code></pre>
+                        <p>This includes:</p>
+                        <ul>
+                            <li>Parentheses <code>( )</code></li>
+                            <li>Whitespace (spaces, tabs, newlines)</li>
+                            <li>The exact token sequence</li>
+                        </ul>
+
+                        <p><strong>Abstract syntax</strong> keeps only what's <em>semantically meaningful</em>:</p>
+                        <pre><code class="language-javascript">Add(left: Var("x"), right: Num(3))</code></pre>
+                        <p>Notice what's missing:</p>
+                        <ul>
+                            <li>❌ No parentheses (the tree structure makes precedence clear)</li>
+                            <li>❌ No whitespace (doesn't affect meaning)</li>
+                            <li>✅ Just the essential structure: an Add operation with two operands</li>
+                        </ul>
+
+                        <h4>Benefits of Abstraction</h4>
+                        <p>Why remove these details?</p>
+                        <ol>
+                            <li><strong>Simplicity:</strong> Fewer details to track means simpler code for analysis, optimization, and execution</li>
+                            <li><strong>Uniformity:</strong> <code>(x+3)</code>, <code>( x + 3 )</code>, and <code>(  x  +  3  )</code> all produce the same AST</li>
+                            <li><strong>Focus on semantics:</strong> When writing an interpreter or type checker, you care about what the code <em>means</em>, not how it's formatted</li>
+                        </ol>
+
+                        <p><mark>Important caveat:</mark> This means you <strong>cannot reconstruct the exact original source code</strong> from an AST. The AST has <em>forgotten</em> the formatting details. This is intentional!</p>
+
+                        <h4>Example: Python's AST Module</h4>
+                        <p>For a real-world example of a complete AST design, check out <a href="https://docs.python.org/3/library/ast.html" target="_blank">Python's <code>ast</code> module</a>. You can parse any Python code and see its AST representation, which is excellent for understanding how ASTs work in practice.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- DESIGNING AST CLASSES -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Designing AST Classes</h3>
+
+                        <h4>Exercise 1: Building an Add Node</h4>
+                        <p>Let's think through how to design an <code>Add</code> class that can represent expressions like <code>(x + 3)</code>, <code>(3 + 3)</code>, <code>(x + x)</code>, and <code>(x + (x+3))</code>.</p>
+
+                        <p><strong>Question:</strong> What fields should the <code>Add</code> class have? What should their types be?</p>
+
+                        <p><strong>Answer:</strong></p>
+                        <pre><code class="language-java">class Add {
+    Expression left;
+    Expression right;
+}</code></pre>
+
+                        <p><strong>Why <code>Expression</code> type?</strong> Because each side of the addition can be:</p>
+                        <ul>
+                            <li>A number: <code>Num(3)</code></li>
+                            <li>A variable: <code>Var("x")</code></li>
+                            <li>Another addition: <code>Add(...)</code></li>
+                            <li>Or any other kind of expression in our language</li>
+                        </ul>
+
+                        <p>We need a <strong>supertype</strong> that captures all possible expression types. We call this <code>Expression</code> (some languages call it <code>Expr</code> or <code>ASTNode</code>).</p>
+
+                        <h4>Alternative Design: Variable Number of Operands</h4>
+                        <p><strong>Bonus question:</strong> How would you support an arbitrary number of operands, like <code>x + 3 + 8 + 9 + 10 + y</code>?</p>
+
+                        <p><strong>Answer:</strong> Instead of <code>left</code> and <code>right</code> fields, use a list:</p>
+                        <pre><code class="language-java">class Add {
+    List&lt;Expression&gt; operands;
+}</code></pre>
+
+                        <p>This is a design choice with trade-offs:</p>
+                        <ul>
+                            <li>✅ <strong>Pros:</strong> More flexible, can represent n-ary operations naturally</li>
+                            <li>❌ <strong>Cons:</strong> More complex to process (need to handle empty lists, single-element lists), less type-safe</li>
+                        </ul>
+
+                        <p>For most DSLs, the <code>left</code>/<code>right</code> approach is simpler and sufficient.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- COMMON AST CLASS HIERARCHY -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Common AST Class Hierarchy</h3>
+
+                        <p>Most programming languages organize their AST classes into a hierarchy that reflects the different <em>roles</em> nodes can play. Here's a typical structure:</p>
+
+                        <pre><code class="language-java">// Root type - everything in the AST is a Node
+abstract class Node { }
+
+// Expressions evaluate to a value and don't modify state
+abstract class Expression extends Node { }
+
+// Statements don't evaluate to a value; they affect state
+abstract class Statement extends Node { }
+
+// Specific expression types
+class Add extends Expression {
+    Expression left;
+    Expression right;
+}
+
+class Var extends Expression {
+    String name;
+}
+
+class Num extends Expression {
+    int value;
+}
+
+// Specific statement types
+class Assignment extends Statement {
+    String varName;
+    Expression value;
+}
+
+class Return extends Statement {
+    Expression value;
+}
+
+// Hybrid: wraps an expression as a statement
+class ExprStatement extends Statement {
+    Expression expr;
+}</code></pre>
+
+                        <h4>Understanding Expressions vs. Statements</h4>
+
+                        <p><strong>Expressions</strong> are language constructs that:</p>
+                        <ul>
+                            <li>✅ Evaluate to a value</li>
+                            <li>❌ Generally don't modify program state (no side effects)</li>
+                            <li>Examples: <code>x + 3</code>, <code>foo(2)</code>, <code>"hello"</code>, <code>true &amp;&amp; false</code></li>
+                        </ul>
+
+                        <p><strong>Statements</strong> are language constructs that:</p>
+                        <ul>
+                            <li>❌ Don't generally evaluate to a value</li>
+                            <li>✅ Affect the evaluation state (side effects)</li>
+                            <li>Examples: <code>x = 5</code>, <code>return x</code>, <code>if (...) { ... }</code>, <code>print("hello")</code></li>
+                        </ul>
+
+                        <blockquote>
+                            <strong>Language design note:</strong> Some languages blur this distinction. In Python, everything is an expression (even assignments return values). In functional languages like Haskell, there are only expressions. But for imperative languages like Java, C, or JavaScript, the expression/statement distinction is fundamental.
+                        </blockquote>
+
+                        <h4>ExprStatement: The Bridge</h4>
+                        <p>Sometimes you need to use an expression in a statement context. For example, in Java:</p>
+                        <pre><code class="language-java">foo(2);  // Function call used as a statement</code></pre>
+
+                        <p>The function call <code>foo(2)</code> is an expression (it returns a value), but we're using it as a statement (we're discarding the return value). The <code>ExprStatement</code> class wraps an expression to make it usable in statement contexts.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- EXPRESSIONS VS STATEMENTS IN PRACTICE -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Identifying Expressions and Statements</h3>
+
+                        <p>Let's practice identifying which parts of a program are expressions vs. statements. Consider this Python code:</p>
+                        <pre><code class="language-python">def foo(x):
+    return x + 3
+
+foo(2)</code></pre>
+
+                        <p>And this equivalent Racket (Lisp) code:</p>
+                        <pre><code class="language-scheme">(define (foo x) (+ x 3))
+
+(foo 2)</code></pre>
+
+                        <h4>Analysis</h4>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Code Fragment</th>
+                                    <th>Expression or Statement?</th>
+                                    <th>Why?</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>def foo(x): ...</code></td>
+                                    <td>Statement</td>
+                                    <td>Defines a function (modifies the environment), doesn't evaluate to a value in typical usage</td>
+                                </tr>
+                                <tr>
+                                    <td><code>return x + 3</code></td>
+                                    <td>Statement</td>
+                                    <td>Control flow statement that exits the function</td>
+                                </tr>
+                                <tr>
+                                    <td><code>x + 3</code></td>
+                                    <td>Expression</td>
+                                    <td>Evaluates to a value (the sum)</td>
+                                </tr>
+                                <tr>
+                                    <td><code>foo(2)</code></td>
+                                    <td>Expression</td>
+                                    <td>Function call that evaluates to a value</td>
+                                </tr>
+                                <tr>
+                                    <td><code>(define (foo x) ...)</code></td>
+                                    <td>Expression (in Lisp)</td>
+                                    <td>In Lisp/Scheme, everything is an expression; <code>define</code> evaluates to a function value</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p><mark>Interesting observation:</mark> The <em>same concept</em> (defining a function) is a statement in Python but an expression in Lisp. This shows how language design choices affect AST structure.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- AST DESIGN EXERCISE -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Exercise 2: Drawing ASTs</h3>
+
+                        <p>Let's practice drawing ASTs for the function definition examples. This exercise helps you think about how different syntaxes can map to similar abstract structures.</p>
+
+                        <h4>Python Version</h4>
+                        <pre><code class="language-python">def foo(x):
+    return x + 3</code></pre>
+
+                        <p><strong>Possible AST:</strong></p>
+                        <pre><code class="language-javascript">FnDef(
+    name: "foo",
+    argnames: ["x"],
+    body: [
+        Return(
+            val: Plus(
+                left: Var("x"),
+                right: Num(3)
+            )
+        )
+    ]
+)</code></pre>
+
+                        <h4>Racket Version</h4>
+                        <pre><code class="language-scheme">(define (foo x) (+ x 3))</code></pre>
+
+                        <p><strong>Possible AST:</strong></p>
+                        <pre><code class="language-javascript">Def(
+    name: "foo",
+    value: Lambda(
+        argnames: ["x"],
+        body: Plus(
+            left: Var("x"),
+            right: Num(3)
+        )
+    )
+)</code></pre>
+
+                        <h4>Key Observations</h4>
+                        <ol>
+                            <li><strong>Different concrete syntax, similar abstract syntax:</strong> Both languages are doing the same thing (defining a function), so the ASTs are structurally similar</li>
+                            <li><strong>Syntactic sugar revealed:</strong> In Racket, <code>(define (foo x) ...)</code> is syntactic sugar for <code>(define foo (lambda (x) ...))</code>. The AST makes this explicit!</li>
+                            <li><strong>Language-specific choices:</strong> Python requires a <code>return</code> statement; Racket just evaluates the body expression</li>
+                            <li><strong>No "right" answer:</strong> There are multiple valid ways to design these ASTs. What matters is consistency and suitability for your use case</li>
+                        </ol>
+
+                        <blockquote>
+                            <strong>Important:</strong> The professor doesn't expect you to draw ASTs exactly like theirs. The point of the exercise is to practice thinking about the tree-like structure of programs and making reasonable design decisions.
+                        </blockquote>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- PROCESSING ASTs -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Processing ASTs: The Recursive Pattern</h3>
+
+                        <p>Once you have an AST, how do you actually <em>do something</em> with it? The answer is beautifully simple: <strong>recursion</strong>.</p>
+
+                        <h4>The Core Principle (CPSC 110 Wisdom)</h4>
+                        <blockquote>
+                            "The structure of your computation should follow the structure of your data"
+                        </blockquote>
+
+                        <p>Since the AST is a tree (a recursive data structure), your code to process it should be recursive. Let's see this in action.</p>
+
+                        <h4>Example: Evaluating an Expression</h4>
+                        <p>Suppose we want to evaluate <code>(x + 3) + (4 + (x + 5))</code> where <code>x = 2</code>.</p>
+
+                        <p>Here's pseudocode for an evaluator:</p>
+                        <pre><code class="language-javascript">function eval(node, environment) {
+    if (node is Add) {
+        leftVal = eval(node.left, environment);
+        rightVal = eval(node.right, environment);
+        return leftVal + rightVal;
+    }
+    else if (node is Var) {
+        return environment.lookup(node.name);
+    }
+    else if (node is Num) {
+        return node.value;
+    }
+}</code></pre>
+
+                        <h4>Why This Works</h4>
+                        <p>Let's trace through evaluating the root <code>Add</code> node:</p>
+                        <ol>
+                            <li><code>eval(Add)</code> calls <code>eval(node.left)</code> and <code>eval(node.right)</code></li>
+                            <li>Each of those calls evaluates its subtree recursively</li>
+                            <li>Base cases (<code>Var</code> and <code>Num</code>) don't recurse—they just return values</li>
+                            <li>Values bubble up from leaves to root</li>
+                            <li>Final result: <code>(2 + 3) + (4 + (2 + 5)) = 5 + 11 = 16</code></li>
+                        </ol>
+
+                        <p><mark>Key insight:</mark> The evaluator's structure <em>mirrors</em> the AST's structure. One function case per node type. Recursion follows the tree's recursion. This pattern is called the <strong>Visitor Pattern</strong> in object-oriented design.</p>
+
+                        <h4>Beyond Evaluation</h4>
+                        <p>This same recursive pattern works for:</p>
+                        <ul>
+                            <li><strong>Type checking:</strong> Recursively infer/check types of subexpressions</li>
+                            <li><strong>Code generation:</strong> Recursively generate machine code or bytecode</li>
+                            <li><strong>Pretty printing:</strong> Recursively format and print the AST back as source code</li>
+                            <li><strong>Optimization:</strong> Recursively find and transform inefficient patterns</li>
+                        </ul>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- PROJECT CONNECTIONS -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Connection to Course Projects</h3>
+
+                        <p>Understanding ASTs is directly relevant to your course projects:</p>
+
+                        <h4>Project 1: Building Your DSL</h4>
+                        <p>In Project 1, you'll <strong>build an AST for your own language</strong>. You'll:</p>
+                        <ul>
+                            <li>Design AST node classes for your language constructs</li>
+                            <li>Write a parser that produces your AST from input strings</li>
+                            <li>Implement an evaluator (or compiler) that processes your AST</li>
+                        </ul>
+
+                        <h4>Project 2: Static Analysis</h4>
+                        <p>If you build a static analysis tool in Project 2, you'll <strong>interact with the AST of a conventional language</strong> (likely Python, JavaScript, or Java). You'll:</p>
+                        <ul>
+                            <li>Parse existing code using a library (e.g., Python's <code>ast</code> module)</li>
+                            <li>Walk the AST to find patterns, check properties, or gather metrics</li>
+                            <li>Report findings to help developers improve their code</li>
+                        </ul>
+
+                        <blockquote>
+                            <strong>Spoiler alert:</strong> The AST is the interface between these projects. P1 teaches you to build ASTs; P2 teaches you to analyze them. Together, you'll understand the full lifecycle of structured program representation.
+                        </blockquote>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- EXIT TICKETS -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Exit Ticket Questions</h3>
+
+                        <p>The lecture ended with two questions to check understanding:</p>
+
+                        <h4>Q1: True or False: Given a concrete syntax, there is only one possible AST design.</h4>
+                        <p><strong>Answer: False</strong></p>
+                        <p><strong>Explanation:</strong> AST design involves many choices:</p>
+                        <ul>
+                            <li>How many node types to have (fine-grained vs. coarse-grained)</li>
+                            <li>Whether to use binary operations (left/right) or n-ary operations (list of operands)</li>
+                            <li>How to represent syntactic sugar (explicitly vs. desugared)</li>
+                            <li>What information to store in nodes (source locations, type annotations, etc.)</li>
+                        </ul>
+                        <p>Different designs have different trade-offs. There's no single "correct" AST for a given language.</p>
+
+                        <h4>Q2: True or False: Given an AST, I should be able to map it back to exactly the same code the user wrote.</h4>
+                        <p><strong>Answer: False</strong></p>
+                        <p><strong>Explanation:</strong> The AST has <em>abstracted away</em> formatting details that don't affect semantics:</p>
+                        <ul>
+                            <li>Parentheses (precedence is encoded in tree structure)</li>
+                            <li>Whitespace (spaces, tabs, newlines)</li>
+                            <li>Comments (not part of executable semantics)</li>
+                            <li>Exact token positions</li>
+                        </ul>
+                        <p>You can generate <em>functionally equivalent</em> code from an AST, but you can't recover the exact original formatting. That's intentional—it's what "abstract" means!</p>
+                        <p><em>Note:</em> Some tools (like IDEs) use <strong>Concrete Syntax Trees</strong> or <strong>annotated ASTs</strong> that preserve formatting information for refactoring tools and formatters. But traditional ASTs do not.</p>
+                    </article>
+
+                    <!-- ============================================ -->
+                    <!-- SUMMARY AND NEXT STEPS -->
+                    <!-- ============================================ -->
+                    <article>
+                        <h3>Summary and Key Takeaways</h3>
+
+                        <h4>What We Learned</h4>
+                        <ul>
+                            <li>✅ <strong>ASTs are the central data structure</strong> in language processing, connecting syntax to semantics</li>
+                            <li>✅ <strong>Trees naturally represent nesting and recursion</strong> in programming languages</li>
+                            <li>✅ <strong>"Abstract" means simplified</strong>—we remove syntactic details that don't affect meaning</li>
+                            <li>✅ <strong>Common hierarchy:</strong> Node → Expression/Statement → specific types</li>
+                            <li>✅ <strong>Processing ASTs uses recursion</strong>—the computation structure follows the data structure</li>
+                            <li>✅ <strong>Many valid AST designs</strong> exist for any given language</li>
+                        </ul>
+
+                        <h4>Memory Aids</h4>
+                        <p>To remember the key concepts:</p>
+                        <ul>
+                            <li>🌳 <strong>AST = Abstract Syntax Tree</strong>—"Abstract" is not just a fancy word; it means we've removed non-semantic details</li>
+                            <li>🔄 <strong>"Structure follows structure"</strong>—your code to process an AST should mirror the tree's recursive structure</li>
+                            <li>📊 <strong>Expression vs. Statement:</strong> "Expressions have values, statements have effects"</li>
+                        </ul>
+
+                        <h4>Looking Ahead</h4>
+                        <p>With ASTs understood, we can now dive deeper into:</p>
+                        <ul>
+                            <li>How to <strong>parse</strong> source code to build ASTs</li>
+                            <li>How to perform <strong>static analysis</strong> on ASTs (type checking, linting)</li>
+                            <li>How to <strong>evaluate or compile</strong> ASTs to produce results</li>
+                            <li>How to design ASTs that are <strong>easy to extend and maintain</strong></li>
+                        </ul>
+                    </article>
+                </div>
+            </section>
+
+            <section class="topics">
+                <h2>Topics Covered</h2>
+                <ul id="topics-list">
+                    <li>Understanding the DSL processing pipeline (Tokenization → Parsing → AST → Static/Dynamic Checks → Evaluation)</li>
+                    <li>Defining Abstract Syntax Trees (ASTs) and their role as the central data structure in language processing</li>
+                    <li>Distinguishing between concrete syntax (what's written) and abstract syntax (semantic structure)</li>
+                    <li>Designing AST node class hierarchies (Node, Expression, Statement patterns)</li>
+                    <li>Identifying expressions vs. statements in programming languages</li>
+                    <li>Processing ASTs using recursive patterns following data structure</li>
+                    <li>Connecting AST concepts to Projects 1 and 2 (building and analyzing DSLs)</li>
+                </ul>
+            </section>
+
+            <section class="assignments">
+                <h2>Assignments & Action Items</h2>
+                <ul id="assignments-list">
+                    <li><strong>Practice Exercise:</strong> Design AST node classes for your Project 1 DSL based on the patterns learned (Node → Expression/Statement hierarchy)</li>
+                    <li><strong>Reading:</strong> Explore <a href="https://docs.python.org/3/library/ast.html" target="_blank">Python's ast module documentation</a> to see a real-world example of AST design</li>
+                    <li><strong>Reflection:</strong> Review the exit ticket questions and ensure you understand why both answers are "False"</li>
+                    <li><strong>Project Work:</strong> Begin sketching the AST structure for your DSL, considering which constructs should be expressions vs. statements</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="../../index.html#cpsc410" class="back-link">← Back to CPSC_410</a>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+</body>
+</html>
