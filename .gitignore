@@ -1,6 +1,9 @@
 # PDFs
 *.pdf
 
+# Converted PDF text files (midterm prep)
+CPSC_404_Advanced_Relational_Databases/midterm\ 1\ prep/*.txt
+
 # Dependencies
 node_modules/
 

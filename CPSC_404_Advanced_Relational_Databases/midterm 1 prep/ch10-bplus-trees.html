@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 10: B+ Tree Indexes - CPSC 404</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        .concept-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        .algorithm-box {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        .formula-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+        .comparison-table th, .comparison-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+        .comparison-table th {
+            background: var(--bg-color);
+            color: var(--secondary-color);
+        }
+        .key-point {
+            background: #dcfce7;
+            border-left: 4px solid #22c55e;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+        .example-box {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 8px;
+        }
+        .warning-box {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        .tree-diagram {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            margin: 16px 0;
+            border-radius: 8px;
+            font-family: monospace;
+            white-space: pre;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="../../index.html">Home</a> &gt;
+            <a href="../index.html">CPSC 404</a> &gt;
+            <a href="index.html">Midterm 1 Prep</a> &gt;
+            Chapter 10
+        </div>
+
+        <div class="lecture-header">
+            <h1>Chapter 10: B+ Tree Indexes</h1>
+            <div class="lecture-meta">
+                <span>CPSC 404</span>
+                <span>Midterm 1 Material</span>
+            </div>
+        </div>
+
+        <div class="lecture-content">
+            <section>
+                <h2>Learning Goals</h2>
+                <ul>
+                    <li>List the 3 alternatives for representing data entries in an index</li>
+                    <li>Explain how Alt. 1, Alt. 2, and Alt. 3 indexes differ</li>
+                    <li>Build a B+ tree for a given set of data; show insertion and deletion</li>
+                    <li>Analyze complexity of search, insert, delete: O(log<sub>F</sub> N)</li>
+                    <li>Explain why B+ trees need sibling pointers for leaf pages</li>
+                    <li>Explain why B+ trees tend to be very shallow</li>
+                    <li>Show difference between clustered and unclustered indexes</li>
+                    <li>Compute size of Alt. 1, Alt. 2, Alt. 3 B+ trees with different fill factors</li>
+                    <li>Build a B+ tree using bulk loading</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Why Indexing?</h2>
+                <div class="concept-box">
+                    <p>We want to keep lots of data about entities (shipping records, customer records, etc.) while maintaining good performance.</p>
+                    <p><strong>Indexing enables both!</strong> Search 100 million records in real time.</p>
+                </div>
+
+                <p>The alternative (scanning the data table) could take a very long time.</p>
+                <p><strong>Analogy:</strong> Using the index at the back of a textbook.</p>
+
+                <div class="key-point">
+                    SQL queries perform exact matches in indexes - spelling matters! (Unlike Google's forgiving search)
+                </div>
+            </section>
+
+            <section>
+                <h2>Index Entries vs. Data Entries</h2>
+
+                <h3>Index Entry</h3>
+                <ul>
+                    <li>A &lt;key, pointer&gt; pair on an <strong>internal</strong> index page</li>
+                    <li>Directs traffic inside the tree, above the leaf level</li>
+                    <li>Pointer is an index page address</li>
+                </ul>
+
+                <h3>Data Entry</h3>
+                <ul>
+                    <li>A &lt;key, pointer&gt; pair in <strong>leaf</strong> pages</li>
+                    <li>Pointer is a RID (record ID) pointing to data table record</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Three Alternatives for Data Entries (k*)</h2>
+
+                <table class="comparison-table">
+                    <tr><th>Alternative</th><th>Format</th><th>Description</th></tr>
+                    <tr>
+                        <td><strong>Alt. 1</strong></td>
+                        <td>&lt;entire record with key k&gt;</td>
+                        <td>Whole data record stored in index leaf (automatically clustered)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Alt. 2</strong></td>
+                        <td>&lt;k, rid&gt;</td>
+                        <td>Key and single record ID (most common)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Alt. 3</strong></td>
+                        <td>&lt;k, list of rids&gt;</td>
+                        <td>Key and list of record IDs (good for duplicates)</td>
+                    </tr>
+                </table>
+
+                <div class="concept-box">
+                    <ul>
+                        <li><strong>Alt. 1</strong> is automatically a clustering index (data IS in the index)</li>
+                        <li><strong>Alt. 2 and Alt. 3</strong> are always dense (one data entry per row in table)</li>
+                        <li><strong>Alt. 3</strong> deals better with lots of duplicate search keys</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section>
+                <h2>B+ Tree Structure</h2>
+
+                <div class="formula-box">
+                    <strong>Complexity:</strong> Search, Insert, Delete = O(log<sub>F</sub> N)<br>
+                    where F = fanout, N = # leaf pages
+                </div>
+
+                <h3>Key Properties</h3>
+                <ul>
+                    <li><strong>Dynamic and balanced</strong> - adjusts gracefully for insertions/deletions</li>
+                    <li>Each node contains d &le; m &le; 2d entries (d = order of tree)</li>
+                    <li>Fan-out for a node with m keys = m + 1</li>
+                    <li>All leaf pages at same level (height-balanced)</li>
+                    <li><strong>Non-root nodes must be at least half full</strong></li>
+                </ul>
+
+                <div class="tree-diagram">
+                        Root: [13 | 17 | 24 | 30]
+                             /    |     |     |    \
+    [2* 3*] [5* 7*] [14* 16*] [19* 20* 22*] [24* 27* 29*] [33* 34* 38* 39*]
+
+    (* = data entry in leaf page)
+    Leaves are linked with sibling pointers for range queries
+                </div>
+            </section>
+
+            <section>
+                <h2>Insertion Algorithm</h2>
+
+                <div class="algorithm-box">
+                    <ol>
+                        <li>Find correct leaf L</li>
+                        <li>Put data entry onto L</li>
+                        <li>If L has enough space, <strong>done!</strong></li>
+                        <li>Else, <strong>split L</strong> into L and new node L2:
+                            <ul>
+                                <li>Redistribute entries evenly</li>
+                                <li><strong>Copy up</strong> middle key to parent</li>
+                                <li>Insert index entry pointing to L2 into parent</li>
+                            </ul>
+                        </li>
+                        <li>This can happen recursively up the tree</li>
+                    </ol>
+                </div>
+
+                <div class="key-point">
+                    <strong>Key Difference:</strong>
+                    <ul>
+                        <li><strong>Leaf split:</strong> COPY UP the middle key (key remains in leaf)</li>
+                        <li><strong>Internal split:</strong> PUSH UP/MOVE UP the middle key (key moves to parent)</li>
+                    </ul>
+                </div>
+
+                <p>Splits "grow" the tree - only a root split increases the height.</p>
+            </section>
+
+            <section>
+                <h2>Deletion Algorithm</h2>
+
+                <div class="algorithm-box">
+                    <ol>
+                        <li>Start at root, find leaf L where data entry belongs</li>
+                        <li>Remove the entry</li>
+                        <li>If L is at least half-full, <strong>done!</strong></li>
+                        <li>If L has only d-1 entries:
+                            <ul>
+                                <li>Try to <strong>re-distribute</strong> (borrow from sibling)</li>
+                                <li>If redistribution fails, <strong>merge</strong> L and sibling</li>
+                            </ul>
+                        </li>
+                        <li>If merging occurred, delete entry from parent</li>
+                        <li>Merging can propagate to root, decreasing height</li>
+                    </ol>
+                </div>
+
+                <h3>Redistribution</h3>
+                <ul>
+                    <li>Borrow entry from adjacent sibling with same parent</li>
+                    <li>Update parent's separator key</li>
+                </ul>
+
+                <h3>Merging</h3>
+                <ul>
+                    <li>Combine L and sibling into one node</li>
+                    <li>"Pull down" separator key from parent</li>
+                    <li>Delete the entry pointing to merged-away node</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>B+ Tree Statistics (Practical)</h2>
+
+                <table class="comparison-table">
+                    <tr><th>Parameter</th><th>Typical Value</th></tr>
+                    <tr><td>Order (d)</td><td>100</td></tr>
+                    <tr><td>Fill factor</td><td>67%</td></tr>
+                    <tr><td>Average fanout</td><td>133</td></tr>
+                </table>
+
+                <h3>Capacity by Height</h3>
+                <div class="formula-box">
+                    <p><strong>Height 4:</strong> 133<sup>4</sup> = 312,900,721 leaf pages</p>
+                    <p><strong>Height 3:</strong> 133<sup>3</sup> = 2,352,637 leaf pages</p>
+                </div>
+
+                <h3>Buffer Pool Implications</h3>
+                <ul>
+                    <li>Level 0 (root) = 1 page = 4 KB</li>
+                    <li>Level 1 = 133 pages = ~0.5 MB</li>
+                    <li>Level 2 = 17,689 pages = ~69 MB</li>
+                </ul>
+                <div class="key-point">
+                    For busy indexes, top levels are often kept in buffer pool!
+                </div>
+            </section>
+
+            <section>
+                <h2>DB2 Metadata for B+ Trees</h2>
+                <ul>
+                    <li><strong>NEAROFFPOSF / FAROFFPOSF:</strong> How many rows are away from their ideal data page</li>
+                    <li><strong>LEAFDIST:</strong> 100 &times; avg # of physical pages between successive logical leaf pages</li>
+                    <li><strong>CLUSTERRATIOF:</strong> 100% = perfect match between index and data ordering
+                        <ul>
+                            <li>As it drops, consider reorganizing</li>
+                        </ul>
+                    </li>
+                </ul>
+                <p>See SYSIBM.SYSINDEXES and SYSIBM.SYSINDEXPART for more metadata.</p>
+            </section>
+
+            <section>
+                <h2>Prefix Key Compression</h2>
+                <p>Increases fan-out for greater efficiency.</p>
+
+                <div class="example-box">
+                    <strong>Example:</strong> Adjacent entries "Danielle Miller", "David Smith", "Deepak Murthy"<br><br>
+                    Can abbreviate "David Smith" to "Dav" (or "Davi" if "Davey Jones" exists)<br><br>
+                    <strong>Rule:</strong> Compressed key must be greater than every key value in any subtree to its left.
+                </div>
+            </section>
+
+            <section>
+                <h2>Bulk Loading</h2>
+                <p>If you have a large collection of records, repeated INSERTs is very slow.</p>
+
+                <div class="algorithm-box">
+                    <strong>Bulk Loading Process:</strong>
+                    <ol>
+                        <li>Sort all data entries by key</li>
+                        <li>Insert pointer to first leaf page in new root</li>
+                        <li>Build tree from bottom up:
+                            <ul>
+                                <li>Index entries for leaf pages always enter right-most index page above leaf level</li>
+                                <li>When a node fills up, it splits (may propagate up right-most path)</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+
+                <h3>Advantages of Bulk Loading</h3>
+                <ul>
+                    <li>Much faster than repeated INSERTs</li>
+                    <li>Leaves stored sequentially and linked</li>
+                    <li>Fewer I/Os during building</li>
+                    <li>Better concurrency control and logging</li>
+                    <li>Can control fill factor (PCTFREE) and blank pages (FREEPAGE)</li>
+                </ul>
+
+                <h3>Problems with Repeated INSERTs</h3>
+                <ul>
+                    <li>Slow</li>
+                    <li>No sequential storage of leaves (unless pre-sorted and space pre-allocated)</li>
+                    <li>Lots of locking overhead</li>
+                    <li>Many log records generated</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Bulk Loading Steps (REORG)</h2>
+                <ol>
+                    <li>Backup the old table (full image copy)</li>
+                    <li>Unload (export) records from table</li>
+                    <li>Sort keys/records by clustering order</li>
+                    <li>Delete old table and indexes</li>
+                    <li>Allocate new table and index files (maybe with different parameters)</li>
+                    <li>Create indexes (CREATE INDEX) before loading</li>
+                    <li>Turn off logging for new table</li>
+                    <li>Bulk load table and indexes</li>
+                    <li>Backup new table (required before use in DB2)</li>
+                    <li>Run RUNSTATS and rebind query plans</li>
+                    <li>Turn logging back on</li>
+                    <li>Make table available to users</li>
+                </ol>
+            </section>
+
+            <section>
+                <h2>Fill Factors</h2>
+                <ul>
+                    <li>Consider 85% fill factor at load time for data pages (room for growth)</li>
+                    <li>Index pages can have different fill factor</li>
+                    <li>DB2 default for indexes: 90%</li>
+                    <li>Depends on expected growth, performance needs, reorg frequency</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Clustered vs Unclustered Indexes</h2>
+
+                <h3>Clustered Index</h3>
+                <ul>
+                    <li>Data sorted on search key before loading</li>
+                    <li>Data entries in leaf pages point to consecutively stored records</li>
+                    <li>Alt. 1 is automatically clustered</li>
+                    <li>Only ONE clustered index per table (data can only be sorted one way)</li>
+                </ul>
+
+                <h3>Unclustered Index</h3>
+                <ul>
+                    <li>Data entry order doesn't match data record order</li>
+                    <li>Following pointers may jump around the data file</li>
+                    <li>Can have multiple unclustered indexes per table</li>
+                </ul>
+
+                <div class="key-point">
+                    Over time, data gets out of order due to inserts/deletes/updates. The index still has correct RIDs but clustering degrades.
+                </div>
+            </section>
+
+            <section>
+                <h2>Summary</h2>
+                <ul>
+                    <li>Tree-structured indexes are very efficient for range and equality searches</li>
+                    <li>B+ tree is dynamic and balanced, adjusts for inserts/deletes</li>
+                    <li>High fanout means depth rarely &gt; 3 or 4</li>
+                    <li>O(log<sub>F</sub> N) cost for unique searches, insertions, deletions</li>
+                    <li>Almost always better than maintaining a sorted file</li>
+                    <li>In practice, ~67% average node occupancy</li>
+                    <li>Key compression increases fanout, reduces height</li>
+                    <li>Bulk loading is much faster than repeated INSERTs</li>
+                    <li><strong>B+ trees are the most widely-used index in DBMSs</strong> - one of the most optimized components!</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="index.html" class="back-link">&larr; Back to Midterm 1 Prep</a>
+        </footer>
+    </div>
+</body>
+</html>

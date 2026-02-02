@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 9c: Disk Scheduling, Metadata, Records & Pages - CPSC 404</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        .concept-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        .algorithm-box {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+        .comparison-table th, .comparison-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+        .comparison-table th {
+            background: var(--bg-color);
+            color: var(--secondary-color);
+        }
+        .key-point {
+            background: #dcfce7;
+            border-left: 4px solid #22c55e;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+        .example-box {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 8px;
+        }
+        .warning-box {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="../../index.html">Home</a> &gt;
+            <a href="../index.html">CPSC 404</a> &gt;
+            <a href="index.html">Midterm 1 Prep</a> &gt;
+            Chapter 9c
+        </div>
+
+        <div class="lecture-header">
+            <h1>Chapter 9c: Disk Scheduling, Metadata, Records & Pages</h1>
+            <div class="lecture-meta">
+                <span>CPSC 404</span>
+                <span>Midterm 1 Material</span>
+            </div>
+        </div>
+
+        <div class="lecture-content">
+            <section>
+                <h2>Learning Goals</h2>
+                <ul>
+                    <li>Explain why page requests may not be serviced immediately (contention)</li>
+                    <li>Compute service order using: FCFS, SSTF, Elevator (SCAN), and C-SCAN</li>
+                    <li>Give examples of metadata stored in a DBMS</li>
+                    <li>Write SQL queries to query RDBMS catalog tables</li>
+                    <li>Compare fixed-length vs. variable-length record layouts</li>
+                    <li>Explain why rows might be relocated on a page</li>
+                    <li>Justify use of free space (PCTFREE) and free pages (FREEPAGE)</li>
+                    <li>Perform calculations for records, pages, and free space</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Disk Service Time and Contention</h2>
+                <p>Requesting a page doesn't guarantee quick service due to <strong>contention</strong>:</p>
+                <ul>
+                    <li>Many DB users wanting pages on the same disk drive</li>
+                    <li>Non-DB users wanting pages on the same drive</li>
+                    <li>Single user with many processes/applications requesting service</li>
+                    <li>Overhead service routines (DBMS, OS, anti-virus, etc.)</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Disk Scheduling Algorithms</h2>
+
+                <div class="example-box">
+                    <strong>Example Setup:</strong><br>
+                    Head currently on cylinder 165 (just came from 164)<br>
+                    Request arrivals: 1400, 2500, 170, 160, 161, 3500, 162, 170
+                </div>
+
+                <h3>FCFS (First Come, First Served)</h3>
+                <div class="algorithm-box">
+                    <strong>Service Order:</strong> 1400, 2500, 170, 160, 161, 3500, 162, 170<br>
+                    <em>Process requests in order received</em>
+                </div>
+
+                <h3>SSTF (Shortest Seek Time First)</h3>
+                <div class="algorithm-box">
+                    <strong>Service Order:</strong> 162, 161, 160, 170, 170, 1400, 2500, 3500<br>
+                    <em>Always service the closest cylinder next</em>
+                </div>
+                <div class="warning-box">
+                    <strong>Potential Issue:</strong> Starvation - distant requests may never be serviced if closer requests keep arriving
+                </div>
+
+                <h3>Elevator Algorithm (SCAN)</h3>
+                <div class="algorithm-box">
+                    <strong>Service Order:</strong> 170, 170, 1400, 2500, 3500, 162, 161, 160<br>
+                    <em>Sweep back and forth across cylinders, servicing requests in both directions</em>
+                </div>
+                <ul>
+                    <li><strong>SCAN with LOOK:</strong> Only go as far as needed (don't go to extreme cylinders unless requested)</li>
+                    <li>New requests can be added while servicing</li>
+                </ul>
+
+                <h3>C-SCAN (Circular Scan)</h3>
+                <div class="algorithm-box">
+                    <em>Service requests in one direction only. On return trip, zoom back to beginning without servicing.</em>
+                </div>
+                <p><strong>Advantage:</strong> More uniform wait times across all cylinders</p>
+            </section>
+
+            <section>
+                <h2>Metadata</h2>
+                <div class="concept-box">
+                    <strong>Metadata = "data about data"</strong>
+                </div>
+
+                <h3>Email Metadata Examples</h3>
+                <ul>
+                    <li>Length of message</li>
+                    <li>To/From addresses</li>
+                    <li>Date/Time</li>
+                    <li>Routing information</li>
+                    <li>Message ID</li>
+                    <li>Subject line</li>
+                </ul>
+
+                <h3>Photo Metadata Examples</h3>
+                <ul>
+                    <li>Camera serial number</li>
+                    <li>GPS coordinates</li>
+                    <li>Camera type and settings</li>
+                    <li>Date and time</li>
+                    <li>File size</li>
+                </ul>
+
+                <div class="warning-box">
+                    <strong>Privacy Note:</strong> "Metadata absolutely tells you everything about somebody's life. If you have enough metadata you don't really need content." - Former NSA general counsel Stewart Baker
+                </div>
+            </section>
+
+            <section>
+                <h2>System Catalogs (DB2 Catalog)</h2>
+                <div class="key-point">
+                    <strong>Catalog tables contain metadata</strong> - extremely useful for DBAs and the DBMS itself!
+                </div>
+
+                <h3>Information Stored</h3>
+                <ul>
+                    <li># of records, # of unique keys</li>
+                    <li>Record layouts, column names, data types, field sizes</li>
+                    <li>Flags, permissions, creation times, creator IDs</li>
+                    <li>Authorization levels, buffer pool sizes</li>
+                    <li>B+ tree stats (# leaf pages, tree height, avg distance between leaves)</li>
+                    <li>Clustering ratios, relocated rows count</li>
+                </ul>
+
+                <h3>Major DB2 Catalog Tables</h3>
+                <ul>
+                    <li><strong>SYSIBM.SYSTABLES</strong> - Table information</li>
+                    <li><strong>SYSIBM.SYSINDEXES</strong> - Index information</li>
+                    <li><strong>SYSIBM.SYSKEYS</strong> - Key information</li>
+                </ul>
+
+                <h3>RUNSTATS Utility</h3>
+                <ul>
+                    <li>Gathers statistics and updates catalog tables</li>
+                    <li>Run on demand by DBA</li>
+                    <li>Stats not kept up-to-date continuously due to overhead</li>
+                </ul>
+
+                <h3>System Catalog Names by Vendor</h3>
+                <table class="comparison-table">
+                    <tr><th>Vendor</th><th>Name</th></tr>
+                    <tr><td>DB2</td><td>DB2 Catalog / System Catalog</td></tr>
+                    <tr><td>Oracle</td><td>Data Dictionary</td></tr>
+                    <tr><td>SQL Server</td><td>System Catalog</td></tr>
+                    <tr><td>MySQL</td><td>Information Schema</td></tr>
+                </table>
+            </section>
+
+            <section>
+                <h2>Record Formats</h2>
+
+                <h3>Fixed-Length Records</h3>
+                <div class="concept-box">
+                    <p>Fields F1, F2, F3, F4 with fixed lengths L1, L2, L3, L4</p>
+                    <p><strong>Address of field i:</strong> Base + L1 + L2 + ... + L(i-1)</p>
+                </div>
+                <ul>
+                    <li>Information about field types is same for all records</li>
+                    <li>Schema stored in DBMS catalog</li>
+                    <li>Finding the i-th field does NOT require scanning the whole record</li>
+                </ul>
+
+                <h3>Variable-Length Records</h3>
+                <p>Two alternative formats:</p>
+                <ol>
+                    <li><strong>Delimiter-based:</strong> Fields separated by special symbols ($)
+                        <ul>
+                            <li>Field Count: 4 | F1 $ | F2 $ | F3 $ | F4 $</li>
+                        </ul>
+                    </li>
+                    <li><strong>Array of field offsets:</strong> Pointers to each field
+                        <ul>
+                            <li>Direct access to i-th field</li>
+                            <li>Efficient storage of nulls</li>
+                            <li>Small directory overhead</li>
+                        </ul>
+                    </li>
+                </ol>
+            </section>
+
+            <section>
+                <h2>Page Formats</h2>
+
+                <h3>Fixed-Length Records: Two Approaches</h3>
+                <table class="comparison-table">
+                    <tr><th>Approach</th><th>Description</th><th>Trade-off</th></tr>
+                    <tr><td><strong>Packed</strong></td><td>Records packed consecutively, free space at end</td><td>Moving records changes RID (record ID)</td></tr>
+                    <tr><td><strong>Unpacked + Bitmap</strong></td><td>Fixed slots with bitmap tracking which are occupied</td><td>May have gaps, but RIDs stay stable</td></tr>
+                </table>
+
+                <div class="concept-box">
+                    <strong>Record ID (RID):</strong> &lt;page id, slot #&gt;
+                </div>
+
+                <h3>Variable-Length Records</h3>
+                <ul>
+                    <li>Use a <strong>slot directory</strong> at bottom of page</li>
+                    <li>Directory contains: # of slots, pointer to free space, offset for each record</li>
+                    <li>Can move records on page without changing RID</li>
+                    <li>Defragmentation gives bigger blocks of contiguous space</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Modifying Variable-Length Rows</h2>
+                <p>Can be done in place if no variable-length field changes size.</p>
+
+                <h3>If Row Increases in Size (in order of preference):</h3>
+                <ol>
+                    <li>Update in place if there is room</li>
+                    <li>Relocate on same page (perhaps after defragmentation)</li>
+                    <li>Relocate to a "near" page (within 16 pages in DB2)</li>
+                    <li>Relocate to a "far" page</li>
+                </ol>
+            </section>
+
+            <section>
+                <h2>Planning for Growth: PCTFREE and FREEPAGE</h2>
+                <div class="key-point">
+                    At CREATE TABLESPACE time, DB2 allows specifying initial free space:
+                </div>
+
+                <h3>PCTFREE</h3>
+                <ul>
+                    <li>Percentage of each page reserved for future insertions and relocations</li>
+                    <li>Example: <code>PCTFREE 15</code> = 15% of each page left free during load</li>
+                </ul>
+
+                <h3>FREEPAGE</h3>
+                <ul>
+                    <li>How often to leave a completely blank page</li>
+                    <li>Example: <code>FREEPAGE 10</code> = after every 10 pages, leave a blank page</li>
+                </ul>
+
+                <h3>Related Catalog Columns (SYSIBM.SYSTABLEPART)</h3>
+                <ul>
+                    <li><strong>NEARINDREF:</strong> # of rows relocated to "near" pages</li>
+                    <li><strong>FARINDREF:</strong> # of rows relocated to "far" pages</li>
+                    <li>NEARINDREF + FARINDREF = total # of relocated rows</li>
+                </ul>
+
+                <div class="concept-box">
+                    When relocated rows become too numerous, consider running a <strong>REORG</strong>.
+                </div>
+            </section>
+
+            <section>
+                <h2>char() vs varchar() Comparison</h2>
+                <div class="example-box">
+                    <strong>Example:</strong> Compare char(20) vs varchar(20) with 2-byte length field<br><br>
+                    Scenario: 80% of time use 15 chars, 20% use 20 chars. 100,000 rows.<br><br>
+                    <strong>Variable-length:</strong> 0.8 &times; (2 + 15) + 0.2 &times; (2 + 20) = 13.6 + 4.4 = 18 bytes avg<br>
+                    Total: 18 &times; 100,000 = 1,800,000 bytes<br><br>
+                    <strong>Fixed-length:</strong> 20 bytes always<br>
+                    Total: 20 &times; 100,000 = 2,000,000 bytes<br><br>
+                    <strong>Savings:</strong> 200,000 bytes (10%)
+                </div>
+            </section>
+
+            <section>
+                <h2>Clustered vs. Unclustered Indexes</h2>
+                <h3>Clustered Index</h3>
+                <ul>
+                    <li>Data sorted on search key field before loading</li>
+                    <li>Leave some free space on each page for future inserts</li>
+                    <li>Data may get out of order during normal operations</li>
+                    <li>Index always has correct RIDs</li>
+                </ul>
+
+                <h3>Unclustered Index</h3>
+                <ul>
+                    <li>Data order doesn't match index order</li>
+                    <li>Following index entries may jump around the data file</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Summary</h2>
+                <ul>
+                    <li>Many page replacement algorithms manage buffer pool pages</li>
+                    <li>Contention and disk scheduling affect disk service times</li>
+                    <li>Disk scheduling algorithms: FCFS, SSTF, Elevator (SCAN), C-SCAN</li>
+                    <li>Metadata = "data about data" - stored in catalog tables</li>
+                    <li>Catalog tables are extremely useful to DBAs and the DBMS</li>
+                    <li>Both fixed-length and variable-length records are supported</li>
+                    <li>Rows can be relocated for various reasons (size changes, defragmentation)</li>
+                    <li>PCTFREE and FREEPAGE help manage table growth and clustering</li>
+                    <li>Page overhead bytes exist but are simplified in course calculations</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="index.html" class="back-link">&larr; Back to Midterm 1 Prep</a>
+        </footer>
+    </div>
+</body>
+</html>

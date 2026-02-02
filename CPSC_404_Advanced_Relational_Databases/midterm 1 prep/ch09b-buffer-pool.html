@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 9b: Buffer Pool Management - CPSC 404</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        .concept-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        .algorithm-box {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .warning-box {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+        .comparison-table th, .comparison-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+        .comparison-table th {
+            background: var(--bg-color);
+            color: var(--secondary-color);
+        }
+        .key-point {
+            background: #dcfce7;
+            border-left: 4px solid #22c55e;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+        .example-box {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="../../index.html">Home</a> &gt;
+            <a href="../index.html">CPSC 404</a> &gt;
+            <a href="index.html">Midterm 1 Prep</a> &gt;
+            Chapter 9b
+        </div>
+
+        <div class="lecture-header">
+            <h1>Chapter 9b: Buffer Pool Management</h1>
+            <div class="lecture-meta">
+                <span>CPSC 404</span>
+                <span>Midterm 1 Material</span>
+            </div>
+        </div>
+
+        <div class="lecture-content">
+            <section>
+                <h2>Learning Goals</h2>
+                <ul>
+                    <li>Explain the purpose of a DBMS buffer pool and justify why DBMS manages it (not OS)</li>
+                    <li>Provide an example of sequential flooding</li>
+                    <li>Explain tradeoffs between force/no force and steal/no steal</li>
+                    <li>Compute behavior of page replacement algorithms: FIFO, LRU, MRU, Clock, Extended Clock</li>
+                    <li>Create reference strings that produce worst-case performance for given algorithms</li>
+                    <li>Explain how page replacement policy affects I/O count</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Key Definitions</h2>
+                <ul>
+                    <li><strong>Buffer Pool:</strong> Part of RAM managed independently of the OS by the DBMS</li>
+                    <li><strong>Page:</strong> Smallest unit of transfer between disk and main memory (logical memory)</li>
+                    <li><strong>Page Frame:</strong> Location in physical memory (RAM) that holds a page</li>
+                    <li><strong>TLB (Translation Lookaside Buffer):</strong> Very fast L1 hardware cache to check if a page is in memory</li>
+                    <li><strong>Page Fault:</strong> Occurs when requested page is not in the buffer pool</li>
+                    <li><strong>Victim Page:</strong> The page chosen to be replaced</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Buffer Management Process</h2>
+                <div class="concept-box">
+                    <p><strong>Data must be in RAM for DBMS to operate on it.</strong></p>
+                    <p>A table of &lt;frame#, pageid&gt; pairs is maintained.</p>
+                </div>
+
+                <h3>When a Page is Requested</h3>
+                <ol>
+                    <li>If page is NOT in buffer pool:
+                        <ul>
+                            <li>Choose a frame for replacement</li>
+                            <li>If chosen frame is <strong>dirty</strong> (was updated), write it to disk first</li>
+                            <li>Read requested page into the chosen frame</li>
+                        </ul>
+                    </li>
+                    <li><strong>Pin</strong> the page and return its address
+                        <ul>
+                            <li>Pin = hold in memory, don't allow overwriting</li>
+                            <li>Add 1 to pin count (tracks multiple users of same page)</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <div class="key-point">
+                    <strong>A page is a candidate for replacement iff: pin count = 0</strong>
+                </div>
+
+                <h3>Key Concepts</h3>
+                <ul>
+                    <li><strong>Dirty Bit:</strong> Set when page has been modified</li>
+                    <li><strong>Pin Count:</strong> Number of active users of the page</li>
+                    <li><strong>Prefetching:</strong> If requests are predictable (e.g., table scans), pages can be prefetched</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Transactions and Commits</h2>
+                <ul>
+                    <li>A <strong>transaction</strong> is a series of one or more SQL statements</li>
+                    <li>After execution, user/program issues COMMIT to make changes permanent</li>
+                    <li>A transaction is <strong>committed</strong> when its log records reach disk</li>
+                    <li>Locks are released at COMMIT time (with Strict 2PL locking)</li>
+                    <li>An <strong>in-flight</strong> transaction hasn't been committed yet</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Force and Steal Policies</h2>
+
+                <h3>Force Policy</h3>
+                <p>At transaction commit time, <strong>force</strong> (write) the transaction's updated pages to disk.</p>
+
+                <h3>Steal Policy</h3>
+                <p>When buffer pool desperately needs a free page, we can <strong>steal</strong> a frame from an active transaction by writing its dirty page to disk.</p>
+
+                <table class="comparison-table">
+                    <tr><th></th><th>No Steal</th><th>Steal</th></tr>
+                    <tr><td><strong>Force</strong></td><td>Easiest to implement</td><td></td></tr>
+                    <tr><td><strong>No Force</strong></td><td></td><td>Desired (ARIES algorithm)</td></tr>
+                </table>
+
+                <div class="concept-box">
+                    <strong>ARIES Algorithm:</strong> Uses No Force + Steal. Can undo uncommitted transactions if necessary using saved logs.
+                </div>
+            </section>
+
+            <section>
+                <h2>Page Replacement Algorithms</h2>
+
+                <h3>FIFO (First In, First Out)</h3>
+                <ul>
+                    <li>Victim = oldest page in buffer pool</li>
+                    <li>Simple but not always optimal</li>
+                    <li><strong>Belady's Anomaly:</strong> Increasing buffer size can sometimes increase page faults!</li>
+                </ul>
+
+                <h3>LRU (Least Recently Used)</h3>
+                <ul>
+                    <li>Victim = page that hasn't been referenced for the longest time</li>
+                    <li>Generally good performance</li>
+                    <li>Susceptible to sequential flooding</li>
+                </ul>
+
+                <h3>MRU (Most Recently Used)</h3>
+                <ul>
+                    <li>Victim = page that has been most recently used</li>
+                    <li>Used by DB2's RUNSTATS utility</li>
+                    <li>Works well for repeated sequential scans</li>
+                </ul>
+
+                <h3>Clock Algorithm</h3>
+                <ul>
+                    <li>Each page gets a "second chance"</li>
+                    <li>Uses a reference bit (RB) - if referenced often, RB stays set</li>
+                    <li>Cycles through pages looking for victim (RB = 0)</li>
+                </ul>
+
+                <div class="algorithm-box">
+                    <strong>Clock Algorithm (on page fault):</strong><br><br>
+                    IF empty frame exists:<br>
+                    &nbsp;&nbsp;- Use it for new page<br>
+                    &nbsp;&nbsp;- Set RB = 1, timestamp = current time<br><br>
+                    ELSE until victim found:<br>
+                    &nbsp;&nbsp;- Find oldest page (oldest timestamp)<br>
+                    &nbsp;&nbsp;- IF RB = 0: this is victim, replace it, set new RB = 1<br>
+                    &nbsp;&nbsp;- ELSE: decrement RB to 0, update timestamp (second chance)
+                </div>
+
+                <div class="key-point">
+                    <strong>Worst case for Clock:</strong> All RBs are 1 and we cycle through all frames.
+                </div>
+            </section>
+
+            <section>
+                <h2>Extended Clock Algorithm</h2>
+                <p>Uses both <strong>Reference Bit (RB)</strong> and <strong>Dirty Bit (DB)</strong></p>
+
+                <table class="comparison-table">
+                    <tr><th>State (RB/DB)</th><th>Meaning</th><th>Becomes</th></tr>
+                    <tr><td>0/0 or 0/0*</td><td>Not used recently, clean (* = will need write)</td><td>Victim</td></tr>
+                    <tr><td>0/1</td><td>Not used recently, modified</td><td>0/0* (third chance)</td></tr>
+                    <tr><td>1/0</td><td>Used recently, clean</td><td>0/0 (second chance)</td></tr>
+                    <tr><td>1/1</td><td>Used recently, modified</td><td>0/1 (second chance)</td></tr>
+                </table>
+
+                <div class="concept-box">
+                    <strong>Note:</strong> Pages go from 0/0* to 1/1 upon reuse. The * indicates the page needs to be written when it becomes the victim.
+                </div>
+
+                <div class="example-box">
+                    <strong>Example Reference String:</strong> 7, 0, 1w, 2, 0, 3, 0w (w = write/modify)<br><br>
+                    Track: Page#^RB/DB for each frame after each access.
+                </div>
+            </section>
+
+            <section>
+                <h2>Sequential Flooding</h2>
+                <div class="warning-box">
+                    <strong>Sequential Flooding:</strong> A nasty situation caused by LRU + repeated sequential scans when # buffer frames &lt; # pages in file. Every page request causes a page fault!
+                </div>
+
+                <h3>Example Scenario</h3>
+                <ul>
+                    <li>Table X contains 9 pages</li>
+                    <li>Buffer pool has 8 frames</li>
+                    <li>5,000 customers in 100 pages</li>
+                    <li>Algorithm: For each customer record, read pages 1-9 from Table X</li>
+                </ul>
+
+                <p>With LRU: When we need page 9, we evict page 1 (least recently used). Then we need page 1 again for the next customer... page fault every time!</p>
+
+                <h3>Solutions</h3>
+                <ol>
+                    <li><strong>Process per customer page</strong> instead of per record</li>
+                    <li><strong>Change access order</strong> to reuse pages better</li>
+                    <li><strong>Use MRU</strong> instead of LRU for this workload</li>
+                    <li><strong>Increase buffer pool size</strong> to hold all pages</li>
+                </ol>
+            </section>
+
+            <section>
+                <h2>Why DBMS Manages Its Own Buffer Pool</h2>
+                <p>Why not let the OS handle buffer management?</p>
+                <ul>
+                    <li><strong>Portability:</strong> Different OS support means different behavior</li>
+                    <li><strong>Pin pages:</strong> DBMS needs to pin pages for concurrency control</li>
+                    <li><strong>Force pages:</strong> DBMS needs to force pages to disk for crash recovery</li>
+                    <li><strong>Adjust replacement policy:</strong> Based on access patterns in DB operations</li>
+                    <li><strong>Prefetch pages:</strong> Based on predictable access patterns</li>
+                    <li><strong>Temporal control:</strong> Some disk subsystems want this, but it's bad for DBMS</li>
+                </ul>
+
+                <div class="key-point">
+                    <strong>The DBMS needs control over events that most OS's don't need for their own paging:</strong> forcing pages to disk, controlling write order, working with files that span disks, and basing policies on predictable access patterns.
+                </div>
+            </section>
+
+            <section>
+                <h2>Summary</h2>
+                <ul>
+                    <li>Buffer Manager brings pages into RAM; pages stay until released</li>
+                    <li>Dirty pages are written to disk when the frame is chosen as victim</li>
+                    <li>Frame replacement depends on the page replacement policy</li>
+                    <li>Many algorithms exist: FIFO, LRU, MRU, Clock, Extended Clock, etc.</li>
+                    <li>Buffer Manager tries to prefetch multiple pages at a time</li>
+                    <li>DBMS needs its own buffer pool management because:
+                        <ul>
+                            <li>Can force pages to disk</li>
+                            <li>Control order of page writes (especially for logging)</li>
+                            <li>Work with files that span disks</li>
+                            <li>Control prefetching</li>
+                            <li>Base replacement on predictable access patterns</li>
+                        </ul>
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="index.html" class="back-link">&larr; Back to Midterm 1 Prep</a>
+        </footer>
+    </div>
+</body>
+</html>

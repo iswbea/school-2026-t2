@@ -256,6 +256,26 @@ header h1 {
     border-bottom: 2px solid var(--border-color);
 }
 
+.lecture-content h3 {
+    color: var(--secondary-color);
+    margin-top: 20px;
+    margin-bottom: 12px;
+    font-size: 1.1em;
+}
+
+.lecture-content ul, .lecture-content ol {
+    margin: 12px 0 12px 28px;
+}
+
+.lecture-content li {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.lecture-content li ul, .lecture-content li ol {
+    margin: 8px 0 8px 24px;
+}
+
 .notes-box {
     background: var(--bg-color);
     padding: 16px;

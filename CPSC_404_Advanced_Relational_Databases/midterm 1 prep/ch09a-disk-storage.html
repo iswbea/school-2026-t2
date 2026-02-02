@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 9a: Disk Storage - CPSC 404</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        .concept-box {
+            background: #eff6ff;
+            border-left: 4px solid var(--primary-color);
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+        }
+        .formula-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+        }
+        .comparison-table th, .comparison-table td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+        .comparison-table th {
+            background: var(--bg-color);
+            color: var(--secondary-color);
+        }
+        .key-point {
+            background: #dcfce7;
+            border-left: 4px solid #22c55e;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="../../index.html">Home</a> &gt;
+            <a href="../index.html">CPSC 404</a> &gt;
+            <a href="index.html">Midterm 1 Prep</a> &gt;
+            Chapter 9a
+        </div>
+
+        <div class="lecture-header">
+            <h1>Chapter 9a: Disk Storage</h1>
+            <div class="lecture-meta">
+                <span>CPSC 404</span>
+                <span>Midterm 1 Material</span>
+            </div>
+        </div>
+
+        <div class="lecture-content">
+            <section>
+                <h2>Learning Goals</h2>
+                <ul>
+                    <li>Explain the impact that disk activity has on DBMS query performance</li>
+                    <li>Draw the memory hierarchy and identify where database bottlenecks occur</li>
+                    <li>Compare cost, capacity, and speed across memory hierarchy levels</li>
+                    <li>Identify the components of a disk drive</li>
+                    <li>Calculate time to read/write pages, tracks, or cylinders given disk geometry</li>
+                    <li>Compute min, average, and max seek, rotation, and transfer times</li>
+                    <li>Explain optimal page placement on disk for performance</li>
+                    <li>Compare HDDs to SSDs and discuss performance implications</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Disk I/O Operations</h2>
+                <div class="concept-box">
+                    <p><strong>Key Insight:</strong> A DBMS stores information on hard disk drives and uses them extensively. This has major implications for DBMS design.</p>
+                </div>
+
+                <h3>Basic Operations</h3>
+                <ul>
+                    <li><strong>READ:</strong> Transfer data from disk to main memory (RAM)</li>
+                    <li><strong>WRITE:</strong> Transfer data from RAM to disk</li>
+                </ul>
+
+                <div class="key-point">
+                    <strong>Important:</strong> Both operations are high-cost relative to in-memory operations. Disk I/O must be planned carefully!
+                </div>
+
+                <h3>Pages and Blocks</h3>
+                <ul>
+                    <li>Data is stored and retrieved in units called <strong>blocks</strong> or <strong>pages</strong></li>
+                    <li>A page is the smallest unit of transfer between disk and main memory</li>
+                    <li>Default assumption: one 4K page = one block</li>
+                    <li>Unlike RAM, time to retrieve a disk page varies depending on its location</li>
+                    <li>Relative placement of pages on disk has major impact on DBMS performance</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Components of a Disk Drive</h2>
+                <ul>
+                    <li><strong>Platters:</strong> The disks that spin (e.g., 15,000 rpm)</li>
+                    <li><strong>Spindle:</strong> The central axis that platters rotate around</li>
+                    <li><strong>Surfaces:</strong> Each platter can have 2 surfaces (top/bottom)</li>
+                    <li><strong>Tracks:</strong> Concentric circles on a surface</li>
+                    <li><strong>Sectors:</strong> Subdivisions of a track; block size is a multiple of sector size</li>
+                    <li><strong>Cylinder:</strong> All tracks with the same track number across all surfaces</li>
+                    <li><strong>Arm Assembly:</strong> Moves in/out to position heads on desired track</li>
+                    <li><strong>Disk Head:</strong> One head per surface; only one reads/writes at a time</li>
+                </ul>
+
+                <div class="concept-box">
+                    <strong>Key Relationship:</strong> A circle on a disk surface represents a track. All tracks with the same number (across all surfaces) make up a cylinder.
+                </div>
+            </section>
+
+            <section>
+                <h2>Accessing a Disk Page</h2>
+                <p>Access time consists of three components:</p>
+
+                <div class="formula-box">
+                    <strong>Access Time = Seek Time + Rotational Delay + Transfer Time</strong>
+                </div>
+
+                <h3>1. Seek Time</h3>
+                <ul>
+                    <li>Time to move the arm to position the disk head above the correct cylinder/track</li>
+                    <li>Varies from about 1-10 ms</li>
+                    <li>Moving to a neighboring cylinder does NOT require another seek</li>
+                </ul>
+
+                <h3>2. Rotational Delay (Latency)</h3>
+                <ul>
+                    <li>Wait for the start of the desired block to come around under the head</li>
+                    <li>Depends on RPM; often less than seek time</li>
+                    <li>Average rotational delay = (1/2) &times; (time for one full rotation)</li>
+                </ul>
+
+                <h3>3. Transfer Time</h3>
+                <ul>
+                    <li>Time to transmit data between disk and RAM</li>
+                    <li>Depends on RPM and amount of data</li>
+                    <li>Rotation time when data passes under head = transfer time</li>
+                </ul>
+
+                <div class="key-point">
+                    <strong>Seek time and rotational delay dominate!</strong> These are the bottlenecks to minimize.
+                </div>
+            </section>
+
+            <section>
+                <h2>Disk Geometry Example: Megatron 747</h2>
+                <table class="comparison-table">
+                    <tr><th>Parameter</th><th>Value</th></tr>
+                    <tr><td>RPM</td><td>3840</td></tr>
+                    <tr><td>Block/Page Size</td><td>4096 bytes (4K)</td></tr>
+                    <tr><td>Platters</td><td>4 platters &times; 2 surfaces = 8 surfaces</td></tr>
+                    <tr><td>Cylinders</td><td>2<sup>13</sup> = 8192</td></tr>
+                    <tr><td>Average Sectors/Track</td><td>2<sup>8</sup> = 256</td></tr>
+                    <tr><td>Bytes/Sector</td><td>2<sup>9</sup> = 512</td></tr>
+                    <tr><td>Seek Operation</td><td>1 ms setup + 1 ms per 500 cylinders moved</td></tr>
+                </table>
+
+                <h3>Time Calculations</h3>
+                <div class="formula-box">
+                    <p><strong>Rotation Time:</strong> 60 sec / 3840 rpm = 15.625 ms per rotation</p>
+                    <p><strong>Min Seek:</strong> 0 ms (already on correct track)</p>
+                    <p><strong>Max Seek:</strong> 1 + (8191/500) = 17.38 ms</p>
+                    <p><strong>Avg Seek:</strong> Approximately (min + max) / 2</p>
+                    <p><strong>Avg Rotational Delay:</strong> 15.625 / 2 = 7.8125 ms</p>
+                </div>
+            </section>
+
+            <section>
+                <h2>Arranging Pages on Disk</h2>
+                <div class="key-point">
+                    <strong>Key to lowering I/O costs:</strong> Reduce seek and rotation time!
+                </div>
+
+                <h3>The "Next Block" Concept (in order of preference)</h3>
+                <ol>
+                    <li>Blocks on the <strong>same track</strong></li>
+                    <li>Blocks on the <strong>same cylinder</strong></li>
+                    <li>Blocks on <strong>adjacent cylinders</strong></li>
+                </ol>
+
+                <p>Blocks in a file should be arranged sequentially on disk to minimize seek and rotational delays.</p>
+
+                <h3>Anticipatory Prefetch</h3>
+                <ul>
+                    <li>For sequential scans: read more than one page at a time (e.g., 32+ pages)</li>
+                    <li>Trade-off: may bring in unnecessary pages if user only needs first few rows</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Memory Hierarchy</h2>
+                <table class="comparison-table">
+                    <tr><th>Level</th><th>Type</th><th>Speed</th><th>Cost</th></tr>
+                    <tr><td>L0</td><td>CPU Registers</td><td>Fastest</td><td>Highest</td></tr>
+                    <tr><td>L1</td><td>On-chip L1 Cache (SRAM)</td><td></td><td></td></tr>
+                    <tr><td>L2</td><td>Off-chip L2 Cache (SRAM)</td><td></td><td></td></tr>
+                    <tr><td>L3</td><td>Main Memory (DRAM)</td><td></td><td></td></tr>
+                    <tr><td>L4</td><td>Local Secondary Storage (Disks)</td><td></td><td></td></tr>
+                    <tr><td>L5</td><td>Remote Secondary Storage</td><td>Slowest</td><td>Lowest</td></tr>
+                </table>
+
+                <div class="concept-box">
+                    <strong>RAM vs. Disk:</strong> About 5 orders of magnitude difference in speeds (nanoseconds vs. milliseconds)
+                </div>
+
+                <h3>Disk vs RAM Comparison</h3>
+                <ul>
+                    <li><strong>Cost:</strong> Disk is much cheaper per byte than RAM</li>
+                    <li><strong>Volatility:</strong> RAM is volatile; disk is not</li>
+                    <li><strong>Capacity:</strong> May have &gt;&gt; 16 GB of data, not all needs to be in memory</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Solid State Disks (SSDs)</h2>
+
+                <h3>Advantages</h3>
+                <ul>
+                    <li>No spinning disks or moving parts (less likely to be damaged)</li>
+                    <li>Lower power requirements (1/3 to 1/2 of HDD power)</li>
+                    <li>Quieter operation</li>
+                    <li>Faster reads (e.g., 0.1 ms vs. 5-10 ms for HDD)</li>
+                    <li>Some parallel request servicing possible</li>
+                </ul>
+
+                <h3>Disadvantages</h3>
+                <ul>
+                    <li><strong>Cost:</strong> More expensive (e.g., 1 TB SSD = $100-180 vs 1 TB HDD = $50-90)</li>
+                    <li><strong>Capacity:</strong> Typically smaller due to cost</li>
+                    <li><strong>Random Writes:</strong> Slower than reads (must erase block before writing)</li>
+                    <li><strong>Write Cycles:</strong> Limited (1-5 million), then block unusable</li>
+                    <li>Still about 1 order of magnitude slower than RAM</li>
+                </ul>
+
+                <div class="key-point">
+                    <strong>HDDs will be with us for a long time</strong> due to cost and capacity advantages, especially in large data centers.
+                </div>
+            </section>
+
+            <section>
+                <h2>Storage Area Networks (SAN) vs Network Attached Storage (NAS)</h2>
+                <table class="comparison-table">
+                    <tr><th>Attribute</th><th>SAN</th><th>NAS</th></tr>
+                    <tr><td>Performance</td><td>High performance</td><td>Lower performance</td></tr>
+                    <tr><td>Connection</td><td>Fibre Channel, Gigabit Ethernet</td><td>TCP/IP networks</td></tr>
+                    <tr><td>Data Addressing</td><td>By disk block ID</td><td>By file name and byte offset</td></tr>
+                    <tr><td>Ease of Admin</td><td>More complex</td><td>Easier</td></tr>
+                    <tr><td>Cost</td><td>Higher</td><td>Lower</td></tr>
+                    <tr><td>Best For</td><td>DBMS workloads</td><td>General file storage</td></tr>
+                </table>
+
+                <h3>Common Features</h3>
+                <ul>
+                    <li>Hourly snapshots for file recovery</li>
+                    <li>RAID configuration for redundancy</li>
+                    <li>Hot-swappable drives</li>
+                    <li>Mirroring and striping capabilities</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Backup and Recovery</h2>
+                <h3>File System Backups</h3>
+                <ul>
+                    <li><strong>Full backups:</strong> Monthly with 1 year retention</li>
+                    <li><strong>Cumulative backups:</strong> Weekly with 1 month retention</li>
+                    <li><strong>Differential backups:</strong> Nightly with 2 week retention</li>
+                    <li>Hourly snapshots allow self-recovery of files</li>
+                </ul>
+
+                <h3>Database Backups</h3>
+                <ul>
+                    <li><strong>Full backup:</strong> Backup the whole table/tablespace</li>
+                    <li><strong>Incremental backup:</strong> Only backup changes since last backup (must have prior full backup)</li>
+                    <li>DBA decides on backup frequency</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Summary</h2>
+                <ul>
+                    <li>Be aware of trade-offs in capacity, access time, and expense across the storage hierarchy</li>
+                    <li>RAM vs. Disk: ~5 orders of magnitude speed difference</li>
+                    <li>Caching occurs at various levels of the hierarchy</li>
+                    <li>Data growth tends to outpace hardware improvements</li>
+                    <li>SSDs solve some HDD problems but have their own limitations</li>
+                    <li>Both HDDs and SSDs will coexist for the foreseeable future</li>
+                </ul>
+            </section>
+        </div>
+
+        <footer class="lecture-footer">
+            <a href="index.html" class="back-link">&larr; Back to Midterm 1 Prep</a>
+        </footer>
+    </div>
+</body>
+</html>
